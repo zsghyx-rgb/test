@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SOP</title>
+    <title>APP</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.min.js"></script>
@@ -507,7 +507,27 @@ body {
 <!-- ==================== 登录界面 ==================== -->
 <div id="login-overlay">
     <div class="card shadow p-3 p-md-4" style="width: 480px; max-width: 95%;">
-        <h4 class="text-center mb-3 text-primary"><i class="bi bi-wallet2"></i> SOP v2.0</h4>
+        <h4 class="text-center mb-3 text-primary"><i class="bi bi-wallet2"></i> APP v2.0</h4>
+
+        <!-- GAS URL 配置（首次填写，之后折叠） -->
+        <div class="mb-3" id="gas-url-section">
+            <div id="gas-url-saved-bar" class="d-flex align-items-center justify-content-between" style="display:none!important;">
+                <span class="small text-success"><i class="bi bi-cloud-check"></i> Drive 已连接</span>
+                <button class="btn btn-link btn-sm p-0 text-muted" onclick="showGasUrlInput()">修改</button>
+            </div>
+            <div id="gas-url-input-bar">
+                <label class="form-label small text-muted fw-bold">GAS Web App URL</label>
+                <div class="input-group input-group-sm">
+                    <input type="text" class="form-control" id="gas-url-input"
+                           placeholder="https://script.google.com/macros/s/.../exec"
+                           autocomplete="off" spellcheck="false">
+                    <button class="btn btn-outline-success" type="button" onclick="saveGasUrl()">
+                        <i class="bi bi-check-lg"></i> 保存
+                    </button>
+                </div>
+                <div class="form-text">此 URL 只存在本设备浏览器中，不会上传</div>
+            </div>
+        </div>
 
         <!-- Step 1: 选择文件 -->
         <div class="mb-3">
@@ -561,7 +581,7 @@ body {
     <div class="sidebar">
         <div class="brand-title">
             <i class="bi bi-wallet2"></i>
-            <span style="font-size: 0.7rem;">SOP</span>
+            <span style="font-size: 0.7rem;">APP</span>
         </div>
         <ul class="nav nav-pills flex-md-column mb-auto">
             <li class="nav-item">
@@ -1402,16 +1422,18 @@ body {
     </div>
 </div>
 
-<!-- 账户详情 高度80% -->
+<!-- 账户详情 高度85% -->
 <div class="modal fade" id="accountDetailModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-scrollable" style="max-height:80vh; height:80vh;">
-        <div class="modal-content" style="max-height:80vh; height:80vh; border-radius:6px; font-size:0.85rem;">
+    <div class="modal-dialog modal-dialog-scrollable" style="max-height:85vh; height:85vh;">
+        <div class="modal-content" style="max-height:85vh; height:85vh; border-radius:6px; font-size:0.85rem;">
             <div class="modal-header py-1 px-3">
                 <div style="line-height:1.3;">
                     <div style="display:flex;align-items:baseline;gap:8px;">
                         <span style="font-size:0.95rem;font-weight:700;" id="account-detail-title">账户详情</span>
                         <span class="text-muted" style="font-size:0.78rem;" id="account-detail-type"></span>
-                        <span class="text-muted" style="font-size:0.78rem;" id="account-detail-currency"></span>
+                    </div>
+                    <div style="font-size:0.78rem;color:var(--bs-secondary);">
+                        <span id="account-detail-currency"></span>
                         <span style="margin:0 4px;">·</span>
                         <span id="account-detail-balance"></span>
                     </div>
@@ -1614,8 +1636,8 @@ const DEFAULT_CATEGORIES = {
 const DEFAULT_RATES = { 'EUR_RMB': 7.8, 'USD_RMB': 7.2, 'HKD_RMB': 0.92, 'JPY_RMB': 0.048, 'GBP_RMB': 9.1 };
 
 // ==================== Google Drive 同步配置 ====================
-// 将下方 URL 替换为你的 GAS Web App 部署地址
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbw5yA5Pp0mnhP0_3k_Xyp27staP64CztqJdfu2uHPDWnbvhegPny_tEoEUVBjtHmw2X/exec';
+// GAS_URL 不再硬编码，从 localStorage 读取，首次使用时在登录界面填写
+let GAS_URL = localStorage.getItem('APP_gas_url') || '';
 const CURRENCY_SYMBOLS = { 'RMB': '¥', 'EUR': '€', 'USD': '$', 'HKD': 'HK$', 'JPY': '¥', 'GBP': '£' };
 
 
@@ -1707,12 +1729,47 @@ let tapTimeout = null, isSwiping = false;
 
 
 // ==================== 页面初始化 ====================
+// ==================== GAS URL 本地管理 ====================
+
+function initGasUrlUI() {
+    const saved = localStorage.getItem('APP_gas_url') || '';
+    if (saved) {
+        document.getElementById('gas-url-saved-bar').style.removeProperty('display');
+        document.getElementById('gas-url-input-bar').style.display = 'none';
+    } else {
+        document.getElementById('gas-url-saved-bar').style.display = 'none';
+        document.getElementById('gas-url-input-bar').style.removeProperty('display');
+    }
+}
+
+function showGasUrlInput() {
+    document.getElementById('gas-url-saved-bar').style.display = 'none';
+    document.getElementById('gas-url-input-bar').style.removeProperty('display');
+    const input = document.getElementById('gas-url-input');
+    input.value = localStorage.getItem('APP_gas_url') || '';
+    input.focus();
+}
+
+function saveGasUrl() {
+    const val = document.getElementById('gas-url-input').value.trim();
+    if (!val || !val.startsWith('https://script.google.com')) {
+        alert('请输入有效的 GAS Web App URL（以 https://script.google.com 开头）');
+        return;
+    }
+    localStorage.setItem('APP_gas_url', val);
+    GAS_URL = val;
+    initGasUrlUI();
+    loadFromDrive();  // 保存后立即拉取
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('qt-date').valueAsDate = new Date();
     document.getElementById('qtr-date').valueAsDate = new Date();
 
-    // 自动从 Drive 同步数据
-    if (GAS_URL && GAS_URL !== 'YOUR_GAS_WEB_APP_URL') {
+    initGasUrlUI();
+
+    // 有已保存的 URL 则自动从 Drive 同步
+    if (GAS_URL) {
         loadFromDrive();
     }
 });
@@ -2077,8 +2134,8 @@ function showDriveStatus(state, msg) {
  */
 async function syncToDrive(manual = false) {
     if (!currentUser) return;
-    if (!GAS_URL || GAS_URL === 'YOUR_GAS_WEB_APP_URL') {
-        if (manual) alert('请先在代码顶部填写 GAS_URL。');
+    if (!GAS_URL) {
+        if (manual) alert('请先在登录界面填写并保存 GAS URL。');
         return;
     }
     if (driveIsSyncing) return;
@@ -2122,8 +2179,8 @@ async function syncToDrive(manual = false) {
  * 从 Google Drive 加载 data.enc（在登录界面调用）
  */
 async function loadFromDrive() {
-    if (!GAS_URL || GAS_URL === 'YOUR_GAS_WEB_APP_URL') {
-        alert('请先在代码顶部填写 GAS_URL。'); return;
+    if (!GAS_URL) {
+        alert('请先在登录界面填写并保存 GAS URL。'); return;
     }
     const statusEl = document.getElementById('file-status');
     statusEl.innerHTML = '<span class="text-primary"><span class="spinner-border spinner-border-sm me-1"></span>正在从 Google Drive 同步数据…</span>';
@@ -2168,7 +2225,7 @@ async function loadFromDrive() {
 // ==================== 页面关闭时同步 ====================
 window.addEventListener('beforeunload', (e) => {
     if (!hasUnsavedChanges || !currentUser) return;
-    if (!GAS_URL || GAS_URL === 'YOUR_GAS_WEB_APP_URL') return;
+    if (!GAS_URL) return;
     // 使用 sendBeacon 做离开时的异步 POST（不阻塞关闭）
     saveUserData();
     let content;
