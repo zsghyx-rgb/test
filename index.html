@@ -488,6 +488,16 @@ body {
 <div id="unsaved-banner">
     <i class="bi bi-exclamation-triangle"></i> 有未保存的更改</div>
 
+<!-- Drive 同步状态 -->
+<div id="drive-sync-status" style="
+    position:fixed; top:5px; right:16px;
+    padding:5px 12px; border-radius:20px;
+    font-size:0.78rem; z-index:5000;
+    display:none; align-items:center; gap:6px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.15);
+    transition: opacity 0.3s;
+"></div>
+
 <!-- 状态提示 -->
 <div id="backup-status" class="backup-status">
     <i class="bi bi-check-circle"></i>
@@ -502,9 +512,14 @@ body {
         <!-- Step 1: 选择文件 -->
         <div class="mb-3">
             <label class="form-label small text-muted fw-bold">① 选择数据文件</label>
-            <input type="file" class="form-control form-control-sm" id="data-import-file"
-                   accept=".enc,.json,.txt" onchange="onFileSelected()">
-            <div id="file-status" class="form-text mt-1">请选择 .enc 或 .json 格式的数据文件</div>
+            <div class="d-flex gap-2">
+                <input type="file" class="form-control form-control-sm" id="data-import-file"
+                       accept=".enc,.json,.txt" onchange="onFileSelected()">
+                <button class="btn btn-outline-primary btn-sm text-nowrap" onclick="loadFromDrive()" title="从 Google Drive 加载 data.enc">
+                    <i class="bi bi-cloud-arrow-down"></i> Drive
+                </button>
+            </div>
+            <div id="file-status" class="form-text mt-1">请选择本地文件，或从 Google Drive 加载</div>
         </div>
 
         <!-- Step 2: 输入密码 (enc文件才显示) -->
@@ -1065,15 +1080,18 @@ body {
 
                 <div class="col-12 col-md-6">
                     <div class="card shadow-sm h-100">
-                        <div class="card-header bg-transparent fw-bold">数据导出 & 导入</div>
+                        <div class="card-header bg-transparent fw-bold">数据导出 & 同步</div>
                         <div class="card-body">
                             <p class="text-muted small mb-3">
                                 <i class="bi bi-info-circle"></i>
                                 数据保存在本地，导出加密文件时输入密码，导入时使用相同密码解密。
                             </p>
                             <div class="d-grid gap-2">
+                                <button class="btn btn-primary" onclick="syncToDrive(true)">
+                                    <i class="bi bi-cloud-upload"></i> 保存到 Google Drive
+                                </button>
                                 <button class="btn btn-warning" onclick="exportEncData()">
-                                    <i class="bi bi-shield-lock"></i> 导出文件
+                                    <i class="bi bi-shield-lock"></i> 导出本地文件
                                 </button>
                             </div>
                         </div>
@@ -1384,18 +1402,16 @@ body {
     </div>
 </div>
 
-<!-- 账户详情 高度85% -->
+<!-- 账户详情 高度80% -->
 <div class="modal fade" id="accountDetailModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-scrollable" style="max-height:85vh; height:85vh;">
-        <div class="modal-content" style="max-height:85vh; height:85vh; border-radius:6px; font-size:0.85rem;">
+    <div class="modal-dialog modal-dialog-scrollable" style="max-height:80vh; height:80vh;">
+        <div class="modal-content" style="max-height:80vh; height:80vh; border-radius:6px; font-size:0.85rem;">
             <div class="modal-header py-1 px-3">
                 <div style="line-height:1.3;">
                     <div style="display:flex;align-items:baseline;gap:8px;">
                         <span style="font-size:0.95rem;font-weight:700;" id="account-detail-title">账户详情</span>
                         <span class="text-muted" style="font-size:0.78rem;" id="account-detail-type"></span>
-                    </div>
-                    <div style="font-size:0.78rem;color:var(--bs-secondary);">
-                        <span id="account-detail-currency"></span>
+                        <span class="text-muted" style="font-size:0.78rem;" id="account-detail-currency"></span>
                         <span style="margin:0 4px;">·</span>
                         <span id="account-detail-balance"></span>
                     </div>
@@ -1596,6 +1612,10 @@ const DEFAULT_CATEGORIES = {
 };
 
 const DEFAULT_RATES = { 'EUR_RMB': 7.8, 'USD_RMB': 7.2, 'HKD_RMB': 0.92, 'JPY_RMB': 0.048, 'GBP_RMB': 9.1 };
+
+// ==================== Google Drive 同步配置 ====================
+// 将下方 URL 替换为你的 GAS Web App 部署地址
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbw5yA5Pp0mnhP0_3k_Xyp27staP64CztqJdfu2uHPDWnbvhegPny_tEoEUVBjtHmw2X/exec';
 const CURRENCY_SYMBOLS = { 'RMB': '¥', 'EUR': '€', 'USD': '$', 'HKD': 'HK$', 'JPY': '¥', 'GBP': '£' };
 
 
@@ -1616,6 +1636,8 @@ let exchangeRates = {};
 let currentUser = null;
 let currentUserName = null;
 let hasUnsavedChanges = false;
+let driveAutoSaveTimer = null;   // 防抖计时器
+let driveIsSyncing = false;      // 防并发
 
 // ==================== UI状态变量 ====================
 let chartInstances = {};
@@ -1688,6 +1710,11 @@ let tapTimeout = null, isSwiping = false;
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('qt-date').valueAsDate = new Date();
     document.getElementById('qtr-date').valueAsDate = new Date();
+
+    // 自动从 Drive 同步数据
+    if (GAS_URL && GAS_URL !== 'YOUR_GAS_WEB_APP_URL') {
+        loadFromDrive();
+    }
 });
 
 // ==================== 登录流程 ====================
@@ -1736,11 +1763,44 @@ function onFileSelected() {
  * 使用密码解密文件
  */
 function decryptAndLoadData() {
-    const file = document.getElementById('data-import-file').files[0];
-    if (!file) { alert('请先选择文件'); return; }
-
     const password = document.getElementById('login-password').value;
     if (!password) { alert('请输入密码'); return; }
+
+    // 来源：Drive 暂存内容 or 本地文件
+    if (window._driveMode && window._driveRawContent) {
+        const raw = window._driveRawContent;
+        try {
+            let data = null;
+            try {
+                const bytes = CryptoJS.AES.decrypt(raw, password);
+                const str = bytes.toString(CryptoJS.enc.Utf8);
+                if (str) data = JSON.parse(str);
+            } catch(_) {}
+            if (!data) try { data = JSON.parse(raw); } catch(_) {}
+            if (!data) {
+                document.getElementById('password-error').classList.remove('d-none');
+                document.getElementById('password-error').textContent = '❌ 密码错误或文件格式不正确';
+                return;
+            }
+            userPassword = password;
+            inMemoryLoadedData = data;
+            categories = data.categories || DEFAULT_CATEGORIES;
+            exchangeRates = data.exchangeRates || DEFAULT_RATES;
+            document.getElementById('password-error').classList.add('d-none');
+            document.getElementById('file-status').innerHTML = '<span class="text-success">✓ Drive 数据解密成功！请选择用户。</span>';
+            window._driveMode = false;
+            window._driveRawContent = null;
+            onDataLoaded();
+        } catch(e) {
+            document.getElementById('password-error').classList.remove('d-none');
+            document.getElementById('password-error').textContent = '❌ 解析失败：' + e.message;
+        }
+        return;
+    }
+
+    // 本地文件来源（原有逻辑）
+    const file = document.getElementById('data-import-file').files[0];
+    if (!file) { alert('请先选择文件'); return; }
 
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -1973,16 +2033,153 @@ function filterUserData() {
     userPlannedTransactions = plannedTransactions.filter(p => p.ownerName === currentUserName);
 }
 
-// ==================== 未保存更改标记 ====================
+// ==================== 未保存更改标记 & Drive 同步 ====================
+
 function triggerAutoSave() {
     hasUnsavedChanges = true;
     document.getElementById('unsaved-banner').classList.add('show');
+    // 防抖：最后一次修改后 2 秒再同步，避免高频操作刷屏
+    clearTimeout(driveAutoSaveTimer);
+    driveAutoSaveTimer = setTimeout(() => syncToDrive(false), 2000);
 }
 
 function clearUnsavedFlag() {
     hasUnsavedChanges = false;
     document.getElementById('unsaved-banner').classList.remove('show');
 }
+
+/**
+ * 显示 Drive 同步状态徽章
+ * state: 'syncing' | 'ok' | 'error'
+ */
+function showDriveStatus(state, msg) {
+    const el = document.getElementById('drive-sync-status');
+    if (!el) return;
+    const styles = {
+        syncing: 'background:#fff3cd;color:#856404;border:1px solid #ffc107;',
+        ok:      'background:#d1e7dd;color:#0a3622;border:1px solid #a3cfbb;',
+        error:   'background:#f8d7da;color:#58151c;border:1px solid #f1aeb5;'
+    };
+    const icons = { syncing: '⏳', ok: '☁️', error: '❌' };
+    el.style.cssText = (styles[state] || styles.ok) +
+        'position:fixed;top:5px;right:16px;padding:5px 12px;border-radius:20px;' +
+        'font-size:0.78rem;z-index:5000;display:flex;align-items:center;gap:6px;' +
+        'box-shadow:0 2px 8px rgba(0,0,0,0.15);transition:opacity 0.3s;';
+    el.innerHTML = `${icons[state]} ${msg}`;
+    if (state !== 'syncing') {
+        setTimeout(() => { el.style.display = 'none'; }, 3000);
+    }
+}
+
+/**
+ * 将当前数据同步到 Google Drive (data.enc)
+ * @param {boolean} manual - 手动触发时显示更明显的提示
+ */
+async function syncToDrive(manual = false) {
+    if (!currentUser) return;
+    if (!GAS_URL || GAS_URL === 'YOUR_GAS_WEB_APP_URL') {
+        if (manual) alert('请先在代码顶部填写 GAS_URL。');
+        return;
+    }
+    if (driveIsSyncing) return;
+    driveIsSyncing = true;
+
+    showDriveStatus('syncing', '同步中…');
+    saveUserData();
+
+    // 加密打包
+    let content;
+    if (userPassword) {
+        content = CryptoJS.AES.encrypt(JSON.stringify(inMemoryLoadedData), userPassword).toString();
+    } else {
+        content = JSON.stringify(inMemoryLoadedData);
+    }
+
+    try {
+        const resp = await fetch(GAS_URL, {
+            method: 'POST',
+            body: content,          // 直接发纯文本，匹配 GAS e.postData.contents
+            headers: { 'Content-Type': 'text/plain' }
+        });
+        const text = (await resp.text()).trim();
+        if (text === 'OK') {
+            clearUnsavedFlag();
+            showDriveStatus('ok', '已同步到 Drive');
+            if (manual) showStatus('已保存到 Google Drive', 'success');
+        } else {
+            throw new Error('GAS 返回：' + text);
+        }
+    } catch (err) {
+        showDriveStatus('error', '同步失败');
+        if (manual) showStatus('同步失败：' + err.message, 'error');
+        console.error('[Drive sync error]', err);
+    } finally {
+        driveIsSyncing = false;
+    }
+}
+
+/**
+ * 从 Google Drive 加载 data.enc（在登录界面调用）
+ */
+async function loadFromDrive() {
+    if (!GAS_URL || GAS_URL === 'YOUR_GAS_WEB_APP_URL') {
+        alert('请先在代码顶部填写 GAS_URL。'); return;
+    }
+    const statusEl = document.getElementById('file-status');
+    statusEl.innerHTML = '<span class="text-primary"><span class="spinner-border spinner-border-sm me-1"></span>正在从 Google Drive 同步数据…</span>';
+
+    try {
+        const resp = await fetch(GAS_URL);
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const raw = (await resp.text()).trim();
+
+        if (!raw) {
+            statusEl.innerHTML = '<span class="text-warning">⚠️ Drive 上暂无数据文件，请选择本地文件</span>';
+            return;
+        }
+
+        // 尝试明文 JSON
+        try {
+            const parsed = JSON.parse(raw);
+            userPassword = '';
+            inMemoryLoadedData = parsed;
+            categories = parsed.categories || DEFAULT_CATEGORIES;
+            exchangeRates = parsed.exchangeRates || DEFAULT_RATES;
+            statusEl.innerHTML = '<span class="text-success">✓ 已从 Drive 加载（明文）</span>';
+            document.getElementById('password-section').style.display = 'none';
+            onDataLoaded();
+            return;
+        } catch(_) {}
+
+        // 加密文件 → 显示密码框
+        window._driveRawContent = raw;
+        window._driveMode = true;
+        statusEl.innerHTML = '<span class="text-success">✓ 已从 Drive 获取加密文件，请输入密码</span>';
+        document.getElementById('user-section').style.display = 'none';
+        document.getElementById('user-buttons').innerHTML = '';
+        document.getElementById('password-error').classList.add('d-none');
+        document.getElementById('password-section').style.display = 'block';
+        document.getElementById('login-password').focus();
+    } catch (err) {
+        statusEl.innerHTML = `<span class="text-danger">❌ 加载失败：${err.message}</span>`;
+    }
+}
+
+// ==================== 页面关闭时同步 ====================
+window.addEventListener('beforeunload', (e) => {
+    if (!hasUnsavedChanges || !currentUser) return;
+    if (!GAS_URL || GAS_URL === 'YOUR_GAS_WEB_APP_URL') return;
+    // 使用 sendBeacon 做离开时的异步 POST（不阻塞关闭）
+    saveUserData();
+    let content;
+    if (userPassword) {
+        content = CryptoJS.AES.encrypt(JSON.stringify(inMemoryLoadedData), userPassword).toString();
+    } else {
+        content = JSON.stringify(inMemoryLoadedData);
+    }
+    navigator.sendBeacon(GAS_URL, content);  // 纯文本，匹配 GAS doPost
+    // 不设置 e.returnValue，不弹确认框，静默同步
+});
 
 // ==================== 数据导出功能 ====================
 
