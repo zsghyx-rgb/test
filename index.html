@@ -258,46 +258,27 @@ body {
     flex-direction: column;
 }
 
-/* 未保存更改提示 */
-#unsaved-banner {
+/* 统一通知 toast */
+#app-toast {
     position: fixed;
-    top: 5px;
+    top: 14px;
     left: 50%;
     transform: translateX(-50%);
-    padding: 8px 16px;
-    background-color: #ffc107;
-    color: #000;
-    border-radius: 5px;
-    z-index: 4999;
-    opacity: 0;
-    transition: opacity 0.3s;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    font-size: 0.875rem;
-    white-space: nowrap;
-    pointer-events: none;
-}
-
-#unsaved-banner.show { opacity: 1; pointer-events: auto; }
-
-.backup-status {
-    position: fixed;
-    top: 5px;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 8px 16px;
-    background-color: var(--bs-success);
-    color: white;
-    border-radius: 5px;
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-size: 0.84rem;
+    font-weight: 500;
     z-index: 9999;
     opacity: 0;
-    transition: opacity 0.3s;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    font-size: 0.875rem;
+    pointer-events: none;
+    transition: opacity 0.25s;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.18);
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 7px;
 }
-
-.backup-status.show { opacity: 1; }
-.backup-status.saving { background-color: var(--bs-warning); color: #000; }
-.backup-status.error { background-color: var(--bs-danger); }
+#app-toast.show { opacity: 1; }
 
 .amount-hidden { filter: blur(8px); user-select: none; }
 
@@ -449,7 +430,10 @@ body {
     #editTransactionModal .modal-dialog {
         margin: 0 auto !important;
         align-self: flex-start;
-        max-height: 95vh;
+        max-height: 80vh;
+    }
+    #accountDetailModal .modal-content {
+        max-height: 80vh;
     }
 }
 
@@ -484,25 +468,9 @@ body {
 </head>
 <body>
 
-<!-- 未保存更改提示条 -->
-<div id="unsaved-banner">
-    <i class="bi bi-exclamation-triangle"></i> 有未保存的更改</div>
+<!-- 统一通知 toast -->
+<div id="app-toast"></div>
 
-<!-- Drive 同步状态 -->
-<div id="drive-sync-status" style="
-    position:fixed; top:5px; right:16px;
-    padding:5px 12px; border-radius:20px;
-    font-size:0.78rem; z-index:5000;
-    display:none; align-items:center; gap:6px;
-    box-shadow:0 2px 8px rgba(0,0,0,0.15);
-    transition: opacity 0.3s;
-"></div>
-
-<!-- 状态提示 -->
-<div id="backup-status" class="backup-status">
-    <i class="bi bi-check-circle"></i>
-    <span id="backup-status-text">已保存</span>
-</div>
 
 <!-- ==================== 登录界面 ==================== -->
 <div id="login-overlay">
@@ -1138,6 +1106,23 @@ body {
                     </div>
                 </div>
 
+                <div class="col-12 col-md-6">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-transparent fw-bold">
+                            <i class="bi bi-people"></i> 用户管理
+                        </div>
+                        <div class="card-body">
+                            <div id="user-management-list" class="mb-3"></div>
+                            <form onsubmit="addUserFromSettings(event)" class="d-flex gap-2">
+                                <input type="text" class="form-control form-control-sm" id="new-user-input" placeholder="新用户名" required>
+                                <button class="btn btn-outline-success btn-sm text-nowrap" type="submit">
+                                    <i class="bi bi-plus-lg"></i> 添加
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="col-12 mobile-hide">
                     <div class="card shadow-sm">
                         <div class="card-header bg-transparent fw-bold">类别管理 (可拖拽排序)</div>
@@ -1558,21 +1543,21 @@ body {
                     <div class="row g-2 mb-2">
                         <div class="col-6">
                             <label class="compact-form-label">转出账户</label>
-                            <select class="form-select compact-form-control" id="edit-transfer-from" required></select>
+                            <select class="form-select compact-form-control" id="edit-transfer-from" onchange="handleEditTransferAmountChange()" required></select>
                         </div>
                         <div class="col-6">
                             <label class="compact-form-label">转出金额</label>
-                            <input type="number" step="0.01" class="form-control compact-form-control" id="edit-transfer-amount-out" required>
+                            <input type="number" step="0.01" class="form-control compact-form-control" id="edit-transfer-amount-out" oninput="handleEditTransferAmountChange('out')" required>
                         </div>
                     </div>
                     <div class="row g-2 mb-2">
                         <div class="col-6">
                             <label class="compact-form-label">转入账户</label>
-                            <select class="form-select compact-form-control" id="edit-transfer-to" required></select>
+                            <select class="form-select compact-form-control" id="edit-transfer-to" onchange="handleEditTransferAmountChange()" required></select>
                         </div>
                         <div class="col-6">
                             <label class="compact-form-label">转入金额</label>
-                            <input type="number" step="0.01" class="form-control compact-form-control" id="edit-transfer-amount-in" required>
+                            <input type="number" step="0.01" class="form-control compact-form-control" id="edit-transfer-amount-in" oninput="handleEditTransferAmountChange('in')" required>
                         </div>
                     </div>
                     <div class="mb-2">
@@ -1716,7 +1701,7 @@ function toRmb(amt, currency) {
  * 格式化金额（日元不显示小数）
  */
 function formatAmount(amt, currency) {
-    return currency === 'JPY' ? Math.round(amt).toLocaleString() : amt.toFixed(2);
+    return amt.toFixed(2);
 }
 
 
@@ -2094,7 +2079,7 @@ function filterUserData() {
 
 function triggerAutoSave() {
     hasUnsavedChanges = true;
-    document.getElementById('unsaved-banner').classList.add('show');
+    showToast('有未保存的更改', 'warning', 0);
     // 防抖：最后一次修改后 2 秒再同步，避免高频操作刷屏
     clearTimeout(driveAutoSaveTimer);
     driveAutoSaveTimer = setTimeout(() => syncToDrive(false), 2000);
@@ -2102,32 +2087,13 @@ function triggerAutoSave() {
 
 function clearUnsavedFlag() {
     hasUnsavedChanges = false;
-    document.getElementById('unsaved-banner').classList.remove('show');
+    hideToast();
 }
 
 /**
  * 显示 Drive 同步状态徽章
  * state: 'syncing' | 'ok' | 'error'
  */
-function showDriveStatus(state, msg) {
-    const el = document.getElementById('drive-sync-status');
-    if (!el) return;
-    const styles = {
-        syncing: 'background:#fff3cd;color:#856404;border:1px solid #ffc107;',
-        ok:      'background:#d1e7dd;color:#0a3622;border:1px solid #a3cfbb;',
-        error:   'background:#f8d7da;color:#58151c;border:1px solid #f1aeb5;'
-    };
-    const icons = { syncing: '⏳', ok: '☁️', error: '❌' };
-    el.style.cssText = (styles[state] || styles.ok) +
-        'position:fixed;top:5px;right:16px;padding:5px 12px;border-radius:20px;' +
-        'font-size:0.78rem;z-index:5000;display:flex;align-items:center;gap:6px;' +
-        'box-shadow:0 2px 8px rgba(0,0,0,0.15);transition:opacity 0.3s;';
-    el.innerHTML = `${icons[state]} ${msg}`;
-    if (state !== 'syncing') {
-        setTimeout(() => { el.style.display = 'none'; }, 3000);
-    }
-}
-
 /**
  * 将当前数据同步到 Google Drive (data.enc)
  * @param {boolean} manual - 手动触发时显示更明显的提示
@@ -2141,7 +2107,7 @@ async function syncToDrive(manual = false) {
     if (driveIsSyncing) return;
     driveIsSyncing = true;
 
-    showDriveStatus('syncing', '同步中…');
+    showToast('☁️ 同步中…', 'syncing', 0);
     saveUserData();
 
     // 加密打包
@@ -2161,14 +2127,13 @@ async function syncToDrive(manual = false) {
         const text = (await resp.text()).trim();
         if (text === 'OK') {
             clearUnsavedFlag();
-            showDriveStatus('ok', '已同步到 Drive');
-            if (manual) showStatus('已保存到 Google Drive', 'success');
+            showToast('☁️ 已同步到 Drive', 'success');
+            if (manual) {} // already shown above
         } else {
             throw new Error('GAS 返回：' + text);
         }
     } catch (err) {
-        showDriveStatus('error', '同步失败');
-        if (manual) showStatus('同步失败：' + err.message, 'error');
+        showToast('同步失败：' + err.message, 'error');
         console.error('[Drive sync error]', err);
     } finally {
         driveIsSyncing = false;
@@ -2274,7 +2239,7 @@ function exportEncData() {
     a.click();
 
     clearUnsavedFlag();
-    showStatus('加密文件已导出', 'success');
+    showToast('加密文件已导出', 'success');
 }
 
 function exportJsonData() {
@@ -2286,7 +2251,7 @@ function exportJsonData() {
     a.download = `ledger_backup_${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     clearUnsavedFlag();
-    showStatus('JSON已导出', 'success');
+    showToast('JSON已导出', 'success');
 }
 
 function exportTransactionCsv() {
@@ -2536,7 +2501,7 @@ function deleteAccount(id) {
             renderAccounts();
             updateSelectOptions();
             triggerAutoSave();
-            showStatus('账户已删除', 'success');
+            showToast('账户已删除', 'success');
         }
     }
 }
@@ -2592,7 +2557,7 @@ function openAccountDetail(id) {
             let titleHtml = '';
             let subLine = t.date;
             let amtColor = isTransfer ? '#ff8c00' : (t.amount >= 0 ? '#198754' : '#dc3545');
-            let iconClass = isTransfer ? 'bi-arrow-right'
+            let iconClass = isTransfer ? 'bi-arrow-left-right'
                 : (t.amount >= 0 ? 'bi-arrow-up-circle' : 'bi-arrow-down-circle');
             let iconColor = amtColor;
 
@@ -2780,7 +2745,7 @@ document.getElementById('edit-account-form').addEventListener('submit', (e) => {
         saveUserData(); triggerAutoSave(); loadAllData(); filterUserData(); renderAccounts();
         displayedTransactionCount = 100; renderAllTransactions();
         bootstrap.Modal.getInstance(document.getElementById('editAccountModal')).hide();
-        showStatus('账户已更新', 'success');
+        showToast('账户已更新', 'success');
     }
 });
 
@@ -2810,6 +2775,22 @@ function updateQuickFormCategoriesMobile() { updateQuickFormCategories('-mobile'
 // ==================== 转账表单处理 ====================
 function handleTransferFromChange() { handleTransferAmountChange(); }
 function handleTransferToChange() { handleTransferAmountChange(); }
+
+function handleEditTransferAmountChange(direction) {
+    const fromId = document.getElementById('edit-transfer-from')?.value;
+    const toId   = document.getElementById('edit-transfer-to')?.value;
+    if (!fromId || !toId) return;
+    const accFrom = accounts.find(a => a.id == fromId);
+    const accTo   = accounts.find(a => a.id == toId);
+    if (!accFrom || !accTo || accFrom.currency !== accTo.currency) return;
+    if (direction === 'out') {
+        const v = document.getElementById('edit-transfer-amount-out').value;
+        document.getElementById('edit-transfer-amount-in').value = v;
+    } else if (direction === 'in') {
+        const v = document.getElementById('edit-transfer-amount-in').value;
+        document.getElementById('edit-transfer-amount-out').value = v;
+    }
+}
 
 function handleTransferAmountChange() {
     const fromId = document.getElementById('qtr-from')?.value;
@@ -3088,7 +3069,7 @@ document.getElementById('edit-transaction-form').addEventListener('submit', (e) 
         saveUserData(); triggerAutoSave(); loadAllData(); filterUserData();
         displayedTransactionCount = 100; renderAllTransactions(); renderAccounts();
         bootstrap.Modal.getInstance(document.getElementById('editTransactionModal')).hide();
-        showStatus('交易已添加', 'success');
+        showToast('交易已添加', 'success');
         maybeReturnToDetail();
     } else {
         const id = parseFloat(document.getElementById('edit-trans-id').value);
@@ -3142,7 +3123,7 @@ document.getElementById('edit-transfer-form').addEventListener('submit', (e) => 
         saveUserData(); triggerAutoSave(); loadAllData(); filterUserData();
         displayedTransactionCount = 100; renderAllTransactions(); renderAccounts();
         bootstrap.Modal.getInstance(document.getElementById('editTransferModal')).hide();
-        showStatus('转账已添加', 'success');
+        showToast('转账已添加', 'success');
         maybeReturnToDetail();
     } else {
         const id = parseFloat(document.getElementById('edit-transfer-id').value);
@@ -3352,7 +3333,7 @@ function renderAllTransactions() {
             const tagsDisplay = t.tags ? ` @${t.tags}` : '';
             let descClean = t.desc || '';
             if (descClean.includes(': ')) descClean = descClean.split(': ')[1];
-            const finalNote = descClean ? `#${descClean}` : (t.isTransfer ? '#转账' : `#${t.category}`);
+            const finalNote = descClean ? `#${descClean}` : (t.isTransfer ? '#转账' : '');
 
             if (t.isTransfer && t.type === 'expense') {
                 const accTo = accounts.find(a => a.id == t.relatedAccountId);
@@ -3918,15 +3899,47 @@ function switchTab(t, el) {
     el.classList.add('active');
     if (t === 'stats') renderStats();
     if (t === 'planned') renderPlannedTransactions();
-    if (t === 'settings') { renderExchangeRateSettings(); initPasswordHint(); }
+    if (t === 'settings') { renderExchangeRateSettings(); initPasswordHint(); renderUserManagement(); }
 }
 
 // ==================== 状态提示 ====================
-function showStatus(msg, type) {
-    const el = document.getElementById('backup-status');
-    el.className = `backup-status ${type} show`;
-    document.getElementById('backup-status-text').innerText = msg;
-    if (type !== 'saving') { setTimeout(() => el.classList.remove('show'), 3000); }
+// ==================== 统一通知系统 ====================
+let _toastTimer = null;
+
+/**
+ * 显示统一 toast 通知
+ * type: 'success' | 'warning' | 'error' | 'syncing'
+ * duration: ms，0 = 不自动消失
+ */
+function showToast(msg, type = 'success', duration = 3000) {
+    const el = document.getElementById('app-toast');
+    if (!el) return;
+    clearTimeout(_toastTimer);
+
+    const styles = {
+        success: 'background:#d1e7dd;color:#0a3622;border:1px solid #a3cfbb;',
+        warning: 'background:#fff3cd;color:#664d03;border:1px solid #ffda6a;',
+        error:   'background:#f8d7da;color:#58151c;border:1px solid #f1aeb5;',
+        syncing: 'background:#cfe2ff;color:#084298;border:1px solid #9ec5fe;',
+    };
+    const icons = {
+        success: '<i class="bi bi-check-circle-fill"></i>',
+        warning: '<i class="bi bi-exclamation-triangle-fill"></i>',
+        error:   '<i class="bi bi-x-circle-fill"></i>',
+        syncing: '<span class="spinner-border spinner-border-sm"></span>',
+    };
+    el.style.cssText = (styles[type] || styles.success);
+    el.innerHTML = `${icons[type] || ''} ${msg}`;
+    el.classList.add('show');
+
+    if (duration > 0) {
+        _toastTimer = setTimeout(() => el.classList.remove('show'), duration);
+    }
+}
+
+function hideToast() {
+    clearTimeout(_toastTimer);
+    document.getElementById('app-toast')?.classList.remove('show');
 }
 
 // ==================== 金额显示/隐藏切换 ====================
@@ -3987,7 +4000,7 @@ function changeDataPassword() {
     triggerAutoSave();
     bootstrap.Modal.getInstance(document.getElementById('changePwdModal')).hide();
     initPasswordHint();
-    showStatus('密码已更新，请导出加密文件保存', 'success');
+    showToast('密码已更新，请导出加密文件保存', 'success');
 }
 
 function initPasswordHint() {
@@ -4068,7 +4081,7 @@ function setExchangeRate(from, to, rate) {
     exchangeRates[key] = parseFloat(rate);
     saveUserData(); triggerAutoSave();
     renderExchangeRateSettings();
-    showStatus('汇率已更新', 'success');
+    showToast('汇率已更新', 'success');
 }
 
 // ==================== 类别管理 ====================
@@ -4130,7 +4143,7 @@ function removeCategory(type, cat) {
     if (plannedTransactions) plannedTransactions.forEach(p => { if (p.type === type && p.category === cat) p.category = '未分类'; });
     saveUserData(); triggerAutoSave(); renderCategorySettings();
     displayedTransactionCount = 100; renderAllTransactions(); renderStats();
-    showStatus(`分类 "${cat}" 已删除`, 'success');
+    showToast(`分类 "${cat}" 已删除`, 'success');
 }
 
 function editCategoryName(type, oldName) {
@@ -4145,7 +4158,7 @@ function editCategoryName(type, oldName) {
     if (plannedTransactions) plannedTransactions.forEach(p => { if (p.type === type && p.category === oldName) p.category = trimmedName; });
     saveUserData(); triggerAutoSave(); renderCategorySettings();
     displayedTransactionCount = 100; renderAllTransactions(); renderStats();
-    showStatus(`分类已重命名: "${oldName}" → "${trimmedName}"`, 'success');
+    showToast(`分类已重命名: "${oldName}" → "${trimmedName}"`, 'success');
 }
 
 // ==================== 表格列宽调整 ====================
@@ -4264,7 +4277,7 @@ document.getElementById('add-planned-form').addEventListener('submit', (e) => {
     plannedTransactions.push(plan);
     saveUserData(); triggerAutoSave(); loadAllData(); filterUserData(); renderPlannedTransactions();
     bootstrap.Modal.getInstance(document.getElementById('addPlannedModal')).hide();
-    e.target.reset(); showStatus('计划已创建', 'success');
+    e.target.reset(); showToast('计划已创建', 'success');
 });
 
 function openEditPlanned(id) {
@@ -4304,7 +4317,7 @@ document.getElementById('edit-planned-form').addEventListener('submit', (e) => {
         plan.tags = document.getElementById('edit-planned-tags').value;
         saveUserData(); triggerAutoSave(); loadAllData(); filterUserData(); renderPlannedTransactions();
         bootstrap.Modal.getInstance(document.getElementById('editPlannedModal')).hide();
-        showStatus('计划已更新', 'success');
+        showToast('计划已更新', 'success');
     }
 });
 
@@ -4314,7 +4327,7 @@ function deletePlanned(id) {
     if (index > -1 && plannedTransactions[index].ownerName === currentUserName) {
         plannedTransactions.splice(index, 1);
         saveUserData(); triggerAutoSave(); loadAllData(); filterUserData(); renderPlannedTransactions();
-        showStatus('计划已删除', 'success');
+        showToast('计划已删除', 'success');
     }
 }
 
@@ -4383,6 +4396,84 @@ function toggleAdvancedExportSection() {
         toggleText.textContent = '显示高级导出';
         toggleIcon.className = 'bi bi-file-earmark-code';
     }
+}
+
+// ==================== 用户管理 ====================
+
+function renderUserManagement() {
+    const container = document.getElementById('user-management-list');
+    if (!container) return;
+    container.innerHTML = '';
+    if (!dataUsers || dataUsers.length === 0) {
+        container.innerHTML = '<span class="text-muted small">暂无用户</span>';
+        return;
+    }
+    dataUsers.forEach(u => {
+        const hasData = (accounts.some(a => a.ownerName === u) ||
+                         transactions.some(t => t.ownerName === u));
+        const row = document.createElement('div');
+        row.className = 'd-flex align-items-center gap-2 mb-2';
+        row.innerHTML = `
+            <span class="flex-fill small fw-bold">${u}${u === currentUserName ? ' <span class="badge bg-primary" style="font-size:0.65rem;">当前</span>' : ''}</span>
+            <button class="btn btn-outline-secondary btn-sm py-0" onclick="renameUser('${u}')">改名</button>
+            <button class="btn btn-outline-danger btn-sm py-0" onclick="removeUser('${u}')"
+                ${hasData ? 'disabled title="有数据，不可删除"' : ''}>删除</button>`;
+        container.appendChild(row);
+    });
+}
+
+function addUserFromSettings(e) {
+    e.preventDefault();
+    const input = document.getElementById('new-user-input');
+    const name = input.value.trim();
+    if (!name) return;
+    if (dataUsers.includes(name)) { alert(`用户 "${name}" 已存在`); return; }
+    dataUsers.push(name);
+    if (!inMemoryLoadedData.allUserData[name]) {
+        inMemoryLoadedData.allUserData[name] = { accounts: [], transactions: [], plannedTransactions: [] };
+    }
+    saveUserData(); triggerAutoSave();
+    input.value = '';
+    renderUserManagement();
+    showToast(`已添加用户 "${name}"`, 'success');
+}
+
+function renameUser(oldName) {
+    const newName = prompt(`将用户 "${oldName}" 改名为：`, oldName);
+    if (!newName || newName.trim() === oldName) return;
+    const trimmed = newName.trim();
+    if (dataUsers.includes(trimmed)) { alert(`用户名 "${trimmed}" 已存在`); return; }
+    const idx = dataUsers.indexOf(oldName);
+    if (idx === -1) return;
+    dataUsers[idx] = trimmed;
+    // 迁移数据
+    accounts.forEach(a => { if (a.ownerName === oldName) a.ownerName = trimmed; });
+    transactions.forEach(t => { if (t.ownerName === oldName) t.ownerName = trimmed; });
+    plannedTransactions.forEach(p => { if (p.ownerName === oldName) p.ownerName = trimmed; });
+    inMemoryLoadedData.allUserData[trimmed] = inMemoryLoadedData.allUserData[oldName];
+    delete inMemoryLoadedData.allUserData[oldName];
+    if (currentUserName === oldName) {
+        currentUserName = trimmed;
+        currentUser.name = trimmed;
+        document.querySelector('.user-name-full').innerText = trimmed;
+        document.querySelector('.user-name-short').innerText = trimmed.charAt(0).toUpperCase();
+        document.getElementById('mobile-current-user').innerText = trimmed;
+    }
+    saveUserData(); triggerAutoSave();
+    renderUserManagement();
+    showToast(`已重命名为 "${trimmed}"`, 'success');
+}
+
+function removeUser(name) {
+    const hasData = accounts.some(a => a.ownerName === name) ||
+                    transactions.some(t => t.ownerName === name);
+    if (hasData) { alert('该用户有账户或交易数据，不可删除。'); return; }
+    if (!confirm(`确定删除用户 "${name}"？`)) return;
+    dataUsers = dataUsers.filter(u => u !== name);
+    delete inMemoryLoadedData.allUserData[name];
+    saveUserData(); triggerAutoSave();
+    renderUserManagement();
+    showToast(`已删除用户 "${name}"`, 'success');
 }
 
 // ==================== 数据一致性检查和修复 ====================
