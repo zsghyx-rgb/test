@@ -1631,7 +1631,13 @@ const DEFAULT_RATES = { 'EUR_RMB': 7.8, 'USD_RMB': 7.2, 'HKD_RMB': 0.92, 'JPY_RM
 
 // ==================== Google Drive 同步配置 ====================
 // GAS_URL 不再硬编码，从 localStorage 读取，首次使用时在登录界面填写
-let GAS_URL = localStorage.getItem('APP_gas_url') || '';
+function gasUrlGet() {
+    try { return localStorage.getItem('APP_gas_url') || ''; } catch(e) { return ''; }
+}
+function gasUrlSet(val) {
+    try { localStorage.setItem('APP_gas_url', val); return true; } catch(e) { return false; }
+}
+let GAS_URL = gasUrlGet();
 const CURRENCY_SYMBOLS = { 'RMB': '¥', 'EUR': '€', 'USD': '$', 'HKD': 'HK$', 'JPY': '¥', 'GBP': '£' };
 
 
@@ -1726,21 +1732,24 @@ let tapTimeout = null, isSwiping = false;
 // ==================== GAS URL 本地管理 ====================
 
 function initGasUrlUI() {
-    const saved = localStorage.getItem('APP_gas_url') || '';
+    const saved = gasUrlGet();
+    const savedBar  = document.getElementById('gas-url-saved-bar');
+    const inputBar  = document.getElementById('gas-url-input-bar');
+    if (!savedBar || !inputBar) return;
     if (saved) {
-        document.getElementById('gas-url-saved-bar').style.removeProperty('display');
-        document.getElementById('gas-url-input-bar').style.display = 'none';
+        savedBar.style.cssText  = 'display:flex!important;';
+        inputBar.style.cssText  = 'display:none!important;';
     } else {
-        document.getElementById('gas-url-saved-bar').style.display = 'none';
-        document.getElementById('gas-url-input-bar').style.removeProperty('display');
+        savedBar.style.cssText  = 'display:none!important;';
+        inputBar.style.cssText  = '';
     }
 }
 
 function showGasUrlInput() {
-    document.getElementById('gas-url-saved-bar').style.display = 'none';
-    document.getElementById('gas-url-input-bar').style.removeProperty('display');
+    document.getElementById('gas-url-saved-bar').style.cssText = 'display:none!important;';
+    document.getElementById('gas-url-input-bar').style.cssText = '';
     const input = document.getElementById('gas-url-input');
-    input.value = localStorage.getItem('APP_gas_url') || '';
+    input.value = gasUrlGet();
     input.focus();
 }
 
@@ -1750,10 +1759,13 @@ function saveGasUrl() {
         alert('请输入有效的 GAS Web App URL（以 https://script.google.com 开头）');
         return;
     }
-    localStorage.setItem('APP_gas_url', val);
+    const ok = gasUrlSet(val);
+    if (!ok) {
+        alert('无法保存到本地存储（Safari 隐私模式不支持）。URL 本次有效，关闭页面后失效。');
+    }
     GAS_URL = val;
     initGasUrlUI();
-    loadFromDrive();  // 保存后立即拉取
+    loadFromDrive();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
