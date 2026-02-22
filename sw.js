@@ -7,7 +7,7 @@
  *  - 其他同源资源（icon / manifest）：Cache First
  */
 
-const CACHE_NAME = 'app-libs-v1';
+const CACHE_NAME = 'sop-libs-v1';
 
 // 需要预缓存的第三方库
 const PRECACHE_URLS = [
@@ -43,7 +43,8 @@ self.addEventListener('fetch', event => {
     const url = new URL(event.request.url);
 
     // HTML 文件：永远从网络获取（Network Only），保证总是最新版本
-    if (url.pathname.endsWith('.html') || url.pathname === '/' || url.pathname.endsWith('/')) {
+    if (url.pathname.endsWith('.html') || url.pathname === '/' ||
+        url.pathname.endsWith('/') || url.pathname.endsWith('/index.html')) {
         event.respondWith(
             fetch(event.request).catch(() => {
                 // 离线时 HTML 无法获取，返回简单提示（不做离线缓存）
