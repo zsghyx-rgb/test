@@ -7,7 +7,7 @@
  *  - 其他同源资源（icon / manifest）：Cache First
  */
 
-const CACHE_NAME = 'sop-libs-v1';
+const CACHE_NAME = 'app-libs-v1';
 
 // 需要预缓存的第三方库
 const PRECACHE_URLS = [
