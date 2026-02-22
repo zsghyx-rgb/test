@@ -2,14 +2,14 @@
 <html lang="zh-CN" data-bs-theme="auto">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>APP</title>
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0d6efd">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="记一笔">
     <link rel="apple-touch-icon" href="icon-192.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -325,7 +325,7 @@ body {
 }
 
 @media (max-width: 768px) {
-    body { padding-bottom: calc(60px + env(safe-area-inset-bottom)); }
+    body { padding-bottom: 60px; }
 
     .sidebar {
         position: fixed;
@@ -333,10 +333,9 @@ body {
         left: 0;
         right: 0;
         width: 100%;
-        height: calc(60px + env(safe-area-inset-bottom));
+        height: 60px;
         flex-direction: row;
         padding: 0;
-        padding-bottom: env(safe-area-inset-bottom);
         z-index: 1000;
         border-right: none;
         border-top: 1px solid var(--bs-border-color);
@@ -351,7 +350,7 @@ body {
 
     .sidebar-footer { display: none; }
 
-    .main-content { padding: 10px; padding-bottom: calc(70px + env(safe-area-inset-bottom)); }
+    .main-content { padding: 10px; padding-bottom: 70px; }
 
     .account-col { width: 100% !important; }
     .account-card { padding: 10px 12px !important; }
@@ -608,7 +607,7 @@ body {
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h4 class="mb-0">我的资产</h4>
                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAccountModal">
-                    <i class="bi bi-plus-lg"></i> 新增账户
+                    <i class="bi bi-plus-lg"></i>
                 </button>
             </div>
             <div class="alert alert-light border shadow-sm mb-4 clickable-amount" onclick="toggleAmountVisibility()">
@@ -623,7 +622,7 @@ body {
             <h4 class="mb-3">交易管理</h4>
             <div class="quick-add-bar shadow-sm">
                 <div class="d-flex justify-content-between mb-2">
-                    <h6 class="fw-bold text-primary"><i class="bi bi-pencil-square"></i> 快速记账</h6>
+                    <h6 class="fw-bold text-primary"><i class="bi bi-pencil-square"></i> 记一笔</h6>
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="mode-toggle" onchange="toggleQuickFormMode()">
                         <label class="form-check-label small" for="mode-toggle">转账模式</label>
@@ -1047,7 +1046,7 @@ body {
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h4 class="mb-0">计划交易</h4>
                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPlannedModal">
-                    <i class="bi bi-plus-lg"></i> 新增计划
+                    <i class="bi bi-plus-lg"></i>
                 </button>
             </div>
 
@@ -1159,6 +1158,20 @@ body {
                 </div>
 
                 <div class="col-12">
+                    <div class="card shadow-sm mb-3">
+                        <div class="card-header bg-transparent fw-bold">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span><i class="bi bi-magic"></i> 分类历史校对</span>
+                                <button class="btn btn-warning btn-sm" onclick="checkHistoryCategories()">
+                                    <i class="bi bi-magic"></i> 自动校对
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small mb-0">根据您的历史记账行为，检测备注相近但分类不一致的交易，逐条提示修正。</p>
+                        </div>
+                    </div>
+
                     <div class="mb-2">
                         <button class="btn btn-outline-secondary btn-sm me-2" onclick="toggleAdvancedExportSection()">
                             <i class="bi bi-file-earmark-code" id="adv-export-toggle-icon"></i>
@@ -1195,20 +1208,6 @@ body {
                                 <input type="file" id="transaction-csv-input" class="d-none" accept=".csv" onchange="importTransactionCsv()">
                                 <input type="file" id="transfer-csv-input" class="d-none" accept=".csv" onchange="importTransferCsv()">
                             </div>
-                        </div>
-                    </div>
-
-                    <div class="card shadow-sm mb-3">
-                        <div class="card-header bg-transparent fw-bold">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span><i class="bi bi-magic"></i> 分类历史校对</span>
-                                <button class="btn btn-warning btn-sm" onclick="checkHistoryCategories()">
-                                    <i class="bi bi-magic"></i> 自动校对
-                                </button>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <p class="text-muted small mb-0">根据您的历史记账行为，检测备注相近但分类不一致的交易，逐条提示修正。</p>
                         </div>
                     </div>
                 </div>
@@ -1631,13 +1630,7 @@ const DEFAULT_RATES = { 'EUR_RMB': 7.8, 'USD_RMB': 7.2, 'HKD_RMB': 0.92, 'JPY_RM
 
 // ==================== Google Drive 同步配置 ====================
 // GAS_URL 不再硬编码，从 localStorage 读取，首次使用时在登录界面填写
-function gasUrlGet() {
-    try { return localStorage.getItem('APP_gas_url') || ''; } catch(e) { return ''; }
-}
-function gasUrlSet(val) {
-    try { localStorage.setItem('APP_gas_url', val); return true; } catch(e) { return false; }
-}
-let GAS_URL = gasUrlGet();
+let GAS_URL = localStorage.getItem('APP_gas_url') || '';
 const CURRENCY_SYMBOLS = { 'RMB': '¥', 'EUR': '€', 'USD': '$', 'HKD': 'HK$', 'JPY': '¥', 'GBP': '£' };
 
 
@@ -1732,24 +1725,21 @@ let tapTimeout = null, isSwiping = false;
 // ==================== GAS URL 本地管理 ====================
 
 function initGasUrlUI() {
-    const saved = gasUrlGet();
-    const savedBar  = document.getElementById('gas-url-saved-bar');
-    const inputBar  = document.getElementById('gas-url-input-bar');
-    if (!savedBar || !inputBar) return;
+    const saved = localStorage.getItem('APP_gas_url') || '';
     if (saved) {
-        savedBar.style.cssText  = 'display:flex!important;';
-        inputBar.style.cssText  = 'display:none!important;';
+        document.getElementById('gas-url-saved-bar').style.removeProperty('display');
+        document.getElementById('gas-url-input-bar').style.display = 'none';
     } else {
-        savedBar.style.cssText  = 'display:none!important;';
-        inputBar.style.cssText  = '';
+        document.getElementById('gas-url-saved-bar').style.display = 'none';
+        document.getElementById('gas-url-input-bar').style.removeProperty('display');
     }
 }
 
 function showGasUrlInput() {
-    document.getElementById('gas-url-saved-bar').style.cssText = 'display:none!important;';
-    document.getElementById('gas-url-input-bar').style.cssText = '';
+    document.getElementById('gas-url-saved-bar').style.display = 'none';
+    document.getElementById('gas-url-input-bar').style.removeProperty('display');
     const input = document.getElementById('gas-url-input');
-    input.value = gasUrlGet();
+    input.value = localStorage.getItem('APP_gas_url') || '';
     input.focus();
 }
 
@@ -1759,13 +1749,10 @@ function saveGasUrl() {
         alert('请输入有效的 GAS Web App URL（以 https://script.google.com 开头）');
         return;
     }
-    const ok = gasUrlSet(val);
-    if (!ok) {
-        alert('无法保存到本地存储（Safari 隐私模式不支持）。URL 本次有效，关闭页面后失效。');
-    }
+    localStorage.setItem('APP_gas_url', val);
     GAS_URL = val;
     initGasUrlUI();
-    loadFromDrive();
+    loadFromDrive();  // 保存后立即拉取
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -2545,8 +2532,9 @@ document.getElementById('add-account-form').addEventListener('submit', (e) => {
 
 let currentDetailAccountId = null;
 let openedFromDetail = false;
+let detailScrollTop = 0;  // 记录账户详情滚动位置
 
-function openAccountDetail(id) {
+function openAccountDetail(id, restoreScroll = false) {
     const acc = accounts.find(a => a.id === id);
     if (!acc) return;
     currentDetailAccountId = id;
@@ -2639,6 +2627,8 @@ function openAccountDetail(id) {
                 item.addEventListener('mouseenter', () => item.style.background = 'rgba(var(--bs-primary-rgb),0.06)');
                 item.addEventListener('mouseleave', () => item.style.background = 'var(--bs-body-bg)');
                 item.addEventListener('click', () => {
+                    const body = document.querySelector('#accountDetailModal .modal-body');
+                    if (body) detailScrollTop = body.scrollTop;
                     openedFromDetail = true;
                     bootstrap.Modal.getInstance(document.getElementById('accountDetailModal')).hide();
                     setTimeout(() => openEditTransaction(t.id), 300);
@@ -2663,7 +2653,17 @@ function openAccountDetail(id) {
     const isOwner = acc.ownerName === currentUserName;
     document.querySelector('#accountDetailModal .modal-footer').style.display = isOwner ? 'flex' : 'none';
 
-    new bootstrap.Modal(document.getElementById('accountDetailModal')).show();
+    const modalEl = document.getElementById('accountDetailModal');
+    const modalInstance = new bootstrap.Modal(modalEl);
+    modalInstance.show();
+
+    // 恢复滚动位置（从编辑页返回时）
+    if (restoreScroll && detailScrollTop > 0) {
+        modalEl.addEventListener('shown.bs.modal', () => {
+            const body = modalEl.querySelector('.modal-body');
+            if (body) body.scrollTop = detailScrollTop;
+        }, { once: true });
+    }
 }
 
 function editAccountFromDetail() {
@@ -2677,6 +2677,8 @@ function deleteAccountFromDetail() {
 }
 
 function openNewTransFromDetail() {
+    const body = document.querySelector('#accountDetailModal .modal-body');
+    if (body) detailScrollTop = body.scrollTop;
     openedFromDetail = true;
     bootstrap.Modal.getInstance(document.getElementById('accountDetailModal')).hide();
     setTimeout(() => {
@@ -2700,6 +2702,8 @@ function openNewTransFromDetail() {
 }
 
 function openNewTransferFromDetail() {
+    const body = document.querySelector('#accountDetailModal .modal-body');
+    if (body) detailScrollTop = body.scrollTop;
     openedFromDetail = true;
     bootstrap.Modal.getInstance(document.getElementById('accountDetailModal')).hide();
     setTimeout(() => {
@@ -3038,7 +3042,7 @@ function openEditTransfer(id) {
 function maybeReturnToDetail() {
     if (openedFromDetail && currentDetailAccountId) {
         openedFromDetail = false;
-        setTimeout(() => openAccountDetail(currentDetailAccountId), 350);
+        setTimeout(() => openAccountDetail(currentDetailAccountId, true), 350);
     } else {
         openedFromDetail = false;
     }
@@ -3068,6 +3072,14 @@ function updateEditFormCategories() {
     catSelect.innerHTML = '';
     (type === 'expense' ? categories.expense : categories.income).forEach(c => catSelect.add(new Option(c, c)));
 }
+
+// 编辑 modal 任意方式关闭（X / 点空白 / ESC）时，若来自详情页则返回详情
+document.getElementById('editTransactionModal').addEventListener('hidden.bs.modal', () => {
+    maybeReturnToDetail();
+});
+document.getElementById('editTransferModal').addEventListener('hidden.bs.modal', () => {
+    maybeReturnToDetail();
+});
 
 document.getElementById('edit-transaction-form').addEventListener('submit', (e) => {
     e.preventDefault();
@@ -4546,6 +4558,7 @@ window.addEventListener('load', () => {
     updateTransferModeButton();
 });
 
+</script>
 <!-- PWA Service Worker 注册 -->
 <script>
 if ('serviceWorker' in navigator) {
