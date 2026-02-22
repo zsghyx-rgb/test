@@ -1,6 +1,6 @@
 {
-  "name": "记一笔",
-  "short_name": "记一笔",
+  "name": "App",
+  "short_name": "App",
   "description": "个人财务记账应用",
   "start_url": "./index.html",
   "display": "standalone",
