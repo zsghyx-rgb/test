@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>APP</title>
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0d6efd">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="记一笔">
+    <link rel="apple-touch-icon" href="icon-192.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.min.js"></script>
@@ -599,7 +607,7 @@ body {
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h4 class="mb-0">我的资产</h4>
                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAccountModal">
-                    <i class="bi bi-plus-lg"></i> 新增账户
+                    <i class="bi bi-plus-lg"></i>
                 </button>
             </div>
             <div class="alert alert-light border shadow-sm mb-4 clickable-amount" onclick="toggleAmountVisibility()">
@@ -614,7 +622,7 @@ body {
             <h4 class="mb-3">交易管理</h4>
             <div class="quick-add-bar shadow-sm">
                 <div class="d-flex justify-content-between mb-2">
-                    <h6 class="fw-bold text-primary"><i class="bi bi-pencil-square"></i> 快速记账</h6>
+                    <h6 class="fw-bold text-primary"><i class="bi bi-pencil-square"></i> 记一笔</h6>
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="mode-toggle" onchange="toggleQuickFormMode()">
                         <label class="form-check-label small" for="mode-toggle">转账模式</label>
@@ -1038,7 +1046,7 @@ body {
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h4 class="mb-0">计划交易</h4>
                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPlannedModal">
-                    <i class="bi bi-plus-lg"></i> 新增计划
+                    <i class="bi bi-plus-lg"></i>
                 </button>
             </div>
 
@@ -2524,8 +2532,9 @@ document.getElementById('add-account-form').addEventListener('submit', (e) => {
 
 let currentDetailAccountId = null;
 let openedFromDetail = false;
+let detailScrollTop = 0;  // 记录账户详情滚动位置
 
-function openAccountDetail(id) {
+function openAccountDetail(id, restoreScroll = false) {
     const acc = accounts.find(a => a.id === id);
     if (!acc) return;
     currentDetailAccountId = id;
@@ -2618,6 +2627,8 @@ function openAccountDetail(id) {
                 item.addEventListener('mouseenter', () => item.style.background = 'rgba(var(--bs-primary-rgb),0.06)');
                 item.addEventListener('mouseleave', () => item.style.background = 'var(--bs-body-bg)');
                 item.addEventListener('click', () => {
+                    const body = document.querySelector('#accountDetailModal .modal-body');
+                    if (body) detailScrollTop = body.scrollTop;
                     openedFromDetail = true;
                     bootstrap.Modal.getInstance(document.getElementById('accountDetailModal')).hide();
                     setTimeout(() => openEditTransaction(t.id), 300);
@@ -2642,7 +2653,17 @@ function openAccountDetail(id) {
     const isOwner = acc.ownerName === currentUserName;
     document.querySelector('#accountDetailModal .modal-footer').style.display = isOwner ? 'flex' : 'none';
 
-    new bootstrap.Modal(document.getElementById('accountDetailModal')).show();
+    const modalEl = document.getElementById('accountDetailModal');
+    const modalInstance = new bootstrap.Modal(modalEl);
+    modalInstance.show();
+
+    // 恢复滚动位置（从编辑页返回时）
+    if (restoreScroll && detailScrollTop > 0) {
+        modalEl.addEventListener('shown.bs.modal', () => {
+            const body = modalEl.querySelector('.modal-body');
+            if (body) body.scrollTop = detailScrollTop;
+        }, { once: true });
+    }
 }
 
 function editAccountFromDetail() {
@@ -2656,6 +2677,8 @@ function deleteAccountFromDetail() {
 }
 
 function openNewTransFromDetail() {
+    const body = document.querySelector('#accountDetailModal .modal-body');
+    if (body) detailScrollTop = body.scrollTop;
     openedFromDetail = true;
     bootstrap.Modal.getInstance(document.getElementById('accountDetailModal')).hide();
     setTimeout(() => {
@@ -2679,6 +2702,8 @@ function openNewTransFromDetail() {
 }
 
 function openNewTransferFromDetail() {
+    const body = document.querySelector('#accountDetailModal .modal-body');
+    if (body) detailScrollTop = body.scrollTop;
     openedFromDetail = true;
     bootstrap.Modal.getInstance(document.getElementById('accountDetailModal')).hide();
     setTimeout(() => {
@@ -3017,7 +3042,7 @@ function openEditTransfer(id) {
 function maybeReturnToDetail() {
     if (openedFromDetail && currentDetailAccountId) {
         openedFromDetail = false;
-        setTimeout(() => openAccountDetail(currentDetailAccountId), 350);
+        setTimeout(() => openAccountDetail(currentDetailAccountId, true), 350);
     } else {
         openedFromDetail = false;
     }
@@ -3047,6 +3072,14 @@ function updateEditFormCategories() {
     catSelect.innerHTML = '';
     (type === 'expense' ? categories.expense : categories.income).forEach(c => catSelect.add(new Option(c, c)));
 }
+
+// 编辑 modal 任意方式关闭（X / 点空白 / ESC）时，若来自详情页则返回详情
+document.getElementById('editTransactionModal').addEventListener('hidden.bs.modal', () => {
+    maybeReturnToDetail();
+});
+document.getElementById('editTransferModal').addEventListener('hidden.bs.modal', () => {
+    maybeReturnToDetail();
+});
 
 document.getElementById('edit-transaction-form').addEventListener('submit', (e) => {
     e.preventDefault();
@@ -4525,6 +4558,18 @@ window.addEventListener('load', () => {
     updateTransferModeButton();
 });
 
+</script>
+<!-- PWA Service Worker 注册 -->
+<script>
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').then(reg => {
+            console.log('[PWA] SW registered:', reg.scope);
+        }).catch(err => {
+            console.warn('[PWA] SW registration failed:', err);
+        });
+    });
+}
 </script>
 </body>
 </html>
