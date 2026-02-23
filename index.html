@@ -525,13 +525,28 @@ body {
             </div>
         </div>
         <div class="mb-3">
-            <label class="form-label small text-muted fw-bold">① 选择数据文件</label>
-            <div class="d-flex gap-2">
-                <input type="file" class="form-control form-control-sm" id="data-import-file"
-                       accept=".enc,.json,.txt" onchange="onFileSelected()">
-                <button class="btn btn-outline-primary btn-sm text-nowrap" onclick="loadFromDrive()" title="从 Google Drive 加载 data.enc">
-                    <i class="bi bi-cloud-arrow-down"></i> Drive
+            <!-- 在线/离线模式切换 -->
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <label class="form-label small text-muted fw-bold mb-0">① 选择数据文件</label>
+                <button id="offline-mode-btn" class="btn btn-sm" onclick="toggleOfflineMode()"
+                        style="font-size:0.72rem; padding:0.2rem 0.6rem;">
                 </button>
+            </div>
+            <!-- 离线模式：手动选择文件 -->
+            <div id="offline-file-bar">
+                <div class="d-flex gap-2">
+                    <input type="file" class="form-control form-control-sm" id="data-import-file"
+                           accept=".enc,.json,.txt" onchange="onFileSelected()">
+                </div>
+            </div>
+            <!-- 在线模式：Drive 自动加载 -->
+            <div id="online-drive-bar">
+                <div class="d-flex gap-2 align-items-center">
+                    <span class="small text-muted flex-fill">将自动从 Google Drive 加载</span>
+                    <button class="btn btn-outline-primary btn-sm text-nowrap" onclick="loadFromDrive()" title="从 Google Drive 加载 data.enc">
+                        <i class="bi bi-cloud-arrow-down"></i> 重新加载
+                    </button>
+                </div>
             </div>
             <div id="file-status" class="form-text mt-1">请选择本地文件，或从 Google Drive 加载</div>
         </div>
@@ -611,15 +626,23 @@ body {
                     <span class="user-name-full">User</span>
                     <span class="user-name-short">U</span>
                 </div>
-                <div class="user-status">本地模式</div>
+                <div class="user-status" id="sync-mode-status">本地模式</div>
             </div>
+            <button class="btn btn-sm btn-outline-secondary w-100 mb-1" onclick="switchUser()" style="font-size: 0.7rem; padding: 0.3rem;">
+                <i class="bi bi-arrow-left-right"></i> 切换
+            </button>
             <button class="btn btn-sm btn-outline-danger w-100" onclick="logout()" style="font-size: 0.7rem; padding: 0.3rem;">
-                <i class="bi bi-box-arrow-left"></i>
+                <i class="bi bi-box-arrow-left"></i> 退出
             </button>
         </div>
     </div>
 
     <div class="main-content">
+        <!-- 历史模式横幅 -->
+        <div id="history-mode-banner" class="d-none alert alert-warning mb-0 py-2 px-3 d-flex align-items-center justify-content-between flex-shrink-0" style="border-radius:0;border-left:none;border-right:none;border-top:none;z-index:10;">
+            <span><i class="bi bi-archive-fill me-1"></i>历史模式：<strong id="history-year-label"></strong> 年（只读）</span>
+            <button class="btn btn-sm btn-outline-dark py-0" onclick="exitHistoryMode()"><i class="bi bi-x-lg"></i> 退出</button>
+        </div>
         <!-- ==================== 账户视图 ==================== -->
         <div id="view-accounts" class="view-section">
             <div class="d-flex justify-content-between align-items-center mb-4">
@@ -1076,12 +1099,30 @@ body {
             <h4 class="mb-4">系统设置</h4>
 
             <div class="d-md-none mb-4">
+                <button class="btn btn-outline-secondary w-100 mb-2" onclick="switchUser()">
+                    <i class="bi bi-arrow-left-right"></i> 切换用户
+                </button>
                 <button class="btn btn-outline-danger w-100" onclick="logout()">
-                    <i class="bi bi-box-arrow-left"></i> 退出当前用户 (<span id="mobile-current-user"></span>)
+                    <i class="bi bi-box-arrow-left"></i> 退出登录 (<span id="mobile-current-user"></span>)
                 </button>
             </div>
 
             <div class="row g-4">
+                <div class="col-12 col-md-6">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-transparent fw-bold">
+                            <i class="bi bi-archive"></i> 数据存档管理
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small mb-2">将历史年份数据存档，减少主文件大小，提升同步速度。存档数据只读，可解档恢复。</p>
+                            <div id="archive-management-ui" class="mb-2"></div>
+                            <button class="btn btn-outline-secondary btn-sm w-100" onclick="showHistoryYearSelector()">
+                                <i class="bi bi-clock-history"></i> 查看历史存档
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="col-12 col-md-6">
                     <div class="card shadow-sm h-100">
                         <div class="card-header bg-transparent fw-bold">汇率配置 (对人民币)</div>
@@ -1100,6 +1141,9 @@ body {
                                 <i class="bi bi-info-circle"></i>
                                 数据保存在本地，导出加密文件时输入密码，导入时使用相同密码解密。
                             </p>
+                            <div id="offline-mode-badge" class="alert alert-warning py-1 px-2 small mb-2" style="display:none;">
+                                <i class="bi bi-wifi-off"></i> 当前为<strong>离线模式</strong>，自动同步已关闭。手动点击下方按钮可主动同步。
+                            </div>
                             <div class="d-grid gap-2">
                                 <button class="btn btn-primary" onclick="syncToDrive(true)">
                                     <i class="bi bi-cloud-upload"></i> 保存到 Google Drive
@@ -1672,6 +1716,12 @@ let currentUserName = null;
 let hasUnsavedChanges = false;
 let driveAutoSaveTimer = null;   // 防抖计时器
 let driveIsSyncing = false;      // 防并发
+let offlineMode = localStorage.getItem('APP_offline_mode') === 'true'; // 离线模式
+
+// ==================== 存档 / 历史模式变量 ====================
+let historyMode = false;          // 当前是否处于历史模式
+let historyYear = null;           // 当前历史模式加载的年份
+let historyBaselines = [];        // 历史模式进入前暂存的基准交易
 
 // ==================== UI状态变量 ====================
 let chartInstances = {};
@@ -1743,10 +1793,13 @@ let tapTimeout = null, isSwiping = false;
 // ==================== 页面初始化 ====================
 // ==================== GAS URL 本地管理 ====================
 
-/** 构建带 token 的请求 URL，GAS_TOKEN 有值时作为 query param 附加 */
-function gasRequestUrl() {
-    if (GAS_TOKEN) return `${GAS_URL}?token=${encodeURIComponent(GAS_TOKEN)}`;
-    return GAS_URL;
+/** 构建带 token 的请求 URL，支持 file / action 额外参数 */
+function gasRequestUrl(options = {}) {
+    const params = [];
+    if (GAS_TOKEN) params.push(`token=${encodeURIComponent(GAS_TOKEN)}`);
+    if (options.action) params.push(`action=${encodeURIComponent(options.action)}`);
+    if (options.file)   params.push(`file=${encodeURIComponent(options.file)}`);
+    return params.length ? `${GAS_URL}?${params.join('&')}` : GAS_URL;
 }
 
 function initGasUrlUI() {
@@ -1807,15 +1860,82 @@ function saveGasToken() {
     initGasTokenUI();
 }
 
+// ==================== 离线模式管理 ====================
+
+function initOfflineModeUI() {
+    const btn = document.getElementById('offline-mode-btn');
+    const offlineBar = document.getElementById('offline-file-bar');
+    const onlineBar = document.getElementById('online-drive-bar');
+    const gasUrlSection = document.getElementById('gas-url-section');
+    const gasTokenSection = document.getElementById('gas-token-section');
+    if (offlineMode) {
+        btn.className = 'btn btn-sm btn-warning';
+        btn.innerHTML = '<i class="bi bi-wifi-off"></i> 离线模式';
+        offlineBar.style.display = '';
+        onlineBar.style.display = 'none';
+        gasUrlSection.style.display = 'none';
+        gasTokenSection.style.display = 'none';
+    } else {
+        btn.className = 'btn btn-sm btn-outline-secondary';
+        btn.innerHTML = '<i class="bi bi-wifi"></i> 在线模式';
+        offlineBar.style.display = 'none';
+        onlineBar.style.display = '';
+        gasUrlSection.style.display = '';
+        gasTokenSection.style.display = '';
+    }
+    // 更新应用内状态指示
+    const statusEl = document.getElementById('sync-mode-status');
+    if (statusEl) statusEl.textContent = offlineMode ? '离线模式' : '在线模式';
+}
+
+function toggleOfflineMode() {
+    offlineMode = !offlineMode;
+    localStorage.setItem('APP_offline_mode', offlineMode ? 'true' : 'false');
+    initOfflineModeUI();
+    if (!offlineMode && GAS_URL) {
+        // 切回在线模式后立即从 Drive 加载
+        loadFromDrive();
+    } else if (offlineMode) {
+        document.getElementById('file-status').innerHTML =
+            '<span class="text-warning">⚠️ 离线模式：不会自动同步，请手动选择本地文件</span>';
+    }
+}
+
+// ==================== 切换用户 ====================
+
+function switchUser() {
+    if (hasUnsavedChanges) {
+        if (!confirm('有未保存的更改，切换用户前会尝试同步，是否继续？')) return;
+        if (!offlineMode) syncToDrive(false);
+    }
+    // 重置当前用户状态，但保留内存中的数据和密码
+    currentUser = null;
+    currentUserName = null;
+    hasUnsavedChanges = false;
+    clearTimeout(driveAutoSaveTimer);
+
+    // 隐藏主界面，显示登录界面
+    document.getElementById('app-wrapper').classList.add('d-none');
+    document.getElementById('login-overlay').classList.remove('d-none');
+
+    // 数据已在内存，直接跳到用户选择步骤
+    if (inMemoryLoadedData) {
+        onDataLoaded();
+        document.getElementById('file-status').innerHTML =
+            '<span class="text-success">✓ 数据已就绪，请选择用户</span>';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('qt-date').valueAsDate = new Date();
     document.getElementById('qtr-date').valueAsDate = new Date();
 
     initGasUrlUI();
     initGasTokenUI();
+    initOfflineModeUI(); // 初始化离线/在线模式 UI
 
-    // 有已保存的 URL 则自动从 Drive 同步
-    if (GAS_URL) {
+    // 在线模式且有已保存的 URL 则自动从 Drive 同步
+    if (!offlineMode && GAS_URL) {
         loadFromDrive();
     }
 });
@@ -2042,6 +2162,280 @@ function loginWithUser(name) {
     loadAllData();
     filterUserData();
     initAppUI();
+
+    // 更新离线模式状态显示
+    const badge = document.getElementById('offline-mode-badge');
+    if (badge) badge.style.display = offlineMode ? '' : 'none';
+    const statusEl = document.getElementById('sync-mode-status');
+    if (statusEl) statusEl.textContent = offlineMode ? '离线模式' : '在线模式';
+
+    // 检查是否需要提示存档
+    checkArchivePrompt();
+}
+
+// ==================== 存档管理 ====================
+
+function getArchivableYears() {
+    const currentYear = new Date().getFullYear();
+    const years = new Set();
+    transactions.forEach(t => {
+        if (!t._isBaseline && !t._isArchived) {
+            const y = parseInt(t.date.substring(0, 4));
+            if (y < currentYear) years.add(y);
+        }
+    });
+    const archived = getArchivedYears();
+    return [...years].filter(y => !archived.includes(y)).sort();
+}
+
+function getArchivedYears() {
+    return (inMemoryLoadedData && inMemoryLoadedData.archivedYears) || [];
+}
+
+function renderArchiveManagementUI() {
+    const el = document.getElementById('archive-management-ui');
+    if (!el) return;
+    const archivableYears = getArchivableYears();
+    const archivedYears = getArchivedYears();
+    let html = '';
+    if (archivedYears.length > 0) {
+        html += '<div class="mb-2"><div class="small text-muted fw-bold mb-1">已存档：</div><div class="d-flex flex-wrap gap-1">';
+        archivedYears.forEach(y => {
+            html += `<span class="badge bg-secondary d-inline-flex align-items-center gap-1">${y}年
+                <button class="btn-close btn-close-white" style="font-size:0.5rem;" title="解档" onclick="confirmUnarchive(${y})"></button>
+            </span>`;
+        });
+        html += '</div></div>';
+    }
+    if (archivableYears.length > 0) {
+        html += '<div class="mb-1"><div class="small text-muted fw-bold mb-1">可存档：</div><div class="d-flex flex-wrap gap-1">';
+        archivableYears.forEach(y => {
+            html += `<button class="btn btn-sm btn-outline-primary py-0" onclick="confirmArchive(${y})">${y}年</button>`;
+        });
+        html += '</div></div>';
+    }
+    if (archivableYears.length === 0 && archivedYears.length === 0) {
+        html = '<p class="text-muted small mb-2">暂无可存档的历史年份数据</p>';
+    }
+    el.innerHTML = html;
+}
+
+function checkArchivePrompt() {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    if (now.getMonth() + 1 > 2) return; // 只在1-2月提示
+    const lastYear = currentYear - 1;
+    const archivedYears = getArchivedYears();
+    if (archivedYears.includes(lastYear)) return;
+    const hasLastYearData = transactions.some(t => t.date.startsWith(String(lastYear)) && !t._isBaseline);
+    if (!hasLastYearData) return;
+    const promptKey = `APP_archive_prompt_${lastYear}`;
+    if (localStorage.getItem(promptKey)) return;
+    localStorage.setItem(promptKey, '1');
+    setTimeout(() => {
+        const cnt = transactions.filter(t => t.date.startsWith(String(lastYear)) && !t._isBaseline).length;
+        if (confirm(`📦 建议存档 ${lastYear} 年数据\n\n共 ${cnt} 条记录，存档后可显著减少每次同步的数据量。\n\n现在存档吗？（可在设置页随时操作）`)) {
+            confirmArchive(lastYear);
+        }
+    }, 2500);
+}
+
+async function confirmArchive(year) {
+    const cnt = transactions.filter(t => t.date.startsWith(String(year)) && !t._isBaseline).length;
+    if (cnt === 0) { showToast(`${year} 年没有可存档的数据`, 'warning'); return; }
+    if (!confirm(`确定存档 ${year} 年的数据？\n\n共 ${cnt} 条记录将移入只读存档。\n可通过"解档"完整恢复。`)) return;
+    await archiveYear(year);
+}
+
+async function archiveYear(year) {
+    showToast(`正在存档 ${year} 年数据…`, 'syncing', 0);
+    try {
+        saveUserData();
+        const yearStr = String(year);
+        const yearTrans = transactions.filter(t => t.date.startsWith(yearStr) && !t._isBaseline);
+        if (yearTrans.length === 0) { showToast('没有可存档的数据', 'error'); return; }
+
+        // 构建存档包
+        const archiveData = {
+            _archiveYear: year, _archivedAt: Date.now(),
+            users: dataUsers, categories, exchangeRates,
+            allUserData: {}
+        };
+        dataUsers.forEach(u => {
+            archiveData.allUserData[u] = {
+                accounts: accounts.filter(a => a.ownerName === u).map(a => ({...a})),
+                transactions: yearTrans.filter(t => t.ownerName === u),
+                plannedTransactions: []
+            };
+        });
+
+        // 为每个账户生成期初余额基准交易（净额 = 该年所有交易之和）
+        const baselineDate = `${year}-12-31`;
+        accounts.forEach(acc => {
+            const yearSum = yearTrans.filter(t => t.accountId == acc.id)
+                .reduce((s, t) => s + parseFloat(t.amount), 0);
+            if (yearSum !== 0) {
+                transactions.push({
+                    id: Date.now() + Math.random(),
+                    _isBaseline: true, _archiveYear: year,
+                    accountId: acc.id, amount: yearSum,
+                    date: baselineDate,
+                    desc: `${year}年存档基准`,
+                    ownerName: acc.ownerName,
+                    type: yearSum >= 0 ? 'income' : 'expense',
+                    category: '存档基准',
+                    isTransfer: false, tags: '', updatedAt: Date.now()
+                });
+            }
+        });
+
+        // 从主数据删除该年原始交易
+        const removeIds = new Set(yearTrans.map(t => t.id));
+        transactions = transactions.filter(t => !removeIds.has(t.id));
+
+        // 标记存档年份
+        if (!inMemoryLoadedData.archivedYears) inMemoryLoadedData.archivedYears = [];
+        if (!inMemoryLoadedData.archivedYears.includes(year)) {
+            inMemoryLoadedData.archivedYears.push(year);
+            inMemoryLoadedData.archivedYears.sort((a, b) => a - b);
+        }
+        saveUserData();
+
+        // 推送存档文件到 GAS
+        if (!offlineMode && GAS_URL) {
+            const archiveFile = `archive_${year}.enc`;
+            let archiveContent = userPassword
+                ? CryptoJS.AES.encrypt(JSON.stringify(archiveData), userPassword).toString()
+                : JSON.stringify(archiveData);
+            const r1 = await fetch(gasRequestUrl({ file: archiveFile }), {
+                method: 'POST', body: archiveContent, headers: { 'Content-Type': 'text/plain' }
+            });
+            if ((await r1.text()).trim() !== 'OK') throw new Error('存档文件推送失败');
+            await syncToDrive(true); // 推送更新后的 data.enc
+        } else {
+            hasUnsavedChanges = true;
+        }
+
+        filterUserData(); loadAllData(); renderAccounts(); renderAllTransactions(); renderArchiveManagementUI();
+        showToast(`✅ ${year} 年数据存档成功`, 'success');
+    } catch (err) {
+        showToast(`存档失败：${err.message}`, 'error');
+        console.error('[archiveYear]', err);
+    }
+}
+
+async function confirmUnarchive(year) {
+    if (!confirm(`确定解档 ${year} 年的数据？\n该年份原始数据将恢复到主文件中。`)) return;
+    await unarchiveYear(year);
+}
+
+async function unarchiveYear(year) {
+    showToast(`正在解档 ${year} 年数据…`, 'syncing', 0);
+    try {
+        if (offlineMode || !GAS_URL) throw new Error('解档需要网络，请切换到在线模式');
+        const archiveFile = `archive_${year}.enc`;
+        const resp = await fetch(gasRequestUrl({ file: archiveFile }));
+        const raw = (await resp.text()).trim();
+        if (!raw || raw === 'UNAUTHORIZED') throw new Error('无法读取存档文件');
+        let archiveData;
+        try { archiveData = JSON.parse(raw); }
+        catch (_) {
+            if (!userPassword) throw new Error('无法解密存档文件');
+            const bytes = CryptoJS.AES.decrypt(raw, userPassword);
+            archiveData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+        }
+
+        // 删除该年的基准交易
+        transactions = transactions.filter(t => !(t._isBaseline && t._archiveYear == year));
+
+        // 将存档交易合并回主数据
+        dataUsers.forEach(u => {
+            const ud = archiveData.allUserData[u];
+            if (ud && ud.transactions) {
+                ud.transactions.forEach(t => {
+                    if (!transactions.find(x => x.id === t.id)) transactions.push({...t, ownerName: u});
+                });
+            }
+        });
+
+        inMemoryLoadedData.archivedYears = getArchivedYears().filter(y => y != year);
+        saveUserData();
+        await syncToDrive(true);
+
+        filterUserData(); loadAllData(); renderAccounts(); renderAllTransactions(); renderArchiveManagementUI();
+        showToast(`✅ ${year} 年数据解档成功`, 'success');
+    } catch (err) {
+        showToast(`解档失败：${err.message}`, 'error');
+        console.error('[unarchiveYear]', err);
+    }
+}
+
+// ==================== 历史模式 ====================
+
+async function showHistoryYearSelector() {
+    const archivedYears = getArchivedYears();
+    if (archivedYears.length === 0) { showToast('暂无存档数据，请先在设置中存档', 'warning'); return; }
+    const yearStr = prompt(`请输入要查看的存档年份：\n可用：${archivedYears.join('、')} 年`);
+    if (!yearStr) return;
+    const year = parseInt(yearStr.trim());
+    if (!archivedYears.includes(year)) { showToast('该年份无存档', 'error'); return; }
+    await loadHistoryYear(year);
+}
+
+async function loadHistoryYear(year) {
+    showToast(`正在加载 ${year} 年存档…`, 'syncing', 0);
+    try {
+        if (offlineMode || !GAS_URL) throw new Error('历史模式需要网络，请切换到在线模式');
+        const archiveFile = `archive_${year}.enc`;
+        const resp = await fetch(gasRequestUrl({ file: archiveFile }));
+        const raw = (await resp.text()).trim();
+        if (!raw || raw === 'UNAUTHORIZED') throw new Error('无法读取存档文件');
+        let archiveData;
+        try { archiveData = JSON.parse(raw); }
+        catch (_) {
+            if (!userPassword) throw new Error('无法解密存档文件');
+            const bytes = CryptoJS.AES.decrypt(raw, userPassword);
+            archiveData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+        }
+
+        // 将该年的基准交易暂存，从 transactions 移出，避免余额重复计算
+        historyBaselines = transactions.filter(t => t._isBaseline && t._archiveYear == year);
+        transactions = transactions.filter(t => !(t._isBaseline && t._archiveYear == year));
+
+        // 将存档交易加入 transactions（带只读标记）
+        dataUsers.forEach(u => {
+            const ud = archiveData.allUserData[u];
+            if (ud && ud.transactions) {
+                ud.transactions.forEach(t => transactions.push({...t, ownerName: u, _isArchived: true}));
+            }
+        });
+
+        historyMode = true;
+        historyYear = year;
+        filterUserData();
+
+        const banner = document.getElementById('history-mode-banner');
+        if (banner) { banner.classList.remove('d-none'); document.getElementById('history-year-label').textContent = year; }
+
+        renderAllTransactions(); renderAccounts(); renderStats();
+        showToast(`📂 已加载 ${year} 年存档（只读）`, 'success');
+    } catch (err) {
+        historyMode = false; historyYear = null;
+        showToast(`加载失败：${err.message}`, 'error');
+        console.error('[loadHistoryYear]', err);
+    }
+}
+
+function exitHistoryMode() {
+    if (!historyMode) return;
+    transactions = transactions.filter(t => !t._isArchived);   // 移除存档交易
+    historyBaselines.forEach(t => transactions.push(t));        // 还原基准交易
+    historyBaselines = [];
+    historyMode = false; historyYear = null;
+    const banner = document.getElementById('history-mode-banner');
+    if (banner) banner.classList.add('d-none');
+    filterUserData(); renderAllTransactions(); renderAccounts(); renderStats();
+    showToast('已退出历史模式', 'info');
 }
 
 /**
@@ -2121,7 +2515,7 @@ function saveUserData() {
     dataUsers.forEach(u => {
         inMemoryLoadedData.allUserData[u] = {
             accounts: accounts.filter(a => a.ownerName === u),
-            transactions: transactions.filter(t => t.ownerName === u),
+            transactions: transactions.filter(t => t.ownerName === u && !t._isArchived), // 排除历史模式临时加载的存档交易
             plannedTransactions: plannedTransactions.filter(p => p.ownerName === u)
         };
     });
@@ -2141,6 +2535,7 @@ function filterUserData() {
 function triggerAutoSave() {
     hasUnsavedChanges = true;
     showToast('有未保存的更改', 'warning', 0);
+    if (offlineMode) return; // 离线模式不自动同步
     // 防抖：最后一次修改后 2 秒再同步，避免高频操作刷屏
     clearTimeout(driveAutoSaveTimer);
     driveAutoSaveTimer = setTimeout(() => syncToDrive(false), 2000);
@@ -2341,8 +2736,7 @@ async function loadFromDrive() {
 // ==================== 页面关闭时同步 ====================
 window.addEventListener('beforeunload', (e) => {
     if (!hasUnsavedChanges || !currentUser) return;
-    if (!GAS_URL) return;
-    // 使用 sendBeacon 做离开时的异步 POST（不阻塞关闭）
+    if (!GAS_URL || offlineMode) return; // 离线模式不同步
     saveUserData();
     let content;
     if (userPassword) {
@@ -2351,7 +2745,6 @@ window.addEventListener('beforeunload', (e) => {
         content = JSON.stringify(inMemoryLoadedData);
     }
     navigator.sendBeacon(gasRequestUrl(), content);
-    // 不设置 e.returnValue，不弹确认框，静默同步
 });
 
 // ==================== 数据导出功能 ====================
@@ -2690,7 +3083,7 @@ function openAccountDetail(id, restoreScroll = false) {
     document.getElementById('account-detail-currency').textContent = acc.currency;
     document.getElementById('account-detail-balance').textContent = `余额 ${balStr}`;
 
-    const acctTrans = transactions.filter(t => t.accountId == id)
+    const acctTrans = transactions.filter(t => t.accountId == id && !t._isBaseline)
         .sort((a, b) => b.date.localeCompare(a.date));
 
     const container = document.getElementById('account-detail-transactions');
@@ -2704,7 +3097,7 @@ function openAccountDetail(id, restoreScroll = false) {
         container.innerHTML = '';
         acctTrans.slice(0, 100).forEach(t => {
             const isTransfer = t.isTransfer;
-            const canEdit = t.ownerName === currentUserName;
+            const canEdit = t.ownerName === currentUserName && !t._isArchived;
 
             // ---- Transfer: build A → B line ----
             let titleHtml = '';
@@ -3409,6 +3802,7 @@ function getFilteredTransactions() {
     const endDate = document.getElementById('filter-end-date').value;
     const userFilter = document.getElementById('trans-user-filter').value;
     return transactions.filter(t => {
+        if (t._isBaseline) return false; // 基准交易不在列表中显示
         if (transactionDisplayMode === 'transactions' && t.isTransfer) return false;
         if (transactionDisplayMode === 'transfers' && !t.isTransfer) return false;
         if (startDate && t.date < startDate) return false;
@@ -3428,7 +3822,7 @@ function getFilteredTransactions() {
 function initMobileSwipeGestures(card, transactionId) {
     card.addEventListener('click', (e) => {
         const t = transactions.find(x => x.id === transactionId);
-        if (t && t.ownerName === currentUserName) { openEditTransaction(transactionId); }
+        if (t && t.ownerName === currentUserName && !t._isArchived) { openEditTransaction(transactionId); }
     });
 }
 
@@ -3479,10 +3873,11 @@ function renderAllTransactions() {
             return; // 跳过转入记录
         }
 
-        const canEdit = t.ownerName === currentUserName;
+        const canEdit = t.ownerName === currentUserName && !t._isArchived;
         const editBtns = canEdit ? (t.isTransfer ?
             `<i class="bi bi-pencil text-primary cursor-pointer me-2" style="cursor:pointer;" onclick="openEditTransfer(${t.id})"></i><i class="bi bi-trash text-danger cursor-pointer" style="cursor:pointer;" onclick="deleteTransaction(${t.id})"></i>` :
-            `<i class="bi bi-pencil text-primary cursor-pointer me-2" style="cursor:pointer;" onclick="openEditTransaction(${t.id})"></i><i class="bi bi-trash text-danger cursor-pointer" style="cursor:pointer;" onclick="deleteTransaction(${t.id})"></i>`) : '';
+            `<i class="bi bi-pencil text-primary cursor-pointer me-2" style="cursor:pointer;" onclick="openEditTransaction(${t.id})"></i><i class="bi bi-trash text-danger cursor-pointer" style="cursor:pointer;" onclick="deleteTransaction(${t.id})"></i>`) :
+            (t._isArchived ? '<span class="badge bg-secondary" style="font-size:0.6rem;">存档</span>' : '');
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -3803,6 +4198,7 @@ function renderStats() {
     const start = currentStatsFilter.startDate;
     const end = currentStatsFilter.endDate;
     const filtered = transactions.filter(t => {
+        if (t._isBaseline) return false; // 基准交易不参与统计
         if (start && t.date < start) return false;
         if (end && t.date > end) return false;
         return true;
@@ -4080,7 +4476,7 @@ function switchTab(t, el) {
     el.classList.add('active');
     if (t === 'stats') renderStats();
     if (t === 'planned') renderPlannedTransactions();
-    if (t === 'settings') { renderExchangeRateSettings(); initPasswordHint(); renderUserManagement(); }
+    if (t === 'settings') { renderExchangeRateSettings(); initPasswordHint(); renderUserManagement(); renderArchiveManagementUI(); }
 }
 
 // ==================== 状态提示 ====================
