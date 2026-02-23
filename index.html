@@ -342,6 +342,38 @@ body {
     .nav-pills .nav-link i { font-size: 1.2rem; }
 
     .sidebar-footer { display: none; }
+/* ---- 交易页悬浮操作按钮 (FAB) ---- */
+#mobile-fab-group {
+    position: fixed;
+    right: 18px;
+    bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 14px);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+    z-index: 1010;
+    transition: opacity 0.2s;
+}
+#mobile-fab-group.d-none { display: none !important; }
+.fab-btn {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.22);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.15s, box-shadow 0.15s;
+    flex-shrink: 0;
+}
+.fab-btn:active { transform: scale(0.92); box-shadow: 0 2px 8px rgba(0,0,0,0.18); }
+.fab-btn-transfer { background: #fd7e14; color: #fff; }
+.fab-btn-add      { background: #0d6efd; color: #fff; }
+
 
     .main-content { padding: 10px; padding-bottom: 10px; }
     .view-section { padding-bottom: 10px; }
@@ -626,6 +658,17 @@ body {
         </div>
     </div>
 
+
+        <!-- 手机端悬浮操作按钮 (仅交易页显示) -->
+        <div id="mobile-fab-group" class="d-none d-md-none">
+            <button class="fab-btn fab-btn-transfer" onclick="openNewTransfer()" title="新增转账">
+                <i class="bi bi-arrow-left-right"></i>
+            </button>
+            <button class="fab-btn fab-btn-add" onclick="openNewTransaction()" title="新增收支">
+                <i class="bi bi-plus-lg"></i>
+            </button>
+        </div>
+
     <div class="main-content">
         <!-- 历史模式横幅 -->
         <div id="history-mode-banner" class="d-none alert alert-warning mb-0 py-2 px-3 d-flex align-items-center justify-content-between flex-shrink-0" style="border-radius:0;border-left:none;border-right:none;border-top:none;z-index:10;">
@@ -651,7 +694,7 @@ body {
         <div id="view-transactions" class="view-section active-view">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h4 class="mb-0">交易管理</h4>
-                <div class="d-flex gap-2">
+                <div class="d-none d-md-flex gap-2">
                     <button class="btn btn-outline-warning btn-sm px-3" onclick="openNewTransfer()" title="新增转账">
                         <i class="bi bi-arrow-left-right"></i>
                     </button>
@@ -1723,11 +1766,17 @@ function toggleOfflineMode() {
     localStorage.setItem('APP_offline_mode', offlineMode ? 'true' : 'false');
     initOfflineModeUI();
     if (!offlineMode && GAS_URL) {
-        // 切回在线模式后立即从 Drive 加载
         loadFromDrive();
     } else if (offlineMode) {
+        // 切换到离线模式：清空 Drive 数据，强制手动选文件
+        inMemoryLoadedData = null;
+        userPassword = ''; dataUsers = [];
+        accounts = []; transactions = []; plannedTransactions = [];
+        userAccounts = []; userTransactions = []; userPlannedTransactions = [];
+        document.getElementById('user-section').style.display = 'none';
+        document.getElementById('password-section').style.display = 'none';
         document.getElementById('file-status').innerHTML =
-            '<span class="text-warning">⚠️ 离线模式：不会自动同步，请手动选择本地文件</span>';
+            '<span class="text-warning">⚠️ 离线模式：已清空在线数据，请手动选择本地文件</span>';
     }
 }
 
@@ -1990,6 +2039,10 @@ function loginWithUser(name) {
     filterUserData();
     initAppUI();
 
+    // 初始 tab = 交易页，显示悬浮按钮
+    const fabInit = document.getElementById('mobile-fab-group');
+    if (fabInit) fabInit.classList.remove('d-none');
+
     // 更新离线模式状态显示
     const badge = document.getElementById('offline-mode-badge');
     if (badge) badge.style.display = offlineMode ? '' : 'none';
@@ -2128,27 +2181,37 @@ async function archiveYear(year) {
         }
         saveUserData();
 
-        // 推送到 GAS（直接推，绕过 driveIsSyncing 锁，防止被已有自动同步抢占）
         if (!offlineMode && GAS_URL) {
-            // Step A：推存档文件
-            const archiveFile = `archive_${year}.enc`;
-            const archiveContent = userPassword
-                ? CryptoJS.AES.encrypt(JSON.stringify(archiveData), userPassword).toString()
-                : JSON.stringify(archiveData);
-            const r1 = await fetch(gasRequestUrl({ file: archiveFile }), {
-                method: 'POST', body: archiveContent, headers: { 'Content-Type': 'text/plain' }
-            });
-            if ((await r1.text()).trim() !== 'OK') throw new Error('存档文件推送失败');
+            // 存档前取消自动同步计时器，并占用 driveIsSyncing 锁
+            // 防止正在进行的 syncToDrive 的 pull-merge-push 覆盖我们的存档推送
+            clearTimeout(driveAutoSaveTimer);
+            while (driveIsSyncing) {
+                await new Promise(r => setTimeout(r, 200)); // 等待当前同步完成
+            }
+            driveIsSyncing = true;
+            try {
+                // Step A：推存档文件
+                const archiveFile = `archive_${year}.enc`;
+                const archiveContent = userPassword
+                    ? CryptoJS.AES.encrypt(JSON.stringify(archiveData), userPassword).toString()
+                    : JSON.stringify(archiveData);
+                const r1 = await fetch(gasRequestUrl({ file: archiveFile }), {
+                    method: 'POST', body: archiveContent, headers: { 'Content-Type': 'text/plain' }
+                });
+                if ((await r1.text()).trim() !== 'OK') throw new Error('存档文件推送失败');
 
-            // Step B：直接推 data.enc（包含基准交易，不含已存档年份原始交易）
-            const mainContent = userPassword
-                ? CryptoJS.AES.encrypt(JSON.stringify(inMemoryLoadedData), userPassword).toString()
-                : JSON.stringify(inMemoryLoadedData);
-            const r2 = await fetch(gasRequestUrl(), {
-                method: 'POST', body: mainContent, headers: { 'Content-Type': 'text/plain' }
-            });
-            if ((await r2.text()).trim() !== 'OK') throw new Error('主文件推送失败');
-            clearUnsavedFlag();
+                // Step B：推 data.enc（含基准交易，不含已存档年份原始交易）
+                const mainContent = userPassword
+                    ? CryptoJS.AES.encrypt(JSON.stringify(inMemoryLoadedData), userPassword).toString()
+                    : JSON.stringify(inMemoryLoadedData);
+                const r2 = await fetch(gasRequestUrl(), {
+                    method: 'POST', body: mainContent, headers: { 'Content-Type': 'text/plain' }
+                });
+                if ((await r2.text()).trim() !== 'OK') throw new Error('主文件推送失败');
+                clearUnsavedFlag();
+            } finally {
+                driveIsSyncing = false;
+            }
         } else {
             hasUnsavedChanges = true;
         }
@@ -3101,21 +3164,7 @@ function openNewTransferFromDetail() {
         document.getElementById('edit-transfer-delete-btn').style.display = 'none';
         document.getElementById('edit-transfer-date').value = today;
 
-        const fromSelect = document.getElementById('edit-transfer-from');
-        fromSelect.innerHTML = '';
-        accounts.filter(a => a.ownerName === currentUserName).forEach(a => {
-            fromSelect.add(new Option(`${a.name} (${CURRENCY_SYMBOLS[a.currency]})`, a.id));
-        });
-        fromSelect.value = currentDetailAccountId;
-
-        const toSelect = document.getElementById('edit-transfer-to');
-        toSelect.innerHTML = '';
-        accounts.forEach(a => {
-            toSelect.add(new Option(`${a.name} (${CURRENCY_SYMBOLS[a.currency]})`, a.id));
-        });
-        // Select a different account as default "to"
-        const otherAcc = accounts.find(a => a.id != currentDetailAccountId);
-        if (otherAcc) toSelect.value = otherAcc.id;
+        fillTransferSelects(currentDetailAccountId, null);
 
         document.getElementById('edit-transfer-amount-out').value = '';
         document.getElementById('edit-transfer-amount-in').value = '';
@@ -3204,6 +3253,29 @@ function openNewTransaction() {
     new bootstrap.Modal(document.getElementById('editTransactionModal')).show();
 }
 
+function fillTransferSelects(fromValue, toValue) {
+    const fromSelect = document.getElementById('edit-transfer-from');
+    const toSelect = document.getElementById('edit-transfer-to');
+    fromSelect.innerHTML = '';
+    accounts.filter(a => a.ownerName === currentUserName).forEach(a => {
+        fromSelect.add(new Option(`${getAccountDisplayName(a)} (${CURRENCY_SYMBOLS[a.currency]})`, a.id));
+    });
+    toSelect.innerHTML = '';
+    accounts.forEach(a => {
+        toSelect.add(new Option(`${getAccountDisplayName(a)} (${CURRENCY_SYMBOLS[a.currency]})`, a.id));
+    });
+    if (fromValue) fromSelect.value = fromValue;
+    else if (fromSelect.options.length > 0) fromSelect.selectedIndex = 0;
+    if (toValue) toSelect.value = toValue;
+    else {
+        // 默认选一个与 from 不同的账户
+        const fromId = fromSelect.value;
+        const other = accounts.find(a => a.id != fromId);
+        if (other) toSelect.value = other.id;
+        else if (toSelect.options.length > 1) toSelect.selectedIndex = 1;
+    }
+}
+
 function openNewTransfer() {
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('edit-transfer-id').value = '';
@@ -3211,11 +3283,7 @@ function openNewTransfer() {
     document.getElementById('editTransferModalTitle').textContent = '新增转账';
     document.getElementById('edit-transfer-delete-btn').style.display = 'none';
     document.getElementById('edit-transfer-date').value = today;
-    const fromSelect = document.getElementById('edit-transfer-from');
-    const toSelect = document.getElementById('edit-transfer-to');
-    if (fromSelect && fromSelect.options.length > 0) fromSelect.selectedIndex = 0;
-    if (toSelect && toSelect.options.length > 1) toSelect.selectedIndex = 1;
-    else if (toSelect && toSelect.options.length > 0) toSelect.selectedIndex = 0;
+    fillTransferSelects(null, null);
     document.getElementById('edit-transfer-amount-out').value = '';
     document.getElementById('edit-transfer-amount-in').value = '';
     document.getElementById('edit-transfer-desc').value = '';
@@ -3327,19 +3395,7 @@ function openEditTransfer(id) {
     document.getElementById('edit-transfer-delete-btn').style.display = '';
     document.getElementById('edit-transfer-date').value = tOut.date;
 
-    const fromSelect = document.getElementById('edit-transfer-from');
-    fromSelect.innerHTML = '';
-    accounts.filter(a => a.ownerName === currentUserName).forEach(a => {
-        fromSelect.add(new Option(`${a.name} (${CURRENCY_SYMBOLS[a.currency]})`, a.id));
-    });
-    fromSelect.value = tOut.accountId;
-
-    const toSelect = document.getElementById('edit-transfer-to');
-    toSelect.innerHTML = '';
-    accounts.forEach(a => {
-        toSelect.add(new Option(`${a.name} (${CURRENCY_SYMBOLS[a.currency]})`, a.id));
-    });
-    toSelect.value = tIn.accountId;
+    fillTransferSelects(tOut.accountId, tIn.accountId);
 
     document.getElementById('edit-transfer-amount-out').value = Math.abs(tOut.amount);
     document.getElementById('edit-transfer-amount-in').value = Math.abs(tIn.amount);
@@ -3415,13 +3471,16 @@ document.getElementById('edit-transaction-form').addEventListener('submit', (e) 
         });
         saveUserData(); triggerAutoSave(); loadAllData(); filterUserData();
         displayedTransactionCount = 100; renderAllTransactions(); renderAccounts();
-        // 保持模态窗打开，清空金额/标签/备注，聚焦金额
+        // renderAccounts() -> updateSelectOptions() 会重置下拉框，需要手动还原
+        document.getElementById('edit-trans-account').value = accountId;
+        const catEl = document.getElementById('edit-trans-category');
+        if (catEl && [...catEl.options].find(o => o.value === category)) catEl.value = category;
+        // 清空金额/标签/备注，不聚焦任何输入框
         document.getElementById('edit-trans-amount').value = '';
         document.getElementById('edit-trans-tags').value = '';
         document.getElementById('edit-trans-desc').value = '';
         const hintEl = document.getElementById('edit-trans-desc-hint');
         if (hintEl) hintEl.style.display = 'none';
-        document.getElementById('edit-trans-amount').focus();
         showToast('✅ 已添加', 'success', 1500);
     } else {
         const id = parseFloat(document.getElementById('edit-trans-id').value);
@@ -3475,11 +3534,10 @@ document.getElementById('edit-transfer-form').addEventListener('submit', (e) => 
         });
         saveUserData(); triggerAutoSave(); loadAllData(); filterUserData();
         displayedTransactionCount = 100; renderAllTransactions(); renderAccounts();
-        // 保持模态窗打开，清空金额/备注，聚焦转出金额
+        // 保持模态窗打开，清空金额/备注，不聚焦
         document.getElementById('edit-transfer-amount-out').value = '';
         document.getElementById('edit-transfer-amount-in').value = '';
         document.getElementById('edit-transfer-desc').value = '';
-        document.getElementById('edit-transfer-amount-out').focus();
         showToast('✅ 已添加', 'success', 1500);
     } else {
         const id = parseFloat(document.getElementById('edit-transfer-id').value);
@@ -4206,6 +4264,9 @@ function switchTab(t, el) {
     document.getElementById(`view-${t}`).classList.add('active-view');
     document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
     el.classList.add('active');
+    // 交易页才显示悬浮按钮
+    const fab = document.getElementById('mobile-fab-group');
+    if (fab) fab.classList.toggle('d-none', t !== 'transactions');
     if (t === 'stats') renderStats();
     if (t === 'planned') renderPlannedTransactions();
     if (t === 'settings') { renderExchangeRateSettings(); initPasswordHint(); renderUserManagement(); renderArchiveManagementUI(); }
