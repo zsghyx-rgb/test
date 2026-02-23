@@ -171,8 +171,6 @@ body {
 }
 
 .account-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-.account-card-negative { border-left: 5px solid #dc3545; }
-.account-card-positive { border-left: 5px solid #198754; }
 .account-card-other {
     opacity: 0.7;
     background-color: rgba(var(--bs-secondary-rgb), 0.1);
@@ -507,7 +505,25 @@ body {
             </div>
         </div>
 
-        <!-- Step 1: 选择文件 -->
+        <!-- GAS Token 配置（与 URL 同样的保存逻辑） -->
+        <div class="mb-3" id="gas-token-section">
+            <div id="gas-token-saved-bar" class="d-flex align-items-center justify-content-between" style="display:none!important;">
+                <span class="small text-success"><i class="bi bi-shield-check"></i> Token 已保存</span>
+                <button class="btn btn-link btn-sm p-0 text-muted" onclick="showGasTokenInput()">修改</button>
+            </div>
+            <div id="gas-token-input-bar">
+                <label class="form-label small text-muted fw-bold">GAS Token</label>
+                <div class="input-group input-group-sm">
+                    <input type="password" class="form-control" id="gas-token-input"
+                           placeholder="在 GAS 脚本中设置的 token"
+                           autocomplete="off" spellcheck="false">
+                    <button class="btn btn-outline-success" type="button" onclick="saveGasToken()">
+                        <i class="bi bi-check-lg"></i> 保存
+                    </button>
+                </div>
+                <div class="form-text">Token 只存在本设备浏览器中，不会上传</div>
+            </div>
+        </div>
         <div class="mb-3">
             <label class="form-label small text-muted fw-bold">① 选择数据文件</label>
             <div class="d-flex gap-2">
@@ -1633,6 +1649,7 @@ const DEFAULT_RATES = { 'EUR_RMB': 7.8, 'USD_RMB': 7.2, 'HKD_RMB': 0.92, 'JPY_RM
 // ==================== Google Drive 同步配置 ====================
 // GAS_URL 不再硬编码，从 localStorage 读取，首次使用时在登录界面填写
 let GAS_URL = localStorage.getItem('APP_gas_url') || '';
+let GAS_TOKEN = localStorage.getItem('APP_gas_token') || '';
 const CURRENCY_SYMBOLS = { 'RMB': '¥', 'EUR': '€', 'USD': '$', 'HKD': 'HK$', 'JPY': '¥', 'GBP': '£' };
 
 
@@ -1726,6 +1743,12 @@ let tapTimeout = null, isSwiping = false;
 // ==================== 页面初始化 ====================
 // ==================== GAS URL 本地管理 ====================
 
+/** 构建带 token 的请求 URL，GAS_TOKEN 有值时作为 query param 附加 */
+function gasRequestUrl() {
+    if (GAS_TOKEN) return `${GAS_URL}?token=${encodeURIComponent(GAS_TOKEN)}`;
+    return GAS_URL;
+}
+
 function initGasUrlUI() {
     const saved = localStorage.getItem('APP_gas_url') || '';
     if (saved) {
@@ -1757,11 +1780,39 @@ function saveGasUrl() {
     loadFromDrive();  // 保存后立即拉取
 }
 
+function initGasTokenUI() {
+    const saved = localStorage.getItem('APP_gas_token') || '';
+    if (saved) {
+        document.getElementById('gas-token-saved-bar').style.removeProperty('display');
+        document.getElementById('gas-token-input-bar').style.display = 'none';
+    } else {
+        document.getElementById('gas-token-saved-bar').style.display = 'none';
+        document.getElementById('gas-token-input-bar').style.removeProperty('display');
+    }
+}
+
+function showGasTokenInput() {
+    document.getElementById('gas-token-saved-bar').style.display = 'none';
+    document.getElementById('gas-token-input-bar').style.removeProperty('display');
+    const input = document.getElementById('gas-token-input');
+    input.value = localStorage.getItem('APP_gas_token') || '';
+    input.focus();
+}
+
+function saveGasToken() {
+    const val = document.getElementById('gas-token-input').value.trim();
+    if (!val) { alert('请输入 Token'); return; }
+    localStorage.setItem('APP_gas_token', val);
+    GAS_TOKEN = val;
+    initGasTokenUI();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('qt-date').valueAsDate = new Date();
     document.getElementById('qtr-date').valueAsDate = new Date();
 
     initGasUrlUI();
+    initGasTokenUI();
 
     // 有已保存的 URL 则自动从 Drive 同步
     if (GAS_URL) {
@@ -2105,7 +2156,51 @@ function clearUnsavedFlag() {
  * state: 'syncing' | 'ok' | 'error'
  */
 /**
+ * 合并本地数据与远端数据，以 updatedAt 时间戳为准取最新版本
+ * 对相同 ID 的记录取 updatedAt 更大的；只有一方有的记录直接保留
+ */
+function mergeData(local, remote) {
+    const mergeArray = (localArr, remoteArr) => {
+        const map = new Map();
+        // 先放 remote，再用 local 覆盖（若 local 更新）
+        (remoteArr || []).forEach(item => map.set(String(item.id), item));
+        (localArr || []).forEach(item => {
+            const existing = map.get(String(item.id));
+            if (!existing || (item.updatedAt || 0) >= (existing.updatedAt || 0)) {
+                map.set(String(item.id), item);
+            }
+        });
+        return Array.from(map.values());
+    };
+
+    const merged = {
+        users: local.users || remote.users || [],
+        categories: local.categories,
+        exchangeRates: local.exchangeRates,
+        allUserData: {}
+    };
+
+    // 合并每个用户的数据
+    const allUsers = new Set([
+        ...Object.keys(local.allUserData || {}),
+        ...Object.keys((remote && remote.allUserData) || {})
+    ]);
+    allUsers.forEach(u => {
+        const localU = (local.allUserData || {})[u] || { accounts: [], transactions: [], plannedTransactions: [] };
+        const remoteU = ((remote && remote.allUserData) || {})[u] || { accounts: [], transactions: [], plannedTransactions: [] };
+        merged.allUserData[u] = {
+            accounts: mergeArray(localU.accounts, remoteU.accounts),
+            transactions: mergeArray(localU.transactions, remoteU.transactions),
+            plannedTransactions: mergeArray(localU.plannedTransactions, remoteU.plannedTransactions)
+        };
+    });
+
+    return merged;
+}
+
+/**
  * 将当前数据同步到 Google Drive (data.enc)
+ * 推送前先拉取远端最新，合并后再推送，避免覆盖其他设备的修改
  * @param {boolean} manual - 手动触发时显示更明显的提示
  */
 async function syncToDrive(manual = false) {
@@ -2120,25 +2215,65 @@ async function syncToDrive(manual = false) {
     showToast('☁️ 同步中…', 'syncing', 0);
     saveUserData();
 
-    // 加密打包
-    let content;
-    if (userPassword) {
-        content = CryptoJS.AES.encrypt(JSON.stringify(inMemoryLoadedData), userPassword).toString();
-    } else {
-        content = JSON.stringify(inMemoryLoadedData);
-    }
-
     try {
-        const resp = await fetch(GAS_URL, {
+        // ── 步骤 1：拉取 Drive 最新版本 ──
+        let remoteData = null;
+        try {
+            const pullResp = await fetch(gasRequestUrl());
+            if (pullResp.ok) {
+                const raw = (await pullResp.text()).trim();
+                if (raw) {
+                    try {
+                        remoteData = JSON.parse(raw);
+                    } catch (_) {
+                        // 加密文件：尝试解密
+                        if (userPassword) {
+                            try {
+                                const bytes = CryptoJS.AES.decrypt(raw, userPassword);
+                                remoteData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+                            } catch (_) { /* 解密失败，跳过合并直接推送本地 */ }
+                        }
+                    }
+                }
+            }
+        } catch (_) { /* 拉取失败，跳过合并直接推送本地 */ }
+
+        // ── 步骤 2：合并 ──
+        let finalData = inMemoryLoadedData;
+        if (remoteData) {
+            finalData = mergeData(inMemoryLoadedData, remoteData);
+            // 用合并结果更新内存，确保本地也是最新合并状态
+            inMemoryLoadedData = finalData;
+            // 重新加载内存数据
+            accounts = []; transactions = []; plannedTransactions = [];
+            Object.entries(finalData.allUserData || {}).forEach(([u, uData]) => {
+                accounts.push(...(uData.accounts || []).map(a => ({...a, ownerName: u})));
+                transactions.push(...(uData.transactions || []).map(t => ({...t, ownerName: u})));
+                if (uData.plannedTransactions) {
+                    plannedTransactions.push(...uData.plannedTransactions.map(p => ({...p, ownerName: u})));
+                }
+            });
+            filterUserData();
+            loadAllData();
+        }
+
+        // ── 步骤 3：加密打包并推送 ──
+        let content;
+        if (userPassword) {
+            content = CryptoJS.AES.encrypt(JSON.stringify(finalData), userPassword).toString();
+        } else {
+            content = JSON.stringify(finalData);
+        }
+
+        const resp = await fetch(gasRequestUrl(), {
             method: 'POST',
-            body: content,          // 直接发纯文本，匹配 GAS e.postData.contents
+            body: content,
             headers: { 'Content-Type': 'text/plain' }
         });
         const text = (await resp.text()).trim();
         if (text === 'OK') {
             clearUnsavedFlag();
             showToast('☁️ 已同步到 Drive', 'success');
-            if (manual) {} // already shown above
         } else {
             throw new Error('GAS 返回：' + text);
         }
@@ -2161,7 +2296,7 @@ async function loadFromDrive() {
     statusEl.innerHTML = '<span class="text-primary"><span class="spinner-border spinner-border-sm me-1"></span>正在从 Google Drive 同步数据…</span>';
 
     try {
-        const resp = await fetch(GAS_URL);
+        const resp = await fetch(gasRequestUrl());
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
         const raw = (await resp.text()).trim();
 
@@ -2209,7 +2344,7 @@ window.addEventListener('beforeunload', (e) => {
     } else {
         content = JSON.stringify(inMemoryLoadedData);
     }
-    navigator.sendBeacon(GAS_URL, content);  // 纯文本，匹配 GAS doPost
+    navigator.sendBeacon(gasRequestUrl(), content);
     // 不设置 e.returnValue，不弹确认框，静默同步
 });
 
@@ -2332,7 +2467,7 @@ function importTransactionCsv() {
                 accountId: acc.id,
                 amount: type === 'expense' ? -Math.abs(cleanAmt) : Math.abs(cleanAmt),
                 category: cat, desc: note || '', ownerName: currentUserName,
-                tags: tags || '', isTransfer: false
+                tags: tags || '', isTransfer: false, updatedAt: Date.now()
             });
             successCount++;
         }
@@ -2375,13 +2510,13 @@ function importTransferCsv() {
                 id: uniqueId, date, type: 'expense', accountId: accFrom.id,
                 amount: -Math.abs(cleanAmtOut), category: '转账',
                 desc: `转给 ${toLabel}: ${note || ''}`, ownerName: fromOwner,
-                isTransfer: true, relatedAccountId: accTo.id, transferPairId: uniqueId
+                isTransfer: true, relatedAccountId: accTo.id, transferPairId: uniqueId, updatedAt: Date.now()
             });
             transactions.unshift({
                 id: uniqueId + 0.1, date, type: 'income', accountId: accTo.id,
                 amount: Math.abs(cleanAmtIn), category: '转账',
                 desc: `来自 ${fromLabel}: ${note || ''}`, ownerName: toOwner,
-                isTransfer: true, relatedAccountId: accFrom.id, transferPairId: uniqueId
+                isTransfer: true, relatedAccountId: accFrom.id, transferPairId: uniqueId, updatedAt: Date.now()
             });
             successCount++;
         }
@@ -2440,7 +2575,7 @@ function renderAccounts() {
             col.className = 'account-col';
             const balClass = amountsHidden ? 'amount-hidden' : (bal < 0 ? 'text-danger' : 'text-success');
             col.innerHTML = `
-                <div class="card account-card p-3 shadow-sm ${bal < 0 ? 'account-card-negative' : 'account-card-positive'}" 
+                <div class="card account-card p-3 shadow-sm" 
                      data-id="${acc.id}" onclick="openAccountDetail(${acc.id})" style="cursor:pointer;">
                     <div class="d-flex justify-content-between align-items-center">
                         <div style="flex:1">
@@ -2470,7 +2605,7 @@ function renderAccounts() {
             const balClass = amountsHidden ? 'amount-hidden' : (bal < 0 ? 'text-danger' : 'text-success');
             const initial = acc.ownerName.charAt(0).toUpperCase();
             col.innerHTML = `
-                <div class="card account-card p-3 shadow-sm ${bal < 0 ? 'account-card-negative' : 'account-card-positive'}">
+                <div class="card account-card p-3 shadow-sm">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <div class="fw-bold text-truncate">[${initial}] ${acc.name}</div>
@@ -2525,7 +2660,8 @@ document.getElementById('add-account-form').addEventListener('submit', (e) => {
         accountType: document.getElementById('acc-type').value,
         currency: document.getElementById('acc-currency').value,
         initialBalance: parseFloat(document.getElementById('acc-balance').value),
-        ownerName: currentUserName
+        ownerName: currentUserName,
+        updatedAt: Date.now()
     });
     saveUserData(); triggerAutoSave(); loadAllData(); filterUserData(); renderAccounts();
     bootstrap.Modal.getInstance(document.getElementById('addAccountModal')).hide();
@@ -2759,6 +2895,7 @@ document.getElementById('edit-account-form').addEventListener('submit', (e) => {
         const oldBalance = calculateBalance(id);
         const diff = newBalance - oldBalance;
         acc.name = name;
+        acc.updatedAt = Date.now();
         if (Math.abs(diff) > 0.01) {
             transactions.unshift({
                 id: Date.now() + Math.random(),
@@ -2766,7 +2903,7 @@ document.getElementById('edit-account-form').addEventListener('submit', (e) => {
                 type: diff > 0 ? 'income' : 'expense',
                 accountId: id, amount: diff, category: '其他',
                 desc: `余额调整 (${oldBalance.toFixed(2)} → ${newBalance.toFixed(2)})`,
-                ownerName: currentUserName, isTransfer: false, tags: ''
+                ownerName: currentUserName, isTransfer: false, tags: '', updatedAt: Date.now()
             });
         }
         saveUserData(); triggerAutoSave(); loadAllData(); filterUserData(); renderAccounts();
@@ -2900,13 +3037,13 @@ function handleQuickTransferSubmit(e) {
         id: uniqueId, date: savedDate, type: 'expense', accountId: savedFromId,
         amount: -Math.abs(amtOut), category: '转账',
         desc: `转给 ${toLabel}: ${descInput}`, ownerName: currentUserName,
-        isTransfer: true, relatedAccountId: savedToId, transferPairId: uniqueId
+        isTransfer: true, relatedAccountId: savedToId, transferPairId: uniqueId, updatedAt: Date.now()
     });
     transactions.unshift({
         id: uniqueId + 0.1, date: savedDate, type: 'income', accountId: savedToId,
         amount: Math.abs(amtIn), category: '转账',
         desc: `来自 ${fromLabel}: ${descInput}`, ownerName: accTo.ownerName,
-        isTransfer: true, relatedAccountId: savedFromId, transferPairId: uniqueId
+        isTransfer: true, relatedAccountId: savedFromId, transferPairId: uniqueId, updatedAt: Date.now()
     });
 
     saveUserData(); loadAllData(); filterUserData();
@@ -3099,7 +3236,7 @@ document.getElementById('edit-transaction-form').addEventListener('submit', (e) 
         transactions.unshift({
             id: Date.now() + Math.random(), date, type, accountId,
             amount: finalAmount, category, tags, desc,
-            ownerName: currentUserName, isTransfer: false
+            ownerName: currentUserName, isTransfer: false, updatedAt: Date.now()
         });
         saveUserData(); triggerAutoSave(); loadAllData(); filterUserData();
         displayedTransactionCount = 100; renderAllTransactions(); renderAccounts();
@@ -3112,6 +3249,7 @@ document.getElementById('edit-transaction-form').addEventListener('submit', (e) 
         if (t) {
             t.date = date; t.type = type; t.accountId = accountId;
             t.category = category; t.amount = finalAmount; t.tags = tags; t.desc = desc;
+            t.updatedAt = Date.now();
             saveUserData(); triggerAutoSave(); filterUserData();
             displayedTransactionCount = 100;
             renderAllTransactions(); renderAccounts();
@@ -3147,13 +3285,13 @@ document.getElementById('edit-transfer-form').addEventListener('submit', (e) => 
             id: uniqueId, date: newDate, type: 'expense', accountId: newFromId,
             amount: -Math.abs(newAmtOut), category: '转账',
             desc: `转给 ${toLabel}: ${newDesc}`, ownerName: currentUserName,
-            isTransfer: true, relatedAccountId: newToId, transferPairId: uniqueId
+            isTransfer: true, relatedAccountId: newToId, transferPairId: uniqueId, updatedAt: Date.now()
         });
         transactions.unshift({
             id: uniqueId + 0.1, date: newDate, type: 'income', accountId: newToId,
             amount: Math.abs(newAmtIn), category: '转账',
             desc: `来自 ${fromLabel}: ${newDesc}`, ownerName: accTo.ownerName,
-            isTransfer: true, relatedAccountId: newFromId, transferPairId: uniqueId
+            isTransfer: true, relatedAccountId: newFromId, transferPairId: uniqueId, updatedAt: Date.now()
         });
         saveUserData(); triggerAutoSave(); loadAllData(); filterUserData();
         displayedTransactionCount = 100; renderAllTransactions(); renderAccounts();
@@ -3175,9 +3313,11 @@ document.getElementById('edit-transfer-form').addEventListener('submit', (e) => 
 
         tOut.date = newDate; tOut.accountId = newFromId; tOut.relatedAccountId = newToId;
         tOut.amount = -Math.abs(newAmtOut); tOut.desc = `转给 ${toLabel}: ${newDesc}`;
+        tOut.updatedAt = Date.now();
         tIn.date = newDate; tIn.accountId = newToId; tIn.relatedAccountId = newFromId;
         tIn.amount = Math.abs(newAmtIn); tIn.desc = `来自 ${fromLabel}: ${newDesc}`;
         tIn.ownerName = accTo.ownerName;
+        tIn.updatedAt = Date.now();
 
         saveUserData(); triggerAutoSave(); filterUserData();
         displayedTransactionCount = 100; displayedTransferCount = 100;
@@ -3581,7 +3721,7 @@ function handleQuickTransSubmit(e) {
     addTransaction({
         id: Date.now(), date: savedDate, type: savedType, accountId: savedAccount,
         category: savedCategory, amount: savedType === 'expense' ? -Math.abs(amount) : Math.abs(amount),
-        desc, ownerName: currentUserName, isTransfer: false, tags
+        desc, ownerName: currentUserName, isTransfer: false, tags, updatedAt: Date.now()
     });
     triggerAutoSave();
 
@@ -4307,7 +4447,8 @@ document.getElementById('add-planned-form').addEventListener('submit', (e) => {
         dayOfMonth: parseInt(document.getElementById('planned-day-of-month').value),
         lastGenerated: null, ownerName: currentUserName,
         desc: document.getElementById('planned-desc').value,
-        tags: document.getElementById('planned-tags').value
+        tags: document.getElementById('planned-tags').value,
+        updatedAt: Date.now()
     };
     plannedTransactions.push(plan);
     saveUserData(); triggerAutoSave(); loadAllData(); filterUserData(); renderPlannedTransactions();
@@ -4350,6 +4491,7 @@ document.getElementById('edit-planned-form').addEventListener('submit', (e) => {
         plan.dayOfMonth = parseInt(document.getElementById('edit-planned-day-of-month').value);
         plan.desc = document.getElementById('edit-planned-desc').value;
         plan.tags = document.getElementById('edit-planned-tags').value;
+        plan.updatedAt = Date.now();
         saveUserData(); triggerAutoSave(); loadAllData(); filterUserData(); renderPlannedTransactions();
         bootstrap.Modal.getInstance(document.getElementById('editPlannedModal')).hide();
         showToast('计划已更新', 'success');
@@ -4395,7 +4537,8 @@ function generateTransactionFromPlan(plan, targetDate) {
         id: Date.now() + Math.random(), date: targetDate, type: plan.type,
         accountId: plan.accountId, amount, category: plan.category,
         desc: `[计划] ${plan.name}${plan.desc ? ': ' + plan.desc : ''}`,
-        ownerName: plan.ownerName, tags: plan.tags || '', isTransfer: false, fromPlannedId: plan.id
+        ownerName: plan.ownerName, tags: plan.tags || '', isTransfer: false,
+        fromPlannedId: plan.id, updatedAt: Date.now()
     });
     plan.lastGenerated = targetDate;
     saveUserData(); triggerAutoSave(); loadAllData(); filterUserData();
