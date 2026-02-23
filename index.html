@@ -673,7 +673,7 @@ body {
         <!-- 历史模式横幅 -->
         <div id="history-mode-banner" class="d-none alert alert-warning mb-0 py-2 px-3 d-flex align-items-center justify-content-between flex-shrink-0" style="border-radius:0;border-left:none;border-right:none;border-top:none;z-index:10;">
             <span><i class="bi bi-archive-fill me-1"></i>历史模式：<strong id="history-year-label"></strong> 年（只读）</span>
-            <button class="btn btn-sm btn-outline-dark py-0" onclick="exitHistoryMode()"><i class="bi bi-x-lg"></i> 退出</button>
+            <button class="btn btn-sm btn-outline-secondary py-0" onclick="exitHistoryMode()"><i class="bi bi-x-lg"></i> 退出</button>
         </div>
         <!-- ==================== 账户视图 ==================== -->
         <div id="view-accounts" class="view-section">
@@ -928,6 +928,11 @@ body {
                                     </div>
                                 </div>
                             </div>
+                            <div id="history-chart-archive-notice" class="d-none alert alert-warning py-2 px-3 mb-2" style="font-size:0.85rem;">
+                                <i class="bi bi-archive me-1"></i>
+                                <span id="history-chart-archive-text"></span>
+                                <a href="#" class="ms-2" onclick="switchTab('settings', document.querySelector('[onclick*=settings]')); return false;">前往设置查看存档</a>
+                            </div>
                             <div id="history-chart-wrapper" class="d-none" style="height: 350px;">
                                 <canvas id="assetHistoryChart"></canvas>
                             </div>
@@ -935,21 +940,6 @@ body {
                     </div>
                 </div>
 
-                <div class="col-12">
-                    <div class="card shadow-sm chart-card">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <h6 class="card-title mb-0">未来资产预测 (基于近6个月趋势)</h6>
-                                <button class="btn btn-sm btn-primary" onclick="toggleChartVisibility('prediction-chart-wrapper', this)">
-                                    <i class="bi bi-eye"></i> 显示图表
-                                </button>
-                            </div>
-                            <div id="prediction-chart-wrapper" class="d-none" style="height: 350px;">
-                                <canvas id="assetPredictionChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -1595,6 +1585,7 @@ let offlineMode = localStorage.getItem('APP_offline_mode') === 'true'; // 离线
 let historyMode = false;          // 当前是否处于历史模式
 let historyYear = null;           // 当前历史模式加载的年份
 let historyBaselines = [];        // 历史模式进入前暂存的基准交易
+let historyPrevFilters = null;    // 历史模式进入前的日期筛选状态
 
 // ==================== UI状态变量 ====================
 let chartInstances = {};
@@ -2310,9 +2301,29 @@ async function loadHistoryYear(year) {
             }
         });
 
+        // 进入历史模式前保存当前日期筛选，供退出时还原
+        historyPrevFilters = {
+            transStart: document.getElementById('filter-start-date')?.value || '',
+            transEnd:   document.getElementById('filter-end-date')?.value   || '',
+            statsStart: document.getElementById('stats-start-date')?.value  || '',
+            statsEnd:   document.getElementById('stats-end-date')?.value    || '',
+        };
+
         historyMode = true;
         historyYear = year;
         filterUserData();
+
+        // 自动把日期范围设为该存档年份全年
+        const yStart = `${year}-01-01`, yEnd = `${year}-12-31`;
+        const fsd = document.getElementById('filter-start-date');
+        const fed = document.getElementById('filter-end-date');
+        const ssd = document.getElementById('stats-start-date');
+        const sed = document.getElementById('stats-end-date');
+        if (fsd) fsd.value = yStart;
+        if (fed) fed.value = yEnd;
+        if (ssd) { ssd.value = yStart; currentStatsFilter.startDate = yStart; }
+        if (sed) { sed.value = yEnd;   currentStatsFilter.endDate   = yEnd; }
+        applyTransactionFilter();
 
         const banner = document.getElementById('history-mode-banner');
         if (banner) { banner.classList.remove('d-none'); document.getElementById('history-year-label').textContent = year; }
@@ -2334,6 +2345,19 @@ function exitHistoryMode() {
     historyMode = false; historyYear = null;
     const banner = document.getElementById('history-mode-banner');
     if (banner) banner.classList.add('d-none');
+    // 还原进入历史模式前的日期筛选
+    if (historyPrevFilters) {
+        const fsd = document.getElementById('filter-start-date');
+        const fed = document.getElementById('filter-end-date');
+        const ssd = document.getElementById('stats-start-date');
+        const sed = document.getElementById('stats-end-date');
+        if (fsd) fsd.value = historyPrevFilters.transStart;
+        if (fed) fed.value = historyPrevFilters.transEnd;
+        if (ssd) { ssd.value = historyPrevFilters.statsStart; currentStatsFilter.startDate = historyPrevFilters.statsStart; }
+        if (sed) { sed.value = historyPrevFilters.statsEnd;   currentStatsFilter.endDate   = historyPrevFilters.statsEnd; }
+        historyPrevFilters = null;
+        applyTransactionFilter();
+    }
     filterUserData(); renderAllTransactions(); renderAccounts(); renderStats();
     showToast('已退出历史模式', 'info');
 }
@@ -3000,7 +3024,7 @@ function openAccountDetail(id, restoreScroll = false) {
         container.innerHTML = '';
         acctTrans.slice(0, 100).forEach(t => {
             const isTransfer = t.isTransfer;
-            const canEdit = t.ownerName === currentUserName && !t._isArchived;
+            let canEdit = t.ownerName === currentUserName && !t._isArchived;
 
             // ---- Transfer: build A → B line ----
             let titleHtml = '';
@@ -3026,6 +3050,8 @@ function openAccountDetail(id, restoreScroll = false) {
                         tOut = transactions.find(x => x.isTransfer && x.type === 'expense' && x.date === t.date && x.relatedAccountId == t.accountId);
                     }
                 }
+                // 只有转账发起人（转出方）才可编辑，收款方只能查看
+                if (tOut) canEdit = (tOut.ownerName === currentUserName) && !t._isArchived;
                 const accFrom = tOut ? accounts.find(a => a.id == tOut.accountId) : null;
                 const accTo   = tIn  ? accounts.find(a => a.id == tIn.accountId)  : null;
                 const fromName = accFrom ? getAccountDisplayName(accFrom) : '?';
@@ -4018,7 +4044,6 @@ function renderStats() {
     renderTagChart(filtered);
     renderTrendChart(filtered);
     renderAssetHistoryChart(currentStatsFilter.user);
-    renderAssetPredictionChart(currentStatsFilter.user);
     renderCategoryTrendChart(filtered);
     renderTotalExpenseTrendChart(filtered);
     const sel = document.getElementById('category-trend-select');
@@ -4135,52 +4160,21 @@ function renderAssetHistoryChart(userFilter) {
         data: { labels, datasets: [{ label: '净资产', data, borderColor: '#0d6efd', fill: true, backgroundColor: 'rgba(13,110,253,0.1)', tension: 0.4 }] },
         options: { maintainAspectRatio: false, elements: { point: { radius: 0 } }, plugins: { legend: { display: true } }, animation: { duration: 500 } }
     });
+
+    // 如有已存档年份，显示提示
+    const archivedYrs = getArchivedYears();
+    const noticeEl = document.getElementById('history-chart-archive-notice');
+    const noticeText = document.getElementById('history-chart-archive-text');
+    if (noticeEl && noticeText) {
+        if (archivedYrs.length > 0) {
+            noticeText.textContent = `${archivedYrs.join('、')} 年数据已归档，趋势图中仅显示基准交易节点，如需查看完整曲线请进入历史模式。`;
+            noticeEl.classList.remove('d-none');
+        } else {
+            noticeEl.classList.add('d-none');
+        }
+    }
 }
 
-function renderAssetPredictionChart() {
-    const ctx = document.getElementById('assetPredictionChart');
-    if (!ctx) return;
-    if (chartInstances.assetPrediction) { chartInstances.assetPrediction.destroy(); chartInstances.assetPrediction = null; }
-    const today = new Date();
-    const sixMonthsAgo = new Date(today); sixMonthsAgo.setMonth(today.getMonth() - 6);
-    const recentTrans = transactions.filter(t => new Date(t.date) >= sixMonthsAgo);
-    const monthlyNet = {};
-    recentTrans.forEach(t => {
-        if (t.isTransfer) return;
-        const m = t.date.substring(0, 7);
-        const acc = accounts.find(a => a.id == t.accountId);
-        let amt = convertAmt(t.amount, acc.currency);
-        monthlyNet[m] = (monthlyNet[m] || 0) + amt;
-    });
-    const netValues = Object.values(monthlyNet);
-    const avgMonthlyNet = netValues.length > 0 ? netValues.reduce((a, b) => a + b, 0) / netValues.length : 0;
-    let currentNetWorth = 0;
-    accounts.forEach(acc => {
-        let bal = parseFloat(acc.initialBalance);
-        transactions.filter(t => t.accountId == acc.id).forEach(t => bal += parseFloat(t.amount));
-        bal = toRmb(bal, acc.currency);
-        currentNetWorth += bal;
-    });
-    const labels = [], historicalData = [], predictedData = [];
-    labels.push(today.toISOString().substring(0, 7));
-    historicalData.push(currentNetWorth); predictedData.push(null);
-    for (let i = 1; i <= 12; i++) {
-        const futureDate = new Date(today); futureDate.setMonth(today.getMonth() + i);
-        labels.push(futureDate.toISOString().substring(0, 7));
-        historicalData.push(null); predictedData.push(currentNetWorth + avgMonthlyNet * i);
-    }
-    chartInstances.assetPrediction = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels,
-            datasets: [
-                { label: '当前资产', data: historicalData, borderColor: '#0d6efd', backgroundColor: 'rgba(13,110,253,0.1)', fill: true, tension: 0.4 },
-                { label: '预测资产', data: predictedData, borderColor: '#ffc107', borderDash: [5, 5], fill: false, tension: 0.4 }
-            ]
-        },
-        options: { maintainAspectRatio: false, plugins: { legend: { display: true } }, animation: { duration: 500 } }
-    });
-}
 
 function renderCategoryTrendChart(data) {
     const cat = document.getElementById('category-trend-select').value;
