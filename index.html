@@ -305,12 +305,6 @@ body {
 
 .modal .form-label { font-size: 0.875rem; margin-bottom: 0.25rem; }
 
-.quick-add-bar {
-    background-color: var(--bs-body-bg);
-    border: 1px solid var(--bs-border-color);
-    border-radius: 6px;
-    padding: 1rem;
-}
 
 .chart-scroll-container { overflow-x: auto; overflow-y: hidden; }
 .chart-scroll-container canvas { min-width: 100%; }
@@ -360,9 +354,6 @@ body {
 
     .excel-table-container { display: none; }
     #mobile-transaction-list { display: block !important; }
-
-    #quick-trans-form,
-    #quick-transfer-form { display: none !important; }
 
     .mobile-transaction-card {
         background: var(--bs-body-bg);
@@ -449,8 +440,6 @@ body {
     #mobile-transaction-list { display: none !important; }
     .user-name-short { display: none; }
     .user-name-full { display: inline; }
-    #quick-trans-form-mobile,
-    #quick-transfer-form-mobile { display: none !important; }
 
     .desc-content { cursor: help; }
     .desc-content:hover { position: relative; overflow: visible; white-space: normal; z-index: 1000; }
@@ -660,180 +649,20 @@ body {
 
         <!-- ==================== 交易视图 ==================== -->
         <div id="view-transactions" class="view-section active-view">
-            <h4 class="mb-3">交易管理</h4>
-            <div class="quick-add-bar shadow-sm">
-                <div class="d-flex justify-content-between mb-2">
-                    <h6 class="fw-bold text-primary"><i class="bi bi-pencil-square"></i> 记一笔</h6>
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="mode-toggle" onchange="toggleQuickFormMode()">
-                        <label class="form-check-label small" for="mode-toggle">转账模式</label>
-                    </div>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="mb-0">交易管理</h4>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-warning btn-sm px-3" onclick="openNewTransfer()" title="新增转账">
+                        <i class="bi bi-arrow-left-right"></i>
+                    </button>
+                    <button class="btn btn-primary" onclick="openNewTransaction()" title="新增交易">
+                        <i class="bi bi-plus-lg"></i>
+                    </button>
                 </div>
+            </div>
 
-                <!-- 桌面端收支表单 -->
-                <form id="quick-trans-form">
-                    <div class="row g-2 align-items-end">
-                        <div class="col-auto" style="width: 125px;">
-                            <label class="compact-form-label">日期</label>
-                            <input type="date" class="form-control compact-form-control" id="qt-date" required>
-                        </div>
-                        <div class="col-auto" style="width: 80px;">
-                            <label class="compact-form-label">类型</label>
-                            <select class="form-select compact-form-control" id="qt-type" onchange="updateQuickFormCategories()">
-                                <option value="expense">支出</option>
-                                <option value="income">收入</option>
-                            </select>
-                        </div>
-                        <div class="col-auto" style="width: 125px;">
-                            <label class="compact-form-label">账户</label>
-                            <select class="form-select compact-form-control" id="qt-account" required></select>
-                        </div>
-                        <div class="col-auto" style="width: 130px;">
-                            <label class="compact-form-label">类别</label>
-                            <select class="form-select compact-form-control" id="qt-category" required></select>
-                        </div>
-                        <div class="col-auto" style="width: 100px;">
-                            <label class="compact-form-label">金额</label>
-                            <input type="number" step="0.01" class="form-control compact-form-control" id="qt-amount" required>
-                        </div>
-                        <div class="col-auto" style="width: 100px;">
-                            <label class="compact-form-label">标签</label>
-                            <input type="text" class="form-control compact-form-control" id="qt-tags">
-                        </div>
-                        <div class="col-auto" style="min-width: 150px; flex: 1;">
-                            <label class="compact-form-label">备注</label>
-                            <input type="text" class="form-control compact-form-control" id="qt-desc"
-                                oninput="updateDescHint('qt-desc','qt-desc-hint','qt-type','qt-category','qt-account')">
-                            <div id="qt-desc-hint" style="display:none;align-items:center;gap:6px;margin-top:3px;padding:3px 8px;border-radius:5px;background:rgba(var(--bs-primary-rgb),0.08);border:1px solid rgba(var(--bs-primary-rgb),0.2);font-size:0.78rem;"></div>
-                        </div>
-                        <div class="col-auto">
-                            <button type="submit" class="btn btn-primary btn-sm" style="width: 70px; margin-top: 24px;">记账</button>
-                        </div>
-                    </div>
-                </form>
-
-                <!-- 移动端收支表单 -->
-                <form id="quick-trans-form-mobile" class="d-md-none" style="display: block;">
-                    <div class="row g-2 mb-2">
-                        <div class="col-6">
-                            <label class="compact-form-label">日期</label>
-                            <input type="date" class="form-control compact-form-control" id="qt-date-mobile" required>
-                        </div>
-                        <div class="col-6">
-                            <label class="compact-form-label">类型</label>
-                            <select class="form-select compact-form-control" id="qt-type-mobile" onchange="updateQuickFormCategoriesMobile()">
-                                <option value="expense">支出</option>
-                                <option value="income">收入</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="row g-2 mb-2">
-                        <div class="col-6">
-                            <label class="compact-form-label">账户</label>
-                            <select class="form-select compact-form-control" id="qt-account-mobile" required></select>
-                        </div>
-                        <div class="col-6">
-                            <label class="compact-form-label">类别</label>
-                            <select class="form-select compact-form-control" id="qt-category-mobile" required></select>
-                        </div>
-                    </div>
-                    <div class="row g-2 mb-2">
-                        <div class="col-6">
-                            <label class="compact-form-label">金额</label>
-                            <input type="number" step="0.01" class="form-control compact-form-control" id="qt-amount-mobile" required>
-                        </div>
-                        <div class="col-6">
-                            <label class="compact-form-label">标签</label>
-                            <input type="text" class="form-control compact-form-control" id="qt-tags-mobile" placeholder="标签">
-                        </div>
-                    </div>
-                    <div class="row g-2 mb-2">
-                        <div class="col-9">
-                            <label class="compact-form-label">备注</label>
-                            <input type="text" class="form-control compact-form-control" id="qt-desc-mobile" placeholder="备注"
-                                oninput="updateDescHint('qt-desc-mobile','qt-desc-mobile-hint','qt-type-mobile','qt-category-mobile','qt-account-mobile')">
-                            <div id="qt-desc-mobile-hint" style="display:none;align-items:center;gap:6px;margin-top:3px;padding:3px 8px;border-radius:5px;background:rgba(var(--bs-primary-rgb),0.08);border:1px solid rgba(var(--bs-primary-rgb),0.2);font-size:0.78rem;"></div>
-                        </div>
-                        <div class="col-3 d-flex align-items-end">
-                            <button type="submit" class="btn btn-primary btn-sm w-100">记账</button>
-                        </div>
-                    </div>
-                </form>
-
-                <!-- 桌面端转账表单 -->
-                <form id="quick-transfer-form" style="display: none;">
-                    <div class="row g-2 align-items-end">
-                        <div class="col-auto" style="width: 130px;">
-                            <label class="compact-form-label">日期</label>
-                            <input type="date" class="form-control compact-form-control" id="qtr-date" required>
-                        </div>
-                        <div class="col-auto" style="width: 125px;">
-                            <label class="compact-form-label">转出账户</label>
-                            <select class="form-select compact-form-control" id="qtr-from" onchange="handleTransferFromChange()" required></select>
-                        </div>
-                        <div class="col-auto" style="width: 100px;">
-                            <label class="compact-form-label">转出金额</label>
-                            <input type="number" step="0.01" class="form-control compact-form-control" id="qtr-amount-out" oninput="handleTransferAmountChange()" required>
-                        </div>
-                        <div class="col-auto" style="width: 125px;">
-                            <label class="compact-form-label">转入账户</label>
-                            <select class="form-select compact-form-control" id="qtr-to" onchange="handleTransferToChange()" required></select>
-                        </div>
-                        <div class="col-auto" style="width: 100px;">
-                            <label class="compact-form-label">转入金额</label>
-                            <input type="number" step="0.01" class="form-control compact-form-control" id="qtr-amount-in" required>
-                        </div>
-                        <div class="col-auto flex-fill">
-                            <label class="compact-form-label">备注</label>
-                            <input type="text" class="form-control compact-form-control" id="qtr-desc">
-                        </div>
-                        <div class="col-auto">
-                            <button type="submit" class="btn btn-warning btn-sm" style="width: 70px;">转账</button>
-                        </div>
-                    </div>
-                </form>
-
-                <!-- 移动端转账表单 -->
-                <form id="quick-transfer-form-mobile" class="d-md-none" style="display: none;">
-                    <div class="row g-2 mb-2">
-                        <div class="col-12">
-                            <label class="compact-form-label">日期</label>
-                            <input type="date" class="form-control compact-form-control" id="qtr-date-mobile" required>
-                        </div>
-                    </div>
-                    <div class="row g-2 mb-2">
-                        <div class="col-7">
-                            <label class="compact-form-label">转出账户</label>
-                            <select class="form-select compact-form-control" id="qtr-from-mobile" onchange="handleTransferFromChange()" required></select>
-                        </div>
-                        <div class="col-5">
-                            <label class="compact-form-label">转出金额</label>
-                            <input type="number" step="0.01" class="form-control compact-form-control" id="qtr-amount-out-mobile" oninput="handleTransferAmountChange()" required>
-                        </div>
-                    </div>
-                    <div class="row g-2 mb-2">
-                        <div class="col-7">
-                            <label class="compact-form-label">转入账户</label>
-                            <select class="form-select compact-form-control" id="qtr-to-mobile" onchange="handleTransferToChange()" required></select>
-                        </div>
-                        <div class="col-5">
-                            <label class="compact-form-label">转入金额</label>
-                            <input type="number" step="0.01" class="form-control compact-form-control" id="qtr-amount-in-mobile" required>
-                        </div>
-                    </div>
-                    <div class="row g-2 mb-2">
-                        <div class="col-9">
-                            <label class="compact-form-label">备注</label>
-                            <input type="text" class="form-control compact-form-control" id="qtr-desc-mobile">
-                        </div>
-                        <div class="col-3 d-flex align-items-end">
-                            <button type="submit" class="btn btn-warning btn-sm w-100">转账</button>
-                        </div>
-                    </div>
-                </form>
-
-                <!-- 筛选栏 -->
-                <div class="card mb-3 border-0 shadow-sm mt-4" style="background-color: var(--bs-tertiary-bg);">
+            <!-- 筛选栏 -->
+            <div class="card mb-3 border-0 shadow-sm" style="background-color: var(--bs-tertiary-bg);">
                     <div class="card-body py-2">
                         <div class="filter-bar-row">
                             <button class="btn btn-sm btn-outline-secondary" onclick="clearTransactionFilters()" title="清除所有筛选">
@@ -874,7 +703,6 @@ body {
                         </div>
                     </div>
                 </div>
-            </div>
 
             <!-- 桌面端表格 -->
             <div class="excel-table-container">
@@ -1583,7 +1411,9 @@ body {
                     </div>
                     <div class="mb-2">
                         <label class="compact-form-label">备注</label>
-                        <input type="text" class="form-control compact-form-control" id="edit-trans-desc">
+                        <input type="text" class="form-control compact-form-control" id="edit-trans-desc"
+                            oninput="updateDescHint('edit-trans-desc','edit-trans-desc-hint','edit-trans-type','edit-trans-category','edit-trans-account')">
+                        <div id="edit-trans-desc-hint" style="display:none;align-items:center;gap:6px;margin-top:3px;padding:3px 8px;border-radius:5px;background:rgba(var(--bs-primary-rgb),0.08);border:1px solid rgba(var(--bs-primary-rgb),0.2);font-size:0.78rem;"></div>
                     </div>
                     <button type="submit" class="btn btn-primary btn-sm w-100 mt-2" id="edit-trans-submit-btn">保存修改</button>
                     <button type="button" class="btn btn-outline-danger btn-sm w-100 mt-2 d-md-none" id="edit-trans-delete-btn"
@@ -1927,9 +1757,6 @@ function switchUser() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('qt-date').valueAsDate = new Date();
-    document.getElementById('qtr-date').valueAsDate = new Date();
-
     initGasUrlUI();
     initGasTokenUI();
     initOfflineModeUI(); // 初始化离线/在线模式 UI
@@ -2301,17 +2128,27 @@ async function archiveYear(year) {
         }
         saveUserData();
 
-        // 推送存档文件到 GAS
+        // 推送到 GAS（直接推，绕过 driveIsSyncing 锁，防止被已有自动同步抢占）
         if (!offlineMode && GAS_URL) {
+            // Step A：推存档文件
             const archiveFile = `archive_${year}.enc`;
-            let archiveContent = userPassword
+            const archiveContent = userPassword
                 ? CryptoJS.AES.encrypt(JSON.stringify(archiveData), userPassword).toString()
                 : JSON.stringify(archiveData);
             const r1 = await fetch(gasRequestUrl({ file: archiveFile }), {
                 method: 'POST', body: archiveContent, headers: { 'Content-Type': 'text/plain' }
             });
             if ((await r1.text()).trim() !== 'OK') throw new Error('存档文件推送失败');
-            await syncToDrive(true); // 推送更新后的 data.enc
+
+            // Step B：直接推 data.enc（包含基准交易，不含已存档年份原始交易）
+            const mainContent = userPassword
+                ? CryptoJS.AES.encrypt(JSON.stringify(inMemoryLoadedData), userPassword).toString()
+                : JSON.stringify(inMemoryLoadedData);
+            const r2 = await fetch(gasRequestUrl(), {
+                method: 'POST', body: mainContent, headers: { 'Content-Type': 'text/plain' }
+            });
+            if ((await r2.text()).trim() !== 'OK') throw new Error('主文件推送失败');
+            clearUnsavedFlag();
         } else {
             hasUnsavedChanges = true;
         }
@@ -2360,7 +2197,7 @@ async function unarchiveYear(year) {
 
         inMemoryLoadedData.archivedYears = getArchivedYears().filter(y => y != year);
         saveUserData();
-        await syncToDrive(true);
+        await syncToDrive(true, true); // forcePush：解档后直接推送，不拉取合并
 
         filterUserData(); loadAllData(); renderAccounts(); renderAllTransactions(); renderArchiveManagementUI();
         showToast(`✅ ${year} 年数据解档成功`, 'success');
@@ -2475,11 +2312,6 @@ function initAppUI() {
     }
 
     const today = new Date();
-    const dateMobile = document.getElementById('qt-date-mobile');
-    const transferDateMobile = document.getElementById('qtr-date-mobile');
-    if (dateMobile) dateMobile.valueAsDate = today;
-    if (transferDateMobile) transferDateMobile.valueAsDate = today;
-
     const plannedStartDate = document.getElementById('planned-start-date');
     if (plannedStartDate) plannedStartDate.valueAsDate = today;
 
@@ -2538,7 +2370,7 @@ function triggerAutoSave() {
     if (offlineMode) return; // 离线模式不自动同步
     // 防抖：最后一次修改后 2 秒再同步，避免高频操作刷屏
     clearTimeout(driveAutoSaveTimer);
-    driveAutoSaveTimer = setTimeout(() => syncToDrive(false), 2000);
+    driveAutoSaveTimer = setTimeout(() => syncToDrive(false), 10000);
 }
 
 function clearUnsavedFlag() {
@@ -2572,6 +2404,10 @@ function mergeData(local, remote) {
         users: local.users || remote.users || [],
         categories: local.categories,
         exchangeRates: local.exchangeRates,
+        archivedYears: Array.from(new Set([
+            ...(local.archivedYears || []),
+            ...(remote.archivedYears || [])
+        ])).sort((a, b) => a - b),
         allUserData: {}
     };
 
@@ -2598,7 +2434,7 @@ function mergeData(local, remote) {
  * 推送前先拉取远端最新，合并后再推送，避免覆盖其他设备的修改
  * @param {boolean} manual - 手动触发时显示更明显的提示
  */
-async function syncToDrive(manual = false) {
+async function syncToDrive(manual = false, forcePush = false) {
     if (!currentUser) return;
     if (!GAS_URL) {
         if (manual) alert('请先在登录界面填写并保存 GAS URL。');
@@ -2611,45 +2447,45 @@ async function syncToDrive(manual = false) {
     saveUserData();
 
     try {
-        // ── 步骤 1：拉取 Drive 最新版本 ──
-        let remoteData = null;
-        try {
-            const pullResp = await fetch(gasRequestUrl());
-            if (pullResp.ok) {
-                const raw = (await pullResp.text()).trim();
-                if (raw && raw !== 'UNAUTHORIZED') {
-                    try {
-                        remoteData = JSON.parse(raw);
-                    } catch (_) {
-                        // 加密文件：尝试解密
-                        if (userPassword) {
-                            try {
-                                const bytes = CryptoJS.AES.decrypt(raw, userPassword);
-                                remoteData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
-                            } catch (_) { /* 解密失败，跳过合并直接推送本地 */ }
+        let finalData = inMemoryLoadedData;
+
+        if (!forcePush) {
+            // ── 步骤 1：拉取 Drive 最新版本 ──
+            let remoteData = null;
+            try {
+                const pullResp = await fetch(gasRequestUrl());
+                if (pullResp.ok) {
+                    const raw = (await pullResp.text()).trim();
+                    if (raw && raw !== 'UNAUTHORIZED') {
+                        try {
+                            remoteData = JSON.parse(raw);
+                        } catch (_) {
+                            if (userPassword) {
+                                try {
+                                    const bytes = CryptoJS.AES.decrypt(raw, userPassword);
+                                    remoteData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+                                } catch (_) { }
+                            }
                         }
                     }
                 }
-            }
-        } catch (_) { /* 拉取失败，跳过合并直接推送本地 */ }
+            } catch (_) { }
 
-        // ── 步骤 2：合并 ──
-        let finalData = inMemoryLoadedData;
-        if (remoteData) {
-            finalData = mergeData(inMemoryLoadedData, remoteData);
-            // 用合并结果更新内存，确保本地也是最新合并状态
-            inMemoryLoadedData = finalData;
-            // 重新加载内存数据
-            accounts = []; transactions = []; plannedTransactions = [];
-            Object.entries(finalData.allUserData || {}).forEach(([u, uData]) => {
-                accounts.push(...(uData.accounts || []).map(a => ({...a, ownerName: u})));
-                transactions.push(...(uData.transactions || []).map(t => ({...t, ownerName: u})));
-                if (uData.plannedTransactions) {
-                    plannedTransactions.push(...uData.plannedTransactions.map(p => ({...p, ownerName: u})));
-                }
-            });
-            filterUserData();
-            loadAllData();
+            // ── 步骤 2：合并 ──
+            if (remoteData) {
+                finalData = mergeData(inMemoryLoadedData, remoteData);
+                inMemoryLoadedData = finalData;
+                accounts = []; transactions = []; plannedTransactions = [];
+                Object.entries(finalData.allUserData || {}).forEach(([u, uData]) => {
+                    accounts.push(...(uData.accounts || []).map(a => ({...a, ownerName: u})));
+                    transactions.push(...(uData.transactions || []).map(t => ({...t, ownerName: u})));
+                    if (uData.plannedTransactions) {
+                        plannedTransactions.push(...uData.plannedTransactions.map(p => ({...p, ownerName: u})));
+                    }
+                });
+                filterUserData();
+                loadAllData();
+            }
         }
 
         // ── 步骤 3：加密打包并推送 ──
@@ -2734,16 +2570,20 @@ async function loadFromDrive() {
 }
 
 // ==================== 页面关闭时同步 ====================
-window.addEventListener('beforeunload', (e) => {
-    if (!hasUnsavedChanges || !currentUser) return;
-    if (!GAS_URL || offlineMode) return; // 离线模式不同步
-    saveUserData();
-    let content;
-    if (userPassword) {
-        content = CryptoJS.AES.encrypt(JSON.stringify(inMemoryLoadedData), userPassword).toString();
-    } else {
-        content = JSON.stringify(inMemoryLoadedData);
+// ── 切后台时完整同步（可靠）──
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden' && hasUnsavedChanges && currentUser && !offlineMode && GAS_URL) {
+        syncToDrive(false);
     }
+});
+
+// ── 强制关闭时 sendBeacon 兜底（不可靠，但聊胜于无）──
+window.addEventListener('beforeunload', () => {
+    if (!hasUnsavedChanges || !currentUser || !GAS_URL || offlineMode) return;
+    saveUserData();
+    const content = userPassword
+        ? CryptoJS.AES.encrypt(JSON.stringify(inMemoryLoadedData), userPassword).toString()
+        : JSON.stringify(inMemoryLoadedData);
     navigator.sendBeacon(gasRequestUrl(), content);
 });
 
@@ -3220,17 +3060,26 @@ function openNewTransFromDetail() {
     bootstrap.Modal.getInstance(document.getElementById('accountDetailModal')).hide();
     setTimeout(() => {
         const today = new Date().toISOString().split('T')[0];
+        const prefs = JSON.parse(localStorage.getItem('APP_last_trans_prefs') || '{}');
         document.getElementById('edit-trans-id').value = '';
         document.getElementById('edit-trans-mode').value = 'add';
         document.getElementById('editTransactionModalTitle').textContent = '新增交易';
         document.getElementById('edit-trans-submit-btn').textContent = '保存';
         document.getElementById('edit-trans-delete-btn').style.display = 'none';
-        document.getElementById('edit-trans-date').value = today;
-        document.getElementById('edit-trans-type').value = 'expense';
+        const lastDate = prefs.date;
+        const dateDiff = lastDate ? Math.abs(new Date(today) - new Date(lastDate)) / 86400000 : 99;
+        document.getElementById('edit-trans-date').value = (lastDate && dateDiff <= 7) ? lastDate : today;
+        document.getElementById('edit-trans-type').value = prefs.type || 'expense';
         updateEditFormCategories();
-        // Pre-select the account
+        // 账户锁定为当前详情账户
         const accSelect = document.getElementById('edit-trans-account');
         accSelect.value = currentDetailAccountId;
+        // 分类
+        const catSelect = document.getElementById('edit-trans-category');
+        if (catSelect && prefs.category) {
+            const opt = [...catSelect.options].find(o => o.value === prefs.category);
+            if (opt) catSelect.value = prefs.category;
+        }
         document.getElementById('edit-trans-amount').value = '';
         document.getElementById('edit-trans-tags').value = '';
         document.getElementById('edit-trans-desc').value = '';
@@ -3313,31 +3162,67 @@ document.getElementById('edit-account-form').addEventListener('submit', (e) => {
 });
 
 // ==================== 交易模式切换 ====================
-function toggleQuickFormMode() {
-    const checked = document.getElementById('mode-toggle').checked;
-    const show = (id, visible) => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = visible ? 'block' : 'none';
-    };
-    show('quick-trans-form', !checked);
-    show('quick-transfer-form', checked);
-    show('quick-trans-form-mobile', !checked);
-    show('quick-transfer-form-mobile', checked);
+// ==================== 新增交易 / 转账入口 ====================
+function openNewTransaction() {
+    const today = new Date().toISOString().split('T')[0];
+    const prefs = JSON.parse(localStorage.getItem('APP_last_trans_prefs') || '{}');
+
+    document.getElementById('edit-trans-id').value = '';
+    document.getElementById('edit-trans-mode').value = 'add';
+    document.getElementById('editTransactionModalTitle').textContent = '新增交易';
+    document.getElementById('edit-trans-submit-btn').textContent = '保存';
+    document.getElementById('edit-trans-delete-btn').style.display = 'none';
+
+    // 日期：记住上次日期，但若相差超过7天则用今天（防止默默记住老日期）
+    const lastDate = prefs.date;
+    const dateDiff = lastDate ? Math.abs(new Date(today) - new Date(lastDate)) / 86400000 : 99;
+    document.getElementById('edit-trans-date').value = (lastDate && dateDiff <= 7) ? lastDate : today;
+
+    // 类型
+    const typeEl = document.getElementById('edit-trans-type');
+    typeEl.value = prefs.type || 'expense';
+    updateEditFormCategories();
+
+    // 账户
+    const accSelect = document.getElementById('edit-trans-account');
+    if (accSelect && accSelect.options.length > 0) {
+        const lastAccOpt = prefs.accountId && [...accSelect.options].find(o => o.value == prefs.accountId);
+        if (lastAccOpt) accSelect.value = prefs.accountId;
+        else accSelect.selectedIndex = 0;
+    }
+
+    // 分类（updateEditFormCategories 已填充选项，再设值）
+    const catSelect = document.getElementById('edit-trans-category');
+    if (catSelect && prefs.category) {
+        const lastCatOpt = [...catSelect.options].find(o => o.value === prefs.category);
+        if (lastCatOpt) catSelect.value = prefs.category;
+    }
+
+    document.getElementById('edit-trans-amount').value = '';
+    document.getElementById('edit-trans-tags').value = '';
+    document.getElementById('edit-trans-desc').value = '';
+    new bootstrap.Modal(document.getElementById('editTransactionModal')).show();
 }
 
-function updateQuickFormCategories(suffix = '') {
-    const type = document.getElementById(`qt-type${suffix}`).value;
-    const catSelect = document.getElementById(`qt-category${suffix}`);
-    if (!catSelect) return;
-    catSelect.innerHTML = '';
-    (type === 'expense' ? categories.expense : categories.income).forEach(c => catSelect.add(new Option(c, c)));
+function openNewTransfer() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('edit-transfer-id').value = '';
+    document.getElementById('edit-transfer-mode').value = 'add';
+    document.getElementById('editTransferModalTitle').textContent = '新增转账';
+    document.getElementById('edit-transfer-delete-btn').style.display = 'none';
+    document.getElementById('edit-transfer-date').value = today;
+    const fromSelect = document.getElementById('edit-transfer-from');
+    const toSelect = document.getElementById('edit-transfer-to');
+    if (fromSelect && fromSelect.options.length > 0) fromSelect.selectedIndex = 0;
+    if (toSelect && toSelect.options.length > 1) toSelect.selectedIndex = 1;
+    else if (toSelect && toSelect.options.length > 0) toSelect.selectedIndex = 0;
+    document.getElementById('edit-transfer-amount-out').value = '';
+    document.getElementById('edit-transfer-amount-in').value = '';
+    document.getElementById('edit-transfer-desc').value = '';
+    new bootstrap.Modal(document.getElementById('editTransferModal')).show();
 }
 
-function updateQuickFormCategoriesMobile() { updateQuickFormCategories('-mobile'); }
-
-// ==================== 转账表单处理 ====================
-function handleTransferFromChange() { handleTransferAmountChange(); }
-function handleTransferToChange() { handleTransferAmountChange(); }
+// ==================== 转账表单辅助 ====================
 
 function handleEditTransferAmountChange(direction) {
     const fromId = document.getElementById('edit-transfer-from')?.value;
@@ -3346,129 +3231,18 @@ function handleEditTransferAmountChange(direction) {
     const accFrom = accounts.find(a => a.id == fromId);
     const accTo   = accounts.find(a => a.id == toId);
     if (!accFrom || !accTo || accFrom.currency !== accTo.currency) return;
+
+    const outEl = document.getElementById('edit-transfer-amount-out');
+    const inEl  = document.getElementById('edit-transfer-amount-in');
     if (direction === 'out') {
-        const v = document.getElementById('edit-transfer-amount-out').value;
-        document.getElementById('edit-transfer-amount-in').value = v;
+        inEl.value = outEl.value;
     } else if (direction === 'in') {
-        const v = document.getElementById('edit-transfer-amount-in').value;
-        document.getElementById('edit-transfer-amount-out').value = v;
+        outEl.value = inEl.value;
+    } else {
+        // 账户切换触发（无 direction）：哪个有值就同步到另一个，都有值以 out 为准
+        if (outEl.value) inEl.value = outEl.value;
+        else if (inEl.value) outEl.value = inEl.value;
     }
-}
-
-function handleTransferAmountChange() {
-    const fromId = document.getElementById('qtr-from')?.value;
-    const toId = document.getElementById('qtr-to')?.value;
-    const amountOut = parseFloat(document.getElementById('qtr-amount-out')?.value);
-    if (fromId && toId && !isNaN(amountOut)) {
-        const accFrom = accounts.find(a => a.id == fromId);
-        const accTo = accounts.find(a => a.id == toId);
-        if (accFrom && accTo && accFrom.currency === accTo.currency) {
-            document.getElementById('qtr-amount-in').value = amountOut;
-        }
-    }
-    const fromIdM = document.getElementById('qtr-from-mobile')?.value;
-    const toIdM = document.getElementById('qtr-to-mobile')?.value;
-    const amountOutM = parseFloat(document.getElementById('qtr-amount-out-mobile')?.value);
-    if (fromIdM && toIdM && !isNaN(amountOutM)) {
-        const accFromM = accounts.find(a => a.id == fromIdM);
-        const accToM = accounts.find(a => a.id == toIdM);
-        if (accFromM && accToM && accFromM.currency === accToM.currency) {
-            document.getElementById('qtr-amount-in-mobile').value = amountOutM;
-        }
-    }
-}
-
-// ==================== 表单提交监听 ====================
-document.getElementById('quick-trans-form').addEventListener('submit', handleQuickTransSubmit);
-
-const mobileTransForm = document.getElementById('quick-trans-form-mobile');
-if (mobileTransForm) {
-    mobileTransForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        document.getElementById('qt-date').value = document.getElementById('qt-date-mobile').value;
-        document.getElementById('qt-type').value = document.getElementById('qt-type-mobile').value;
-        document.getElementById('qt-account').value = document.getElementById('qt-account-mobile').value;
-        document.getElementById('qt-category').value = document.getElementById('qt-category-mobile').value;
-        document.getElementById('qt-amount').value = document.getElementById('qt-amount-mobile').value;
-        document.getElementById('qt-tags').value = document.getElementById('qt-tags-mobile').value;
-        document.getElementById('qt-desc').value = document.getElementById('qt-desc-mobile').value;
-        handleQuickTransSubmit();
-    });
-}
-
-document.getElementById('quick-transfer-form').addEventListener('submit', handleQuickTransferSubmit);
-
-const mobileTransferForm = document.getElementById('quick-transfer-form-mobile');
-if (mobileTransferForm) {
-    mobileTransferForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        document.getElementById('qtr-date').value = document.getElementById('qtr-date-mobile').value;
-        document.getElementById('qtr-from').value = document.getElementById('qtr-from-mobile').value;
-        document.getElementById('qtr-to').value = document.getElementById('qtr-to-mobile').value;
-        document.getElementById('qtr-amount-out').value = document.getElementById('qtr-amount-out-mobile').value;
-        document.getElementById('qtr-amount-in').value = document.getElementById('qtr-amount-in-mobile').value;
-        document.getElementById('qtr-desc').value = document.getElementById('qtr-desc-mobile').value;
-        handleQuickTransferSubmit();
-    });
-}
-
-function handleQuickTransferSubmit(e) {
-    if (e) e.preventDefault();
-    const savedDate = document.getElementById('qtr-date').value;
-    const savedFromId = document.getElementById('qtr-from').value;
-    const savedToId = document.getElementById('qtr-to').value;
-    const amtOut = parseFloat(document.getElementById('qtr-amount-out').value);
-    const amtIn = parseFloat(document.getElementById('qtr-amount-in').value);
-    const descInput = document.getElementById('qtr-desc').value || '';
-
-    if (savedFromId === savedToId) { alert('转出账户和转入账户不能相同'); return; }
-    if (isNaN(amtOut) || isNaN(amtIn)) { alert('请输入有效的转账金额'); return; }
-
-    const accFrom = accounts.find(a => a.id == savedFromId);
-    const accTo = accounts.find(a => a.id == savedToId);
-    if (!accFrom || !accTo) { alert('账户不存在'); return; }
-
-    const fromLabel = getAccountDisplayName(accFrom);
-    const toLabel = getAccountDisplayName(accTo);
-    const uniqueId = Date.now() + Math.random();
-
-    transactions.unshift({
-        id: uniqueId, date: savedDate, type: 'expense', accountId: savedFromId,
-        amount: -Math.abs(amtOut), category: '转账',
-        desc: `转给 ${toLabel}: ${descInput}`, ownerName: currentUserName,
-        isTransfer: true, relatedAccountId: savedToId, transferPairId: uniqueId, updatedAt: Date.now()
-    });
-    transactions.unshift({
-        id: uniqueId + 0.1, date: savedDate, type: 'income', accountId: savedToId,
-        amount: Math.abs(amtIn), category: '转账',
-        desc: `来自 ${fromLabel}: ${descInput}`, ownerName: accTo.ownerName,
-        isTransfer: true, relatedAccountId: savedFromId, transferPairId: uniqueId, updatedAt: Date.now()
-    });
-
-    saveUserData(); loadAllData(); filterUserData();
-    displayedTransactionCount = 100; renderAllTransactions(); renderAccounts(); triggerAutoSave();
-
-    setTimeout(() => {
-        updateSelectOptions();
-        ['qtr-date','qtr-from','qtr-to'].forEach((id, i) => {
-            const el = document.getElementById(id);
-            if (el) el.value = [savedDate, savedFromId, savedToId][i];
-        });
-        document.getElementById('qtr-amount-out').value = '';
-        document.getElementById('qtr-amount-in').value = '';
-        document.getElementById('qtr-desc').value = '';
-
-        const dateMobile = document.getElementById('qtr-date-mobile');
-        const fromMobile = document.getElementById('qtr-from-mobile');
-        const toMobile = document.getElementById('qtr-to-mobile');
-        if (dateMobile) dateMobile.value = savedDate;
-        if (fromMobile) fromMobile.value = savedFromId;
-        if (toMobile) toMobile.value = savedToId;
-        ['qtr-amount-out-mobile', 'qtr-amount-in-mobile', 'qtr-desc-mobile'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.value = '';
-        });
-    }, 50);
 }
 
 // ==================== 交易添加/删除/编辑 ====================
@@ -3632,6 +3406,8 @@ document.getElementById('edit-transaction-form').addEventListener('submit', (e) 
     const finalAmount = type === 'expense' ? -Math.abs(amount) : Math.abs(amount);
 
     if (mode === 'add') {
+        // 记住本次输入的日期/类型/账户/分类，供下次新增时预填
+        localStorage.setItem('APP_last_trans_prefs', JSON.stringify({ date, type, accountId, category }));
         transactions.unshift({
             id: Date.now() + Math.random(), date, type, accountId,
             amount: finalAmount, category, tags, desc,
@@ -3639,9 +3415,14 @@ document.getElementById('edit-transaction-form').addEventListener('submit', (e) 
         });
         saveUserData(); triggerAutoSave(); loadAllData(); filterUserData();
         displayedTransactionCount = 100; renderAllTransactions(); renderAccounts();
-        bootstrap.Modal.getInstance(document.getElementById('editTransactionModal')).hide();
-        showToast('交易已添加', 'success');
-        maybeReturnToDetail();
+        // 保持模态窗打开，清空金额/标签/备注，聚焦金额
+        document.getElementById('edit-trans-amount').value = '';
+        document.getElementById('edit-trans-tags').value = '';
+        document.getElementById('edit-trans-desc').value = '';
+        const hintEl = document.getElementById('edit-trans-desc-hint');
+        if (hintEl) hintEl.style.display = 'none';
+        document.getElementById('edit-trans-amount').focus();
+        showToast('✅ 已添加', 'success', 1500);
     } else {
         const id = parseFloat(document.getElementById('edit-trans-id').value);
         const t = transactions.find(x => x.id === id);
@@ -3694,9 +3475,12 @@ document.getElementById('edit-transfer-form').addEventListener('submit', (e) => 
         });
         saveUserData(); triggerAutoSave(); loadAllData(); filterUserData();
         displayedTransactionCount = 100; renderAllTransactions(); renderAccounts();
-        bootstrap.Modal.getInstance(document.getElementById('editTransferModal')).hide();
-        showToast('转账已添加', 'success');
-        maybeReturnToDetail();
+        // 保持模态窗打开，清空金额/备注，聚焦转出金额
+        document.getElementById('edit-transfer-amount-out').value = '';
+        document.getElementById('edit-transfer-amount-in').value = '';
+        document.getElementById('edit-transfer-desc').value = '';
+        document.getElementById('edit-transfer-amount-out').focus();
+        showToast('✅ 已添加', 'success', 1500);
     } else {
         const id = parseFloat(document.getElementById('edit-transfer-id').value);
         const tOut = transactions.find(x => x.id === id);
@@ -4109,52 +3893,6 @@ async function checkHistoryCategories() {
     }
 }
 
-function handleQuickTransSubmit(e) {
-    if (e) e.preventDefault();
-    const savedDate = document.getElementById('qt-date').value;
-    const savedType = document.getElementById('qt-type').value;
-    const savedAccount = document.getElementById('qt-account').value;
-    const savedCategory = document.getElementById('qt-category').value;
-    const amount = parseFloat(document.getElementById('qt-amount').value);
-    const desc = document.getElementById('qt-desc').value;
-    const tags = document.getElementById('qt-tags').value;
-
-    addTransaction({
-        id: Date.now(), date: savedDate, type: savedType, accountId: savedAccount,
-        category: savedCategory, amount: savedType === 'expense' ? -Math.abs(amount) : Math.abs(amount),
-        desc, ownerName: currentUserName, isTransfer: false, tags, updatedAt: Date.now()
-    });
-    triggerAutoSave();
-
-    setTimeout(() => {
-        document.getElementById('qt-date').value = savedDate;
-        document.getElementById('qt-type').value = savedType;
-        updateQuickFormCategories();
-        document.getElementById('qt-account').value = savedAccount;
-        document.getElementById('qt-category').value = savedCategory;
-        document.getElementById('qt-amount').value = '';
-        document.getElementById('qt-desc').value = '';
-        document.getElementById('qt-tags').value = '';
-        // 清除提示气泡
-        const hint = document.getElementById('qt-desc-hint');
-        if (hint) hint.style.display = 'none';
-        const hintM = document.getElementById('qt-desc-mobile-hint');
-        if (hintM) hintM.style.display = 'none';
-        const dateMobile = document.getElementById('qt-date-mobile');
-        const typeMobile = document.getElementById('qt-type-mobile');
-        const accountMobile = document.getElementById('qt-account-mobile');
-        const categoryMobile = document.getElementById('qt-category-mobile');
-        if (dateMobile) dateMobile.value = savedDate;
-        if (typeMobile) { typeMobile.value = savedType; updateQuickFormCategoriesMobile(); }
-        if (accountMobile) accountMobile.value = savedAccount;
-        if (categoryMobile) categoryMobile.value = savedCategory;
-        ['qt-amount-mobile', 'qt-desc-mobile', 'qt-tags-mobile'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.value = '';
-        });
-    }, 10);
-}
-
 // ==================== 统计分析功能 ====================
 function applyStatsFilter() {
     currentStatsFilter.startDate = document.getElementById('stats-start-date').value;
@@ -4438,11 +4176,7 @@ function updateSelectOptions() {
         el.innerHTML = '';
         arr.forEach(x => el.add(new Option(x, x)));
     };
-    const type = document.getElementById('qt-type')?.value || 'expense';
-    fill('qt-category', type === 'expense' ? categories.expense : categories.income);
     fill('edit-trans-category', categories.expense);
-    const typeMobile = document.getElementById('qt-type-mobile')?.value || 'expense';
-    fill('qt-category-mobile', typeMobile === 'expense' ? categories.expense : categories.income);
     const plannedType = document.getElementById('planned-type')?.value || 'expense';
     fill('planned-category', plannedType === 'expense' ? categories.expense : categories.income);
 
@@ -4455,9 +4189,7 @@ function updateSelectOptions() {
             el.add(new Option(`${getAccountDisplayName(a)} (${CURRENCY_SYMBOLS[a.currency] || a.currency})`, a.id));
         });
     };
-    accFill('qt-account', false); accFill('qtr-from', false); accFill('qtr-to', true);
     accFill('edit-trans-account', false); accFill('planned-account', false); accFill('edit-planned-account', false);
-    accFill('qt-account-mobile', false); accFill('qtr-from-mobile', false); accFill('qtr-to-mobile', true);
 
     const uf = document.getElementById('trans-user-filter');
     if (uf) {
