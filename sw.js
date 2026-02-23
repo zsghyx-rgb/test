@@ -42,6 +42,14 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
     const url = new URL(event.request.url);
 
+    // GAS / Google Drive 请求：永远走网络，绝对不缓存
+    // （同步时需要拿到最新数据，缓存会导致合并逻辑失效）
+    if (url.hostname.includes('script.google.com') ||
+        url.hostname.includes('googleapis.com')) {
+        event.respondWith(fetch(event.request));
+        return;
+    }
+
     // HTML 文件：永远从网络获取（Network Only），保证总是最新版本
     if (url.pathname.endsWith('.html') || url.pathname === '/' ||
         url.pathname.endsWith('/') || url.pathname.endsWith('/index.html')) {
