@@ -171,9 +171,9 @@ body {
 #view-transactions.active-view,
 #view-account-detail.active-view { display: flex; flex-direction: column; overflow-y: hidden; }
 
-/* 账户详情流水列表撑满剩余空间 */
-#account-detail-view-list,
-#account-detail-view-empty { flex: 1; min-height: 0; overflow-y: auto; }
+/* 账户详情视图：桌面表格撑满，手机列表滚动 */
+#view-account-detail .excel-table-container { flex: 1; min-height: 0; }
+#account-detail-view-list { overflow-y: auto; flex: 1; min-height: 0; }
 
 @keyframes fadeIn {
     from { opacity: 0; }
@@ -748,7 +748,29 @@ body {
                     <button class="btn btn-sm btn-outline-primary" onclick="editAccountFromDetail()" title="编辑账户"><i class="bi bi-pencil"></i></button>
                 </div>
             </div>
-            <div id="account-detail-view-list" class="list-group list-group-flush mt-2" style="border:1px solid var(--bs-border-color);border-radius:6px;"></div>
+
+            <!-- 桌面端表格 -->
+            <div class="excel-table-container d-none d-md-block mt-2">
+                <table class="table table-hover excel-table">
+                    <thead>
+                        <tr>
+                            <th style="width:110px;">日期</th>
+                            <th style="width:60px;">类型</th>
+                            <th style="width:110px;">类别</th>
+                            <th style="width:120px;" class="text-end">金额</th>
+                            <th style="width:130px;">转入账户</th>
+                            <th style="width:110px;" class="text-end">转入金额</th>
+                            <th style="min-width:140px;">备注</th>
+                            <th style="width:100px;">标签</th>
+                            <th style="width:80px;" class="text-center">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ad-table-body"></tbody>
+                </table>
+            </div>
+
+            <!-- 手机端卡片列表 -->
+            <div id="account-detail-view-list" class="list-group list-group-flush d-md-none mt-2" style="border:1px solid var(--bs-border-color);border-radius:6px;"></div>
             <div id="account-detail-view-empty" class="text-center text-muted py-4 d-none">
                 <i class="bi bi-inbox fs-2"></i><br>暂无交易记录
             </div>
@@ -3057,7 +3079,7 @@ $('add-account-form').addEventListener('submit', (e) => {
 let currentDetailAccountId = null;
 let openedFromDetail = false;
 
-function openAccountDetailTab(id) {
+function renderDetailContent(id) {
     const acc = accounts.find(a => a.id === id);
     if (!acc) return;
     currentDetailAccountId = id;
@@ -3078,45 +3100,53 @@ function openAccountDetailTab(id) {
     const acctTrans = transactions.filter(t => t.accountId == id && !t._isBaseline)
         .sort((a, b) => b.date.localeCompare(a.date));
 
-    const container = $('account-detail-view-list');
+    const mobileContainer = $('account-detail-view-list');
+    const desktopTbody = $('ad-table-body');
     const empty = $('account-detail-view-empty');
 
+    const resolveTransfer = (t) => {
+        let tOut, tIn;
+        if (t.transferPairId) {
+            const pair = transactions.filter(x => x.transferPairId === t.transferPairId);
+            tOut = pair.find(x => x.type === 'expense');
+            tIn  = pair.find(x => x.type === 'income');
+        } else {
+            if (t.type === 'expense') {
+                tOut = t;
+                tIn = transactions.find(x => x.isTransfer && x.type === 'income' && x.date === t.date && x.relatedAccountId == t.accountId);
+            } else {
+                tIn = t;
+                tOut = transactions.find(x => x.isTransfer && x.type === 'expense' && x.date === t.date && x.relatedAccountId == t.accountId);
+            }
+        }
+        return { tOut, tIn };
+    };
+
     if (acctTrans.length === 0) {
-        container.innerHTML = '';
-        empty.classList.remove('d-none');
-    } else {
-        empty.classList.add('d-none');
-        container.innerHTML = '';
+        if (mobileContainer) mobileContainer.innerHTML = '';
+        if (desktopTbody) desktopTbody.innerHTML = '';
+        if (empty) empty.classList.remove('d-none');
+        return;
+    }
+    if (empty) empty.classList.add('d-none');
+
+    // ---- 手机卡片列表 ----
+    if (mobileContainer) {
+        mobileContainer.innerHTML = '';
         acctTrans.forEach(t => {
             const isTransfer = t.isTransfer;
             let canEdit = t.ownerName === currentUserName && !t._isArchived;
-
-            let titleHtml = '';
-            let subLine = t.date;
+            let titleHtml = '', subLine = t.date;
             let amtColor = isTransfer ? '#ff8c00' : (t.amount >= 0 ? '#198754' : '#dc3545');
-            let iconClass = isTransfer ? 'bi-arrow-left-right'
-                : (t.amount >= 0 ? 'bi-arrow-up-circle' : 'bi-arrow-down-circle');
+            let iconClass = isTransfer ? 'bi-arrow-left-right' : (t.amount >= 0 ? 'bi-arrow-up-circle' : 'bi-arrow-down-circle');
 
             if (isTransfer) {
-                let tOut, tIn;
-                if (t.transferPairId) {
-                    const pair = transactions.filter(x => x.transferPairId === t.transferPairId);
-                    tOut = pair.find(x => x.type === 'expense');
-                    tIn  = pair.find(x => x.type === 'income');
-                } else {
-                    if (t.type === 'expense') {
-                        tOut = t;
-                        tIn  = transactions.find(x => x.isTransfer && x.type === 'income' && x.date === t.date && x.relatedAccountId == t.accountId);
-                    } else {
-                        tIn  = t;
-                        tOut = transactions.find(x => x.isTransfer && x.type === 'expense' && x.date === t.date && x.relatedAccountId == t.accountId);
-                    }
-                }
+                const { tOut, tIn } = resolveTransfer(t);
                 if (tOut) canEdit = (tOut.ownerName === currentUserName) && !t._isArchived;
-                const accFrom = tOut ? accounts.find(a => a.id == tOut.accountId) : null;
-                const accTo   = tIn  ? accounts.find(a => a.id == tIn.accountId)  : null;
-                const fromName = accFrom ? getAccountDisplayName(accFrom) : '?';
-                const toName   = accTo   ? getAccountDisplayName(accTo)   : '?';
+                const fromAcc = tOut ? accounts.find(a => a.id == tOut.accountId) : null;
+                const toAcc   = tIn  ? accounts.find(a => a.id == tIn.accountId)  : null;
+                const fromName = fromAcc ? getAccountDisplayName(fromAcc) : '?';
+                const toName   = toAcc   ? getAccountDisplayName(toAcc)   : '?';
                 titleHtml = `<span style="font-size:0.83rem;font-weight:600;">${fromName}<span style="color:var(--bs-primary);margin:0 2px;">→</span>${toName}</span>`;
                 let cleanDesc = t.desc || '';
                 if (cleanDesc.includes(': ')) cleanDesc = cleanDesc.split(': ')[1];
@@ -3135,10 +3165,7 @@ function openAccountDetailTab(id) {
             if (canEdit) {
                 item.addEventListener('mouseenter', () => item.style.background = 'rgba(var(--bs-primary-rgb),0.06)');
                 item.addEventListener('mouseleave', () => item.style.background = 'var(--bs-body-bg)');
-                item.addEventListener('click', () => {
-                    openedFromDetail = true;
-                    isTransfer ? openEditTransfer(t.id) : openEditTransaction(t.id);
-                });
+                item.addEventListener('click', () => { openedFromDetail = true; isTransfer ? openEditTransfer(t.id) : openEditTransaction(t.id); });
             }
             item.innerHTML = `
                 <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
@@ -3149,18 +3176,70 @@ function openAccountDetailTab(id) {
                     </div>
                 </div>
                 <div style="font-weight:700;font-size:0.88rem;color:${amtColor};margin-left:8px;white-space:nowrap;">${displayAmt}</div>`;
-            container.appendChild(item);
+            mobileContainer.appendChild(item);
         });
     }
 
+    // ---- 桌面表格 ----
+    if (desktopTbody) {
+        desktopTbody.innerHTML = '';
+        acctTrans.forEach(t => {
+            const isTransfer = t.isTransfer;
+            if (isTransfer && t.type === 'income') return;
+            let canEdit = t.ownerName === currentUserName && !t._isArchived;
+            const typeText = isTransfer ? '转账' : (t.amount < 0 ? '支出' : '收入');
+            const typeColorClass = isTransfer ? 'text-warning' : (t.amount < 0 ? 'text-danger' : 'text-success');
+            const amtColorClass = t.amount < 0 ? 'text-danger' : (isTransfer ? 'text-warning' : 'text-success');
+
+            let toAccDisplay = '', amountInDisplay = '';
+            if (isTransfer) {
+                const { tOut, tIn } = resolveTransfer(t);
+                if (tOut) canEdit = (tOut.ownerName === currentUserName) && !t._isArchived;
+                if (tIn) {
+                    const accTo = accounts.find(a => a.id == tIn.accountId);
+                    if (accTo) {
+                        toAccDisplay = `<small>${getAccountDisplayName(accTo)}</small>`;
+                        amountInDisplay = `<div class="text-end fw-bold text-success">${CURRENCY_SYMBOLS[accTo.currency]}${formatAmount(Math.abs(tIn.amount), accTo.currency)}</div>`;
+                    }
+                }
+            }
+
+            const editBtns = canEdit
+                ? (isTransfer
+                    ? `<i class="bi bi-pencil text-primary me-2" style="cursor:pointer;" onclick="openedFromDetail=true;openEditTransfer(${t.id})"></i><i class="bi bi-trash text-danger" style="cursor:pointer;" onclick="deleteTransaction(${t.id})"></i>`
+                    : `<i class="bi bi-pencil text-primary me-2" style="cursor:pointer;" onclick="openedFromDetail=true;openEditTransaction(${t.id})"></i><i class="bi bi-trash text-danger" style="cursor:pointer;" onclick="deleteTransaction(${t.id})"></i>`)
+                : (t._isArchived ? '<span class="badge bg-secondary" style="font-size:0.6rem;">存档</span>' : '');
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${t.date}</td>
+                <td><div class="${typeColorClass}">${typeText}</div></td>
+                <td>${t.category || ''}</td>
+                <td><div class="fw-bold ${amtColorClass} text-end">${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}</div></td>
+                <td>${toAccDisplay}</td>
+                <td>${amountInDisplay}</td>
+                <td><div class="desc-content" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;" title="${(t.desc||'').replace(/"/g,'&quot;')}">${t.desc||''}</div></td>
+                <td>${t.tags||''}</td>
+                <td><div class="text-center">${editBtns}</div></td>`;
+            desktopTbody.appendChild(tr);
+        });
+    }
+}
+
+function openAccountDetailTab(id) {
+    renderDetailContent(id);
     switchTab('account-detail', null);
-    // 滚回顶部
     $('view-account-detail').scrollTop = 0;
+}
+
+// 只刷新内容，不触发switchTab（保存交易后调用，避免关闭modal）
+function refreshDetailContent(id) {
+    if (!id) return;
+    renderDetailContent(id);
 }
 
 // 保留旧名称兼容
 function openAccountDetail(id) { openAccountDetailTab(id); }
-
 function refreshAccountDetailContent(id) { openAccountDetailTab(id); }
 
 function editAccountFromDetail() {
@@ -3252,7 +3331,7 @@ $('edit-account-form').addEventListener('submit', (e) => {
         bootstrap.Modal.getInstance($('editAccountModal')).hide();
         showToast('账户已更新', 'success');
         // 若当前在该账户详情页，刷新
-        if (currentDetailAccountId === id) openAccountDetailTab(id);
+        if (currentDetailAccountId === id) refreshDetailContent(id);
     }
 });
 
@@ -3456,7 +3535,7 @@ function openEditTransfer(id) {
 function maybeReturnToDetail() {
     if (openedFromDetail && currentDetailAccountId) {
         openedFromDetail = false;
-        openAccountDetailTab(currentDetailAccountId);
+        refreshDetailContent(currentDetailAccountId);
     } else {
         openedFromDetail = false;
     }
@@ -3520,8 +3599,8 @@ $('edit-transaction-form').addEventListener('submit', (e) => {
         $('edit-trans-account').value = accountId;
         const catEl = $('edit-trans-category');
         if (catEl && [...catEl.options].find(o => o.value === category)) catEl.value = category;
-        // 若在账户详情页，刷新详情列表
-        if (currentDetailAccountId) openAccountDetailTab(currentDetailAccountId);
+        // 若在账户详情页，只刷新内容（不触发switchTab，保持modal开着）
+        if (currentDetailAccountId) refreshDetailContent(currentDetailAccountId);
         // 清空金额/标签/备注，不聚焦任何输入框
         $('edit-trans-amount').value = '';
         $('edit-trans-tags').value = '';
@@ -3581,6 +3660,8 @@ $('edit-transfer-form').addEventListener('submit', (e) => {
         });
         saveUserData(); triggerAutoSave(); loadAllData(); filterUserData();
         displayedTransactionCount = 100; renderAllTransactions(); renderAccounts();
+        // 若在账户详情页，只刷新内容（不触发switchTab，保持modal开着）
+        if (currentDetailAccountId) refreshDetailContent(currentDetailAccountId);
         // 保持模态窗打开，清空金额/备注，不聚焦
         $('edit-transfer-amount-out').value = '';
         $('edit-transfer-amount-in').value = '';
