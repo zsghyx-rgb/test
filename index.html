@@ -168,6 +168,12 @@ body {
 }
 
 .active-view { display: block; }
+#view-transactions.active-view,
+#view-account-detail.active-view { display: flex; flex-direction: column; overflow-y: hidden; }
+
+/* 账户详情流水列表撑满剩余空间 */
+#account-detail-view-list,
+#account-detail-view-empty { flex: 1; min-height: 0; overflow-y: auto; }
 
 @keyframes fadeIn {
     from { opacity: 0; }
@@ -199,7 +205,8 @@ body {
     border: 1px solid var(--bs-border-color);
     border-radius: 6px;
     overflow: auto;
-    height: calc(100dvh - 300px - env(safe-area-inset-bottom, 0px));
+    flex: 1;
+    min-height: 0;
     background: var(--bs-body-bg);
 }
 
@@ -2984,8 +2991,7 @@ function renderAccounts() {
             const balClass = amountsHidden ? 'amount-hidden' : (bal < 0 ? 'text-danger' : 'text-success');
             const initial = acc.ownerName.charAt(0).toUpperCase();
             col.innerHTML = `
-                <div class="card account-card account-card-other p-3 shadow-sm" style="cursor:pointer;"
-                     onclick="openAccountDetailTab(${acc.id})">
+                <div class="card account-card account-card-other p-3 shadow-sm">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <div class="fw-bold text-truncate">[${initial}] ${acc.name}</div>
@@ -3245,6 +3251,8 @@ $('edit-account-form').addEventListener('submit', (e) => {
         displayedTransactionCount = 100; renderAllTransactions();
         bootstrap.Modal.getInstance($('editAccountModal')).hide();
         showToast('账户已更新', 'success');
+        // 若当前在该账户详情页，刷新
+        if (currentDetailAccountId === id) openAccountDetailTab(id);
     }
 });
 
@@ -3512,6 +3520,8 @@ $('edit-transaction-form').addEventListener('submit', (e) => {
         $('edit-trans-account').value = accountId;
         const catEl = $('edit-trans-category');
         if (catEl && [...catEl.options].find(o => o.value === category)) catEl.value = category;
+        // 若在账户详情页，刷新详情列表
+        if (currentDetailAccountId) openAccountDetailTab(currentDetailAccountId);
         // 清空金额/标签/备注，不聚焦任何输入框
         $('edit-trans-amount').value = '';
         $('edit-trans-tags').value = '';
@@ -4239,7 +4249,8 @@ function updateSelectOptions() {
         el.innerHTML = '';
         arr.forEach(x => el.add(new Option(x, x)));
     };
-    fill('edit-trans-category', categories.expense);
+    const currentType = $('edit-trans-type')?.value || 'expense';
+    fill('edit-trans-category', currentType === 'expense' ? categories.expense : categories.income);
     const plannedType = $('planned-type')?.value || 'expense';
     fill('planned-category', plannedType === 'expense' ? categories.expense : categories.income);
 
@@ -4284,7 +4295,7 @@ function switchTab(t, el) {
     $$('.nav-link').forEach(n => n.classList.remove('active'));
     if (el) el.classList.add('active');
     const fab = $('mobile-fab-group');
-    if (fab) fab.classList.toggle('d-none', t !== 'transactions' && t !== 'account-detail');
+    if (fab) fab.classList.toggle('d-none', t !== 'transactions');
     if (t === 'stats') renderStats();
     if (t === 'planned') renderPlannedTransactions();
     if (t === 'settings') { renderExchangeRateSettings(); initPasswordHint(); renderUserManagement(); renderArchiveManagementUI(); }
