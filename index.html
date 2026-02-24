@@ -348,9 +348,9 @@ body {
     right: 18px;
     bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 14px);
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 10px;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
     z-index: 1010;
     transition: opacity 0.2s;
 }
@@ -456,15 +456,25 @@ body {
     .modal-body { overflow-y: auto; flex: 1; max-height: calc(90vh - 120px); }
     .modal-body form { display: flex; flex-direction: column; }
 
-    /* 账户详情 & 编辑交易 模态框：手机上贴顶部 */
-    #accountDetailModal .modal-dialog,
+    /* 账户详情：手机全屏 */
+    #accountDetailModal .modal-dialog {
+        margin: 0 !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+        height: 100dvh !important;
+        max-height: 100dvh !important;
+    }
+    #accountDetailModal .modal-content {
+        height: 100dvh !important;
+        max-height: 100dvh !important;
+        border-radius: 0 !important;
+        border: none !important;
+    }
+    /* 编辑交易模态框：手机贴顶 */
     #editTransactionModal .modal-dialog {
         margin: 0 auto !important;
         align-self: flex-start;
-        max-height: 80vh;
-    }
-    #accountDetailModal .modal-content {
-        max-height: 80vh;
+        max-height: 90vh;
     }
 }
 
@@ -1340,8 +1350,8 @@ body {
 
 <!-- 账户详情 高度85% -->
 <div class="modal fade" id="accountDetailModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-scrollable" style="max-height:80vh; height:80vh;">
-        <div class="modal-content" style="max-height:80vh; height:80vh; border-radius:6px; font-size:0.85rem;">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content" style="font-size:0.85rem;">
             <div class="modal-header py-1 px-3">
                 <div style="line-height:1.3;">
                     <div style="display:flex;align-items:baseline;gap:8px;">
@@ -3096,8 +3106,8 @@ function openAccountDetail(id, restoreScroll = false) {
                     const body = document.querySelector('#accountDetailModal .modal-body');
                     if (body) detailScrollTop = body.scrollTop;
                     openedFromDetail = true;
-                    bootstrap.Modal.getInstance(document.getElementById('accountDetailModal')).hide();
-                    setTimeout(() => openEditTransaction(t.id), 300);
+                    // 不关闭详情页，直接叠加编辑弹窗
+                    openEditTransaction(t.id);
                 });
             }
             item.innerHTML = `
@@ -3146,57 +3156,49 @@ function openNewTransFromDetail() {
     const body = document.querySelector('#accountDetailModal .modal-body');
     if (body) detailScrollTop = body.scrollTop;
     openedFromDetail = true;
-    bootstrap.Modal.getInstance(document.getElementById('accountDetailModal')).hide();
-    setTimeout(() => {
-        const today = new Date().toISOString().split('T')[0];
-        const prefs = JSON.parse(localStorage.getItem('APP_last_trans_prefs') || '{}');
-        document.getElementById('edit-trans-id').value = '';
-        document.getElementById('edit-trans-mode').value = 'add';
-        document.getElementById('editTransactionModalTitle').textContent = '新增交易';
-        document.getElementById('edit-trans-submit-btn').textContent = '保存';
-        document.getElementById('edit-trans-delete-btn').style.display = 'none';
-        const lastDate = prefs.date;
-        const dateDiff = lastDate ? Math.abs(new Date(today) - new Date(lastDate)) / 86400000 : 99;
-        document.getElementById('edit-trans-date').value = (lastDate && dateDiff <= 7) ? lastDate : today;
-        document.getElementById('edit-trans-type').value = prefs.type || 'expense';
-        updateEditFormCategories();
-        // 账户锁定为当前详情账户
-        const accSelect = document.getElementById('edit-trans-account');
-        accSelect.value = currentDetailAccountId;
-        // 分类
-        const catSelect = document.getElementById('edit-trans-category');
-        if (catSelect && prefs.category) {
-            const opt = [...catSelect.options].find(o => o.value === prefs.category);
-            if (opt) catSelect.value = prefs.category;
-        }
-        document.getElementById('edit-trans-amount').value = '';
-        document.getElementById('edit-trans-tags').value = '';
-        document.getElementById('edit-trans-desc').value = '';
-        new bootstrap.Modal(document.getElementById('editTransactionModal')).show();
-    }, 300);
+    // 不关闭详情页，直接叠加新增交易弹窗
+    const today = new Date().toISOString().split('T')[0];
+    const prefs = JSON.parse(localStorage.getItem('APP_last_trans_prefs') || '{}');
+    document.getElementById('edit-trans-id').value = '';
+    document.getElementById('edit-trans-mode').value = 'add';
+    document.getElementById('editTransactionModalTitle').textContent = '新增交易';
+    document.getElementById('edit-trans-submit-btn').textContent = '保存';
+    document.getElementById('edit-trans-delete-btn').style.display = 'none';
+    const lastDate = prefs.date;
+    const dateDiff = lastDate ? Math.abs(new Date(today) - new Date(lastDate)) / 86400000 : 99;
+    document.getElementById('edit-trans-date').value = (lastDate && dateDiff <= 7) ? lastDate : today;
+    document.getElementById('edit-trans-type').value = prefs.type || 'expense';
+    updateEditFormCategories();
+    const accSelect = document.getElementById('edit-trans-account');
+    accSelect.value = currentDetailAccountId;
+    const catSelect = document.getElementById('edit-trans-category');
+    if (catSelect && prefs.category) {
+        const opt = [...catSelect.options].find(o => o.value === prefs.category);
+        if (opt) catSelect.value = prefs.category;
+    }
+    document.getElementById('edit-trans-amount').value = '';
+    document.getElementById('edit-trans-tags').value = '';
+    document.getElementById('edit-trans-desc').value = '';
+    new bootstrap.Modal(document.getElementById('editTransactionModal')).show();
 }
 
 function openNewTransferFromDetail() {
     const body = document.querySelector('#accountDetailModal .modal-body');
     if (body) detailScrollTop = body.scrollTop;
     openedFromDetail = true;
-    bootstrap.Modal.getInstance(document.getElementById('accountDetailModal')).hide();
-    setTimeout(() => {
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('edit-transfer-id').value = '';
-        document.getElementById('edit-transfer-mode').value = 'add';
-        document.getElementById('editTransferModalTitle').textContent = '新增转账';
-        document.getElementById('edit-transfer-submit-btn').textContent = '保存';
-        document.getElementById('edit-transfer-delete-btn').style.display = 'none';
-        document.getElementById('edit-transfer-date').value = today;
-
-        fillTransferSelects(currentDetailAccountId, null);
-
-        document.getElementById('edit-transfer-amount-out').value = '';
-        document.getElementById('edit-transfer-amount-in').value = '';
-        document.getElementById('edit-transfer-desc').value = '';
-        new bootstrap.Modal(document.getElementById('editTransferModal')).show();
-    }, 300);
+    // 不关闭详情页，直接叠加转账弹窗
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('edit-transfer-id').value = '';
+    document.getElementById('edit-transfer-mode').value = 'add';
+    document.getElementById('editTransferModalTitle').textContent = '新增转账';
+    document.getElementById('edit-transfer-submit-btn').textContent = '保存';
+    document.getElementById('edit-transfer-delete-btn').style.display = 'none';
+    document.getElementById('edit-transfer-date').value = today;
+    fillTransferSelects(currentDetailAccountId, null);
+    document.getElementById('edit-transfer-amount-out').value = '';
+    document.getElementById('edit-transfer-amount-in').value = '';
+    document.getElementById('edit-transfer-desc').value = '';
+    new bootstrap.Modal(document.getElementById('editTransferModal')).show();
 }
 
 function openEditAccount(id) {
@@ -3436,7 +3438,13 @@ function openEditTransfer(id) {
 function maybeReturnToDetail() {
     if (openedFromDetail && currentDetailAccountId) {
         openedFromDetail = false;
-        setTimeout(() => openAccountDetail(currentDetailAccountId, true), 350);
+        // 如果账户详情窗口仍然开着（背景保持模式），只刷新内容，不重新打开
+        const detailModal = bootstrap.Modal.getInstance(document.getElementById('accountDetailModal'));
+        if (detailModal) {
+            openAccountDetail(currentDetailAccountId, true);
+        } else {
+            setTimeout(() => openAccountDetail(currentDetailAccountId, true), 350);
+        }
     } else {
         openedFromDetail = false;
     }
@@ -3467,13 +3475,17 @@ function updateEditFormCategories() {
     (type === 'expense' ? categories.expense : categories.income).forEach(c => catSelect.add(new Option(c, c)));
 }
 
-// 编辑 modal 任意方式关闭（X / 点空白 / ESC）时，若来自详情页则返回详情
-document.getElementById('editTransactionModal').addEventListener('hidden.bs.modal', () => {
+// 编辑 modal 关闭时：若账户详情仍开着，确保 body 保持 modal-open 锁定（防止 Bootstrap 解锁 body scroll）
+function onSubModalHide() {
     maybeReturnToDetail();
-});
-document.getElementById('editTransferModal').addEventListener('hidden.bs.modal', () => {
-    maybeReturnToDetail();
-});
+    const detailModal = bootstrap.Modal.getInstance(document.getElementById('accountDetailModal'));
+    if (detailModal) {
+        // Bootstrap 在子弹窗关闭时移除了 body.modal-open，手动补回
+        setTimeout(() => { document.body.classList.add('modal-open'); }, 0);
+    }
+}
+document.getElementById('editTransactionModal').addEventListener('hidden.bs.modal', onSubModalHide);
+document.getElementById('editTransferModal').addEventListener('hidden.bs.modal', onSubModalHide);
 
 document.getElementById('edit-transaction-form').addEventListener('submit', (e) => {
     e.preventDefault();
