@@ -1658,7 +1658,7 @@ let transactionDisplayMode = 'all';
 
 // ==================== 共用工具函数 ====================
 const $ = id => document.getElementById(id);
-const $$ = selector => $$(selector);
+const $$ = selector => document.querySelectorAll(selector);
 
 /**
  * 将 Date 对象格式化为本地日期字符串 YYYY-MM-DD
