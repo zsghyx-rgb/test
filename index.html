@@ -68,6 +68,19 @@ body {
     display: flex;
     flex-direction: column;
     padding: 1rem 0.5rem;
+    -webkit-touch-callout: none;
+    user-select: none;
+}
+
+/* 账户详情视图 */
+#account-detail-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--bs-body-bg);
+    border-bottom: 1px solid var(--bs-border-color);
+    padding: 10px 0 10px 0;
+    margin-bottom: 0;
 }
 
 .brand-title {
@@ -95,6 +108,10 @@ body {
     flex-direction: column;
     align-items: center;
     gap: 4px;
+    border: none;
+    background: transparent;
+    width: 100%;
+    cursor: pointer;
 }
 
 .nav-pills .nav-link.active {
@@ -625,29 +642,29 @@ body {
         </div>
         <ul class="nav nav-pills flex-md-column mb-auto">
             <li class="nav-item">
-                <a href="#" class="nav-link" onclick="switchTab('accounts', this)">
+                <button class="nav-link" onclick="switchTab('accounts', this)">
                     <i class="bi bi-bank"></i><span>账户</span>
-                </a>
+                </button>
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link active" onclick="switchTab('transactions', this)">
+                <button class="nav-link active" onclick="switchTab('transactions', this)">
                     <i class="bi bi-table"></i><span>交易</span>
-                </a>
+                </button>
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link" onclick="switchTab('stats', this)">
+                <button class="nav-link" onclick="switchTab('stats', this)">
                     <i class="bi bi-pie-chart"></i><span>统计</span>
-                </a>
+                </button>
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link" onclick="switchTab('planned', this)">
+                <button class="nav-link" onclick="switchTab('planned', this)">
                     <i class="bi bi-calendar-check"></i><span>计划</span>
-                </a>
+                </button>
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link" onclick="switchTab('settings', this)">
+                <button class="nav-link" onclick="switchTab('settings', this)">
                     <i class="bi bi-gear"></i><span>设置</span>
-                </a>
+                </button>
             </li>
         </ul>
         <div class="sidebar-footer">
@@ -698,6 +715,36 @@ body {
             </div>
             <div id="account-list-container"></div>
             <div id="other-users-accounts-container" class="mt-5 opacity-75"></div>
+        </div>
+
+        <!-- ==================== 账户详情视图 ==================== -->
+        <div id="view-account-detail" class="view-section">
+            <div id="account-detail-header" class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="switchTab('accounts', document.querySelector('.nav-link[onclick*=accounts]'))">
+                        <i class="bi bi-arrow-left"></i>
+                    </button>
+                    <div>
+                        <div>
+                            <span style="font-size:1rem;font-weight:700;" id="ad-title"></span>
+                            <span class="text-muted ms-2" style="font-size:0.8rem;" id="ad-type"></span>
+                        </div>
+                        <div style="font-size:0.8rem;color:var(--bs-secondary);">
+                            <span id="ad-currency"></span><span class="mx-1">·</span><span id="ad-balance"></span>
+                        </div>
+                    </div>
+                </div>
+                <div id="ad-action-btns" class="d-flex gap-1">
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteAccountFromDetail()" title="删除账户"><i class="bi bi-trash"></i></button>
+                    <button class="btn btn-sm btn-outline-warning" onclick="openNewTransferFromDetail()" title="新增转账"><i class="bi bi-arrow-left-right"></i></button>
+                    <button class="btn btn-sm btn-outline-success" onclick="openNewTransFromDetail()" title="新增收支"><i class="bi bi-plus-lg"></i></button>
+                    <button class="btn btn-sm btn-outline-primary" onclick="editAccountFromDetail()" title="编辑账户"><i class="bi bi-pencil"></i></button>
+                </div>
+            </div>
+            <div id="account-detail-view-list" class="list-group list-group-flush mt-2" style="border:1px solid var(--bs-border-color);border-radius:6px;"></div>
+            <div id="account-detail-view-empty" class="text-center text-muted py-4 d-none">
+                <i class="bi bi-inbox fs-2"></i><br>暂无交易记录
+            </div>
         </div>
 
         <!-- ==================== 交易视图 ==================== -->
@@ -1131,10 +1178,10 @@ body {
                                     </button>
                                 </div>
                                 <div class="btn-group">
-                                    <button class="btn btn-primary" onclick="document.getElementById('transaction-csv-input').click()">
+                                    <button class="btn btn-primary" onclick="$('transaction-csv-input').click()">
                                         <i class="bi bi-file-earmark-arrow-up"></i> 导入交易CSV
                                     </button>
-                                    <button class="btn btn-primary" onclick="document.getElementById('transfer-csv-input').click()">
+                                    <button class="btn btn-primary" onclick="$('transfer-csv-input').click()">
                                         <i class="bi bi-file-earmark-arrow-up"></i> 导入转账CSV
                                     </button>
                                 </div>
@@ -1610,6 +1657,9 @@ let currentAssetAggregation = 'month';
 let transactionDisplayMode = 'all';
 
 // ==================== 共用工具函数 ====================
+const $ = id => document.getElementById(id);
+const $$ = selector => $$(selector);
+
 /**
  * 将 Date 对象格式化为本地日期字符串 YYYY-MM-DD
  */
@@ -1679,24 +1729,24 @@ function gasRequestUrl(options = {}) {
 function initGasUrlUI() {
     const saved = localStorage.getItem('APP_gas_url') || '';
     if (saved) {
-        document.getElementById('gas-url-saved-bar').style.removeProperty('display');
-        document.getElementById('gas-url-input-bar').style.display = 'none';
+        $('gas-url-saved-bar').style.removeProperty('display');
+        $('gas-url-input-bar').style.display = 'none';
     } else {
-        document.getElementById('gas-url-saved-bar').style.display = 'none';
-        document.getElementById('gas-url-input-bar').style.removeProperty('display');
+        $('gas-url-saved-bar').style.display = 'none';
+        $('gas-url-input-bar').style.removeProperty('display');
     }
 }
 
 function showGasUrlInput() {
-    document.getElementById('gas-url-saved-bar').style.display = 'none';
-    document.getElementById('gas-url-input-bar').style.removeProperty('display');
-    const input = document.getElementById('gas-url-input');
+    $('gas-url-saved-bar').style.display = 'none';
+    $('gas-url-input-bar').style.removeProperty('display');
+    const input = $('gas-url-input');
     input.value = localStorage.getItem('APP_gas_url') || '';
     input.focus();
 }
 
 function saveGasUrl() {
-    const val = document.getElementById('gas-url-input').value.trim();
+    const val = $('gas-url-input').value.trim();
     if (!val || !val.startsWith('https://script.google.com')) {
         alert('请输入有效的 GAS Web App URL（以 https://script.google.com 开头）');
         return;
@@ -1710,24 +1760,24 @@ function saveGasUrl() {
 function initGasTokenUI() {
     const saved = localStorage.getItem('APP_gas_token') || '';
     if (saved) {
-        document.getElementById('gas-token-saved-bar').style.removeProperty('display');
-        document.getElementById('gas-token-input-bar').style.display = 'none';
+        $('gas-token-saved-bar').style.removeProperty('display');
+        $('gas-token-input-bar').style.display = 'none';
     } else {
-        document.getElementById('gas-token-saved-bar').style.display = 'none';
-        document.getElementById('gas-token-input-bar').style.removeProperty('display');
+        $('gas-token-saved-bar').style.display = 'none';
+        $('gas-token-input-bar').style.removeProperty('display');
     }
 }
 
 function showGasTokenInput() {
-    document.getElementById('gas-token-saved-bar').style.display = 'none';
-    document.getElementById('gas-token-input-bar').style.removeProperty('display');
-    const input = document.getElementById('gas-token-input');
+    $('gas-token-saved-bar').style.display = 'none';
+    $('gas-token-input-bar').style.removeProperty('display');
+    const input = $('gas-token-input');
     input.value = localStorage.getItem('APP_gas_token') || '';
     input.focus();
 }
 
 function saveGasToken() {
-    const val = document.getElementById('gas-token-input').value.trim();
+    const val = $('gas-token-input').value.trim();
     if (!val) { alert('请输入 Token'); return; }
     localStorage.setItem('APP_gas_token', val);
     GAS_TOKEN = val;
@@ -1737,11 +1787,11 @@ function saveGasToken() {
 // ==================== 离线模式管理 ====================
 
 function initOfflineModeUI() {
-    const btn = document.getElementById('offline-mode-btn');
-    const offlineBar = document.getElementById('offline-file-bar');
-    const onlineBar = document.getElementById('online-drive-bar');
-    const gasUrlSection = document.getElementById('gas-url-section');
-    const gasTokenSection = document.getElementById('gas-token-section');
+    const btn = $('offline-mode-btn');
+    const offlineBar = $('offline-file-bar');
+    const onlineBar = $('online-drive-bar');
+    const gasUrlSection = $('gas-url-section');
+    const gasTokenSection = $('gas-token-section');
     if (offlineMode) {
         btn.className = 'btn btn-sm btn-warning';
         btn.innerHTML = '<i class="bi bi-wifi-off"></i> 离线模式';
@@ -1758,7 +1808,7 @@ function initOfflineModeUI() {
         gasTokenSection.style.display = '';
     }
     // 更新应用内状态指示
-    const statusEl = document.getElementById('sync-mode-status');
+    const statusEl = $('sync-mode-status');
     if (statusEl) statusEl.textContent = offlineMode ? '离线模式' : '在线模式';
 }
 
@@ -1774,9 +1824,9 @@ function toggleOfflineMode() {
         userPassword = ''; dataUsers = [];
         accounts = []; transactions = []; plannedTransactions = [];
         userAccounts = []; userTransactions = []; userPlannedTransactions = [];
-        document.getElementById('user-section').style.display = 'none';
-        document.getElementById('password-section').style.display = 'none';
-        document.getElementById('file-status').innerHTML =
+        $('user-section').style.display = 'none';
+        $('password-section').style.display = 'none';
+        $('file-status').innerHTML =
             '<span class="text-warning">⚠️ 离线模式：已清空在线数据，请手动选择本地文件</span>';
     }
 }
@@ -1795,13 +1845,13 @@ function switchUser() {
     clearTimeout(driveAutoSaveTimer);
 
     // 隐藏主界面，显示登录界面
-    document.getElementById('app-wrapper').classList.add('d-none');
-    document.getElementById('login-overlay').classList.remove('d-none');
+    $('app-wrapper').classList.add('d-none');
+    $('login-overlay').classList.remove('d-none');
 
     // 数据已在内存，直接跳到用户选择步骤
     if (inMemoryLoadedData) {
         onDataLoaded();
-        document.getElementById('file-status').innerHTML =
+        $('file-status').innerHTML =
             '<span class="text-success">✓ 数据已就绪，请选择用户</span>';
     }
 }
@@ -1823,15 +1873,15 @@ document.addEventListener('DOMContentLoaded', () => {
  * 用户选择文件后触发
  */
 function onFileSelected() {
-    const file = document.getElementById('data-import-file').files[0];
+    const file = $('data-import-file').files[0];
     if (!file) return;
 
-    document.getElementById('file-status').textContent = `已选择: ${file.name}`;
-    const usernameHint = document.getElementById('login-username-hint');
+    $('file-status').textContent = `已选择: ${file.name}`;
+    const usernameHint = $('login-username-hint');
     if (usernameHint) usernameHint.value = file.name;
-    document.getElementById('password-error').classList.add('d-none');
-    document.getElementById('user-section').style.display = 'none';
-    document.getElementById('user-buttons').innerHTML = '';
+    $('password-error').classList.add('d-none');
+    $('user-section').style.display = 'none';
+    $('user-buttons').innerHTML = '';
 
     // JSON明文文件：直接尝试解析
     if (file.name.endsWith('.json')) {
@@ -1844,18 +1894,18 @@ function onFileSelected() {
                 categories = data.categories || DEFAULT_CATEGORIES;
                 exchangeRates = data.exchangeRates || DEFAULT_RATES;
                 onDataLoaded();
-                document.getElementById('password-section').style.display = 'none';
+                $('password-section').style.display = 'none';
             } catch(err) {
                 // 可能是加密后的json，显示密码框
-                document.getElementById('password-section').style.display = 'block';
-                document.getElementById('file-status').textContent = `文件读取失败，请输入密码解密`;
+                $('password-section').style.display = 'block';
+                $('file-status').textContent = `文件读取失败，请输入密码解密`;
             }
         };
         reader.readAsText(file);
     } else {
         // .enc 文件：需要密码
-        document.getElementById('password-section').style.display = 'block';
-        document.getElementById('login-password').focus();
+        $('password-section').style.display = 'block';
+        $('login-password').focus();
     }
 }
 
@@ -1863,7 +1913,7 @@ function onFileSelected() {
  * 使用密码解密文件
  */
 function decryptAndLoadData() {
-    const password = document.getElementById('login-password').value;
+    const password = $('login-password').value;
     if (!password) { alert('请输入密码'); return; }
 
     // 来源：Drive 暂存内容 or 本地文件
@@ -1878,28 +1928,28 @@ function decryptAndLoadData() {
             } catch(_) {}
             if (!data) try { data = JSON.parse(raw); } catch(_) {}
             if (!data) {
-                document.getElementById('password-error').classList.remove('d-none');
-                document.getElementById('password-error').textContent = '❌ 密码错误或文件格式不正确';
+                $('password-error').classList.remove('d-none');
+                $('password-error').textContent = '❌ 密码错误或文件格式不正确';
                 return;
             }
             userPassword = password;
             inMemoryLoadedData = data;
             categories = data.categories || DEFAULT_CATEGORIES;
             exchangeRates = data.exchangeRates || DEFAULT_RATES;
-            document.getElementById('password-error').classList.add('d-none');
-            document.getElementById('file-status').innerHTML = '<span class="text-success">✓ Drive 数据解密成功！请选择用户。</span>';
+            $('password-error').classList.add('d-none');
+            $('file-status').innerHTML = '<span class="text-success">✓ Drive 数据解密成功！请选择用户。</span>';
             window._driveMode = false;
             window._driveRawContent = null;
             onDataLoaded();
         } catch(e) {
-            document.getElementById('password-error').classList.remove('d-none');
-            document.getElementById('password-error').textContent = '❌ 解析失败：' + e.message;
+            $('password-error').classList.remove('d-none');
+            $('password-error').textContent = '❌ 解析失败：' + e.message;
         }
         return;
     }
 
     // 本地文件来源（原有逻辑）
-    const file = document.getElementById('data-import-file').files[0];
+    const file = $('data-import-file').files[0];
     if (!file) { alert('请先选择文件'); return; }
 
     const reader = new FileReader();
@@ -1919,8 +1969,8 @@ function decryptAndLoadData() {
             }
 
             if (!data) {
-                document.getElementById('password-error').classList.remove('d-none');
-                document.getElementById('password-error').textContent = '❌ 密码错误或文件格式不正确';
+                $('password-error').classList.remove('d-none');
+                $('password-error').textContent = '❌ 密码错误或文件格式不正确';
                 return;
             }
 
@@ -1928,11 +1978,11 @@ function decryptAndLoadData() {
             inMemoryLoadedData = data;
             categories = data.categories || DEFAULT_CATEGORIES;
             exchangeRates = data.exchangeRates || DEFAULT_RATES;
-            document.getElementById('password-error').classList.add('d-none');
+            $('password-error').classList.add('d-none');
             onDataLoaded();
         } catch(e) {
-            document.getElementById('password-error').classList.remove('d-none');
-            document.getElementById('password-error').textContent = '❌ 解析失败：' + e.message;
+            $('password-error').classList.remove('d-none');
+            $('password-error').textContent = '❌ 解析失败：' + e.message;
         }
     };
     reader.readAsText(file);
@@ -1963,11 +2013,11 @@ function onDataLoaded() {
         }
     });
 
-    document.getElementById('file-status').innerHTML = '<span class="text-success">✓ 数据加载成功！请选择用户。</span>';
-    document.getElementById('user-section').style.display = 'block';
+    $('file-status').innerHTML = '<span class="text-success">✓ 数据加载成功！请选择用户。</span>';
+    $('user-section').style.display = 'block';
 
     // 渲染用户按钮
-    const container = document.getElementById('user-buttons');
+    const container = $('user-buttons');
     container.innerHTML = '';
     if (dataUsers.length === 0) {
         container.innerHTML = '<span class="text-danger small">数据文件中没有用户，请新建文件。</span>';
@@ -2014,8 +2064,8 @@ function createNewDataFile() {
     userPassword = pwd;
     dataUsers = users;
 
-    document.getElementById('file-status').innerHTML = '<span class="text-success">✓ 新数据文件已创建，请选择用户登录。</span>';
-    document.getElementById('password-section').style.display = 'none';
+    $('file-status').innerHTML = '<span class="text-success">✓ 新数据文件已创建，请选择用户登录。</span>';
+    $('password-section').style.display = 'none';
     onDataLoaded();
 }
 
@@ -2028,26 +2078,26 @@ function loginWithUser(name) {
     currentUser = { name: name };
     currentUserName = name;
 
-    document.getElementById('login-overlay').classList.add('d-none');
-    document.getElementById('app-wrapper').classList.remove('d-none');
+    $('login-overlay').classList.add('d-none');
+    $('app-wrapper').classList.remove('d-none');
 
     const initial = name.charAt(0).toUpperCase();
     document.querySelector('.user-name-full').innerText = name;
     document.querySelector('.user-name-short').innerText = initial;
-    document.getElementById('mobile-current-user').innerText = name;
+    $('mobile-current-user').innerText = name;
 
     loadAllData();
     filterUserData();
     initAppUI();
 
     // 初始 tab = 交易页，显示悬浮按钮
-    const fabInit = document.getElementById('mobile-fab-group');
+    const fabInit = $('mobile-fab-group');
     if (fabInit) fabInit.classList.remove('d-none');
 
     // 更新离线模式状态显示
-    const badge = document.getElementById('offline-mode-badge');
+    const badge = $('offline-mode-badge');
     if (badge) badge.style.display = offlineMode ? '' : 'none';
-    const statusEl = document.getElementById('sync-mode-status');
+    const statusEl = $('sync-mode-status');
     if (statusEl) statusEl.textContent = offlineMode ? '离线模式' : '在线模式';
 
     // 检查是否需要提示存档
@@ -2074,7 +2124,7 @@ function getArchivedYears() {
 }
 
 function renderArchiveManagementUI() {
-    const el = document.getElementById('archive-management-ui');
+    const el = $('archive-management-ui');
     if (!el) return;
     const archivableYears = getArchivableYears();
     const archivedYears = getArchivedYears();
@@ -2313,10 +2363,10 @@ async function loadHistoryYear(year) {
 
         // 进入历史模式前保存当前日期筛选，供退出时还原
         historyPrevFilters = {
-            transStart: document.getElementById('filter-start-date')?.value || '',
-            transEnd:   document.getElementById('filter-end-date')?.value   || '',
-            statsStart: document.getElementById('stats-start-date')?.value  || '',
-            statsEnd:   document.getElementById('stats-end-date')?.value    || '',
+            transStart: $('filter-start-date')?.value || '',
+            transEnd:   $('filter-end-date')?.value   || '',
+            statsStart: $('stats-start-date')?.value  || '',
+            statsEnd:   $('stats-end-date')?.value    || '',
         };
 
         historyMode = true;
@@ -2325,18 +2375,18 @@ async function loadHistoryYear(year) {
 
         // 自动把日期范围设为该存档年份全年
         const yStart = `${year}-01-01`, yEnd = `${year}-12-31`;
-        const fsd = document.getElementById('filter-start-date');
-        const fed = document.getElementById('filter-end-date');
-        const ssd = document.getElementById('stats-start-date');
-        const sed = document.getElementById('stats-end-date');
+        const fsd = $('filter-start-date');
+        const fed = $('filter-end-date');
+        const ssd = $('stats-start-date');
+        const sed = $('stats-end-date');
         if (fsd) fsd.value = yStart;
         if (fed) fed.value = yEnd;
         if (ssd) { ssd.value = yStart; currentStatsFilter.startDate = yStart; }
         if (sed) { sed.value = yEnd;   currentStatsFilter.endDate   = yEnd; }
         applyTransactionFilter();
 
-        const banner = document.getElementById('history-mode-banner');
-        if (banner) { banner.classList.remove('d-none'); document.getElementById('history-year-label').textContent = year; }
+        const banner = $('history-mode-banner');
+        if (banner) { banner.classList.remove('d-none'); $('history-year-label').textContent = year; }
 
         renderAllTransactions(); renderAccounts(); renderStats();
         showToast(`📂 已加载 ${year} 年存档（只读）`, 'success');
@@ -2353,14 +2403,14 @@ function exitHistoryMode() {
     historyBaselines.forEach(t => transactions.push(t));        // 还原基准交易
     historyBaselines = [];
     historyMode = false; historyYear = null;
-    const banner = document.getElementById('history-mode-banner');
+    const banner = $('history-mode-banner');
     if (banner) banner.classList.add('d-none');
     // 还原进入历史模式前的日期筛选
     if (historyPrevFilters) {
-        const fsd = document.getElementById('filter-start-date');
-        const fed = document.getElementById('filter-end-date');
-        const ssd = document.getElementById('stats-start-date');
-        const sed = document.getElementById('stats-end-date');
+        const fsd = $('filter-start-date');
+        const fed = $('filter-end-date');
+        const ssd = $('stats-start-date');
+        const sed = $('stats-end-date');
         if (fsd) fsd.value = historyPrevFilters.transStart;
         if (fed) fed.value = historyPrevFilters.transEnd;
         if (ssd) { ssd.value = historyPrevFilters.statsStart; currentStatsFilter.startDate = historyPrevFilters.statsStart; }
@@ -2388,28 +2438,21 @@ function initAppUI() {
     const start = new Date();
     start.setDate(start.getDate() - 30);
 
-    const formatDate = (date) => {
-        const y = date.getFullYear();
-        const m = String(date.getMonth() + 1).padStart(2, '0');
-        const d = String(date.getDate()).padStart(2, '0');
-        return `${y}-${m}-${d}`;
-    };
+    const startStr = formatLocal(start);
+    const endStr = formatLocal(end);
 
-    const startStr = formatDate(start);
-    const endStr = formatDate(end);
+    $('filter-start-date').value = startStr;
+    $('filter-end-date').value = endStr;
 
-    document.getElementById('filter-start-date').value = startStr;
-    document.getElementById('filter-end-date').value = endStr;
-
-    if (document.getElementById('stats-start-date')) {
-        document.getElementById('stats-start-date').value = startStr;
-        document.getElementById('stats-end-date').value = endStr;
+    if ($('stats-start-date')) {
+        $('stats-start-date').value = startStr;
+        $('stats-end-date').value = endStr;
         currentStatsFilter.startDate = startStr;
         currentStatsFilter.endDate = endStr;
     }
 
     const today = new Date();
-    const plannedStartDate = document.getElementById('planned-start-date');
+    const plannedStartDate = $('planned-start-date');
     if (plannedStartDate) plannedStartDate.valueAsDate = today;
 
     renderAllTransactions();
@@ -2620,7 +2663,7 @@ async function loadFromDrive() {
     if (!GAS_URL) {
         alert('请先在登录界面填写并保存 GAS URL。'); return;
     }
-    const statusEl = document.getElementById('file-status');
+    const statusEl = $('file-status');
     statusEl.innerHTML = '<span class="text-primary"><span class="spinner-border spinner-border-sm me-1"></span>正在从 Google Drive 同步数据…</span>';
 
     try {
@@ -2647,7 +2690,7 @@ async function loadFromDrive() {
             categories = parsed.categories || DEFAULT_CATEGORIES;
             exchangeRates = parsed.exchangeRates || DEFAULT_RATES;
             statusEl.innerHTML = '<span class="text-success">✓ 已从 Drive 加载（明文）</span>';
-            document.getElementById('password-section').style.display = 'none';
+            $('password-section').style.display = 'none';
             onDataLoaded();
             return;
         } catch(_) {}
@@ -2656,11 +2699,11 @@ async function loadFromDrive() {
         window._driveRawContent = raw;
         window._driveMode = true;
         statusEl.innerHTML = '<span class="text-success">✓ 已从 Drive 获取加密文件，请输入密码</span>';
-        document.getElementById('user-section').style.display = 'none';
-        document.getElementById('user-buttons').innerHTML = '';
-        document.getElementById('password-error').classList.add('d-none');
-        document.getElementById('password-section').style.display = 'block';
-        document.getElementById('login-password').focus();
+        $('user-section').style.display = 'none';
+        $('user-buttons').innerHTML = '';
+        $('password-error').classList.add('d-none');
+        $('password-section').style.display = 'block';
+        $('login-password').focus();
     } catch (err) {
         statusEl.innerHTML = `<span class="text-danger">❌ 加载失败：${err.message}</span>`;
     }
@@ -2777,7 +2820,7 @@ function exportTransferCsv() {
 
 // ==================== 数据导入功能 ====================
 function importTransactionCsv() {
-    const file = document.getElementById('transaction-csv-input').files[0];
+    const file = $('transaction-csv-input').files[0];
     if (!file) return;
     const clean = (str) => str ? str.trim().replace(/^["']|["']$/g, '').trim() : '';
     const reader = new FileReader();
@@ -2818,7 +2861,7 @@ function importTransactionCsv() {
 }
 
 function importTransferCsv() {
-    const file = document.getElementById('transfer-csv-input').files[0];
+    const file = $('transfer-csv-input').files[0];
     if (!file) return;
     const clean = (str) => str ? str.trim().replace(/^["']|["']$/g, '').trim() : '';
     const reader = new FileReader();
@@ -2877,8 +2920,8 @@ function getAccountDisplayName(acc) {
 
 // ==================== 账户渲染功能 ====================
 function renderAccounts() {
-    const container = document.getElementById('account-list-container');
-    const otherContainer = document.getElementById('other-users-accounts-container');
+    const container = $('account-list-container');
+    const otherContainer = $('other-users-accounts-container');
     container.innerHTML = '';
     otherContainer.innerHTML = '';
 
@@ -2891,7 +2934,7 @@ function renderAccounts() {
     });
 
     const hiddenClass = amountsHidden ? 'amount-hidden' : '';
-    document.getElementById('net-worth-display').innerHTML = `
+    $('net-worth-display').innerHTML = `
         <div class="row text-center">
             <div class="col-4">总资产: <b class="text-success ${hiddenClass}">¥${totalAssets.toFixed(2)}</b></div>
             <div class="col-4">总负债: <b class="text-danger ${hiddenClass}">¥${Math.abs(totalLiabilities).toFixed(2)}</b></div>
@@ -2941,7 +2984,8 @@ function renderAccounts() {
             const balClass = amountsHidden ? 'amount-hidden' : (bal < 0 ? 'text-danger' : 'text-success');
             const initial = acc.ownerName.charAt(0).toUpperCase();
             col.innerHTML = `
-                <div class="card account-card p-3 shadow-sm">
+                <div class="card account-card account-card-other p-3 shadow-sm" style="cursor:pointer;"
+                     onclick="openAccountDetailTab(${acc.id})">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <div class="fw-bold text-truncate">[${initial}] ${acc.name}</div>
@@ -2988,60 +3032,64 @@ function deleteAccount(id) {
 }
 
 // ==================== 账户添加/编辑 ====================
-document.getElementById('add-account-form').addEventListener('submit', (e) => {
+$('add-account-form').addEventListener('submit', (e) => {
     e.preventDefault();
     accounts.push({
         id: Date.now(),
-        name: document.getElementById('acc-name').value,
-        accountType: document.getElementById('acc-type').value,
-        currency: document.getElementById('acc-currency').value,
-        initialBalance: parseFloat(document.getElementById('acc-balance').value),
+        name: $('acc-name').value,
+        accountType: $('acc-type').value,
+        currency: $('acc-currency').value,
+        initialBalance: parseFloat($('acc-balance').value),
         ownerName: currentUserName,
         updatedAt: Date.now()
     });
     saveUserData(); triggerAutoSave(); loadAllData(); filterUserData(); renderAccounts();
-    bootstrap.Modal.getInstance(document.getElementById('addAccountModal')).hide();
+    bootstrap.Modal.getInstance($('addAccountModal')).hide();
     e.target.reset();
 });
 
 let currentDetailAccountId = null;
 let openedFromDetail = false;
-let detailScrollTop = 0;  // 记录账户详情滚动位置
 
-function refreshAccountDetailContent(id) {
+function openAccountDetailTab(id) {
     const acc = accounts.find(a => a.id === id);
     if (!acc) return;
     currentDetailAccountId = id;
+
     const bal = calculateBalance(id);
     const balStr = `${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(bal, acc.currency)}`;
     const typeLabel = acc.accountType === 'Asset' ? '资产' : acc.accountType === 'Liability' ? '负债' : '应收';
-    document.getElementById('account-detail-title').textContent = acc.name;
-    document.getElementById('account-detail-type').textContent = typeLabel;
-    document.getElementById('account-detail-currency').textContent = acc.currency;
-    document.getElementById('account-detail-balance').textContent = `余额 ${balStr}`;
+    const isOwner = acc.ownerName === currentUserName;
+    const initial = acc.ownerName.charAt(0).toUpperCase();
+    const displayName = isOwner ? acc.name : `[${initial}] ${acc.name}`;
+
+    $('ad-title').textContent = displayName;
+    $('ad-type').textContent = typeLabel;
+    $('ad-currency').textContent = acc.currency;
+    $('ad-balance').textContent = `余额 ${balStr}`;
+    $('ad-action-btns').style.display = isOwner ? 'flex' : 'none';
 
     const acctTrans = transactions.filter(t => t.accountId == id && !t._isBaseline)
         .sort((a, b) => b.date.localeCompare(a.date));
 
-    const container = document.getElementById('account-detail-transactions');
-    const empty = document.getElementById('account-detail-empty');
+    const container = $('account-detail-view-list');
+    const empty = $('account-detail-view-empty');
+
     if (acctTrans.length === 0) {
         container.innerHTML = '';
         empty.classList.remove('d-none');
     } else {
         empty.classList.add('d-none');
         container.innerHTML = '';
-        acctTrans.slice(0, 100).forEach(t => {
+        acctTrans.forEach(t => {
             const isTransfer = t.isTransfer;
             let canEdit = t.ownerName === currentUserName && !t._isArchived;
 
-            // ---- Transfer: build A → B line ----
             let titleHtml = '';
             let subLine = t.date;
             let amtColor = isTransfer ? '#ff8c00' : (t.amount >= 0 ? '#198754' : '#dc3545');
             let iconClass = isTransfer ? 'bi-arrow-left-right'
                 : (t.amount >= 0 ? 'bi-arrow-up-circle' : 'bi-arrow-down-circle');
-            let iconColor = amtColor;
 
             if (isTransfer) {
                 let tOut, tIn;
@@ -3058,172 +3106,125 @@ function refreshAccountDetailContent(id) {
                         tOut = transactions.find(x => x.isTransfer && x.type === 'expense' && x.date === t.date && x.relatedAccountId == t.accountId);
                     }
                 }
-                // 只有转账发起人（转出方）才可编辑，收款方只能查看
                 if (tOut) canEdit = (tOut.ownerName === currentUserName) && !t._isArchived;
                 const accFrom = tOut ? accounts.find(a => a.id == tOut.accountId) : null;
                 const accTo   = tIn  ? accounts.find(a => a.id == tIn.accountId)  : null;
                 const fromName = accFrom ? getAccountDisplayName(accFrom) : '?';
                 const toName   = accTo   ? getAccountDisplayName(accTo)   : '?';
-
-                titleHtml = `<span style="font-size:0.83rem;font-weight:600;">
-                    ${fromName}
-                    <span style="color:var(--bs-primary);margin:0 2px;">→</span>
-                    ${toName}
-                </span>`;
-
+                titleHtml = `<span style="font-size:0.83rem;font-weight:600;">${fromName}<span style="color:var(--bs-primary);margin:0 2px;">→</span>${toName}</span>`;
                 let cleanDesc = t.desc || '';
                 if (cleanDesc.includes(': ')) cleanDesc = cleanDesc.split(': ')[1];
                 if (cleanDesc) subLine += ' · ' + cleanDesc;
             } else {
-                let title = t.category || '';
-                const tagsHtml = t.tags
-                    ? `<span style="font-size:0.72rem;color:var(--bs-secondary);margin-left:4px;">@${t.tags}</span>`
-                    : '';
-                titleHtml = `<span style="font-weight:600;font-size:0.83rem;">${title}${tagsHtml}</span>`;
+                const tagsHtml = t.tags ? `<span style="font-size:0.72rem;color:var(--bs-secondary);margin-left:4px;">@${t.tags}</span>` : '';
+                titleHtml = `<span style="font-weight:600;font-size:0.83rem;">${t.category || ''}${tagsHtml}</span>`;
                 if (t.desc) subLine += ' · ' + t.desc;
             }
 
-            const amtSign = (!isTransfer && t.amount >= 0) ? '+' : (isTransfer ? '' : '');
+            const amtSign = (!isTransfer && t.amount >= 0) ? '+' : '';
             const displayAmt = `${amtSign}${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}`;
 
             const item = document.createElement('div');
-            item.style.cssText = `
-                display:flex; justify-content:space-between; align-items:center;
-                padding:7px 12px; border-bottom:1px solid var(--bs-border-color);
-                background:var(--bs-body-bg);
-                ${canEdit ? 'cursor:pointer;' : ''}
-                transition: background 0.15s;
-            `;
+            item.style.cssText = `display:flex;justify-content:space-between;align-items:center;padding:7px 12px;border-bottom:1px solid var(--bs-border-color);background:var(--bs-body-bg);${canEdit ? 'cursor:pointer;' : ''}transition:background 0.15s;`;
             if (canEdit) {
                 item.addEventListener('mouseenter', () => item.style.background = 'rgba(var(--bs-primary-rgb),0.06)');
                 item.addEventListener('mouseleave', () => item.style.background = 'var(--bs-body-bg)');
                 item.addEventListener('click', () => {
-                    const body = document.querySelector('#accountDetailModal .modal-body');
-                    if (body) detailScrollTop = body.scrollTop;
                     openedFromDetail = true;
-                    // 不关闭详情页，直接叠加编辑弹窗
-                    openEditTransaction(t.id);
+                    isTransfer ? openEditTransfer(t.id) : openEditTransaction(t.id);
                 });
             }
             item.innerHTML = `
                 <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
-                    <i class="bi ${iconClass}" style="font-size:0.95rem;color:${iconColor};flex-shrink:0;"></i>
+                    <i class="bi ${iconClass}" style="font-size:0.95rem;color:${amtColor};flex-shrink:0;"></i>
                     <div style="min-width:0;overflow:hidden;">
                         <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${titleHtml}</div>
                         <div style="font-size:0.72rem;color:var(--bs-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${subLine}</div>
                     </div>
                 </div>
-                <div style="font-weight:700;font-size:0.88rem;color:${amtColor};margin-left:8px;white-space:nowrap;">
-                    ${displayAmt}
-                </div>`;
+                <div style="font-weight:700;font-size:0.88rem;color:${amtColor};margin-left:8px;white-space:nowrap;">${displayAmt}</div>`;
             container.appendChild(item);
         });
     }
 
-    const isOwner = acc.ownerName === currentUserName;
-    document.querySelector('#accountDetailModal .modal-footer').style.display = isOwner ? 'flex' : 'none';
+    switchTab('account-detail', null);
+    // 滚回顶部
+    $('view-account-detail').scrollTop = 0;
 }
 
-function openAccountDetail(id, restoreScroll = false) {
-    refreshAccountDetailContent(id);
+// 保留旧名称兼容
+function openAccountDetail(id) { openAccountDetailTab(id); }
 
-    const modalEl = document.getElementById('accountDetailModal');
-    const existing = bootstrap.Modal.getInstance(modalEl);
-    if (!existing) {
-        // 首次打开：创建实例并 show
-        const modalInstance = new bootstrap.Modal(modalEl);
-        modalInstance.show();
-    }
-    // 已经打开时不调 show()，避免重置滚动位置
-
-    // 恢复滚动位置（从子弹窗关闭返回时立即恢复，不等 shown 事件）
-    if (restoreScroll && detailScrollTop > 0) {
-        const body = modalEl.querySelector('.modal-body');
-        if (body) {
-            body.scrollTop = detailScrollTop;
-        } else {
-            // 首次打开时用事件
-            modalEl.addEventListener('shown.bs.modal', () => {
-                const b = modalEl.querySelector('.modal-body');
-                if (b) b.scrollTop = detailScrollTop;
-            }, { once: true });
-        }
-    }
-}
+function refreshAccountDetailContent(id) { openAccountDetailTab(id); }
 
 function editAccountFromDetail() {
-    bootstrap.Modal.getInstance(document.getElementById('accountDetailModal')).hide();
-    setTimeout(() => openEditAccount(currentDetailAccountId), 300);
+    openEditAccount(currentDetailAccountId);
 }
 
 function deleteAccountFromDetail() {
-    bootstrap.Modal.getInstance(document.getElementById('accountDetailModal')).hide();
-    setTimeout(() => deleteAccount(currentDetailAccountId), 300);
+    deleteAccount(currentDetailAccountId);
+    if (!accounts.find(a => a.id === currentDetailAccountId)) {
+        switchTab('accounts', document.querySelector('.nav-link[onclick*=accounts]'));
+    }
 }
 
 function openNewTransFromDetail() {
-    const body = document.querySelector('#accountDetailModal .modal-body');
-    if (body) detailScrollTop = body.scrollTop;
     openedFromDetail = true;
-    // 不关闭详情页，直接叠加新增交易弹窗
     const today = new Date().toISOString().split('T')[0];
     const prefs = JSON.parse(localStorage.getItem('APP_last_trans_prefs') || '{}');
-    document.getElementById('edit-trans-id').value = '';
-    document.getElementById('edit-trans-mode').value = 'add';
-    document.getElementById('editTransactionModalTitle').textContent = '新增交易';
-    document.getElementById('edit-trans-submit-btn').textContent = '保存';
-    document.getElementById('edit-trans-delete-btn').style.display = 'none';
+    $('edit-trans-id').value = '';
+    $('edit-trans-mode').value = 'add';
+    $('editTransactionModalTitle').textContent = '新增交易';
+    $('edit-trans-submit-btn').textContent = '保存';
+    $('edit-trans-delete-btn').style.display = 'none';
     const lastDate = prefs.date;
     const dateDiff = lastDate ? Math.abs(new Date(today) - new Date(lastDate)) / 86400000 : 99;
-    document.getElementById('edit-trans-date').value = (lastDate && dateDiff <= 7) ? lastDate : today;
-    document.getElementById('edit-trans-type').value = prefs.type || 'expense';
+    $('edit-trans-date').value = (lastDate && dateDiff <= 7) ? lastDate : today;
+    $('edit-trans-type').value = prefs.type || 'expense';
     updateEditFormCategories();
-    const accSelect = document.getElementById('edit-trans-account');
+    const accSelect = $('edit-trans-account');
     accSelect.value = currentDetailAccountId;
-    const catSelect = document.getElementById('edit-trans-category');
+    const catSelect = $('edit-trans-category');
     if (catSelect && prefs.category) {
         const opt = [...catSelect.options].find(o => o.value === prefs.category);
         if (opt) catSelect.value = prefs.category;
     }
-    document.getElementById('edit-trans-amount').value = '';
-    document.getElementById('edit-trans-tags').value = '';
-    document.getElementById('edit-trans-desc').value = '';
-    new bootstrap.Modal(document.getElementById('editTransactionModal')).show();
+    $('edit-trans-amount').value = '';
+    $('edit-trans-tags').value = '';
+    $('edit-trans-desc').value = '';
+    new bootstrap.Modal($('editTransactionModal')).show();
 }
 
 function openNewTransferFromDetail() {
-    const body = document.querySelector('#accountDetailModal .modal-body');
-    if (body) detailScrollTop = body.scrollTop;
     openedFromDetail = true;
-    // 不关闭详情页，直接叠加转账弹窗
     const today = new Date().toISOString().split('T')[0];
-    document.getElementById('edit-transfer-id').value = '';
-    document.getElementById('edit-transfer-mode').value = 'add';
-    document.getElementById('editTransferModalTitle').textContent = '新增转账';
-    document.getElementById('edit-transfer-submit-btn').textContent = '保存';
-    document.getElementById('edit-transfer-delete-btn').style.display = 'none';
-    document.getElementById('edit-transfer-date').value = today;
+    $('edit-transfer-id').value = '';
+    $('edit-transfer-mode').value = 'add';
+    $('editTransferModalTitle').textContent = '新增转账';
+    $('edit-transfer-submit-btn').textContent = '保存';
+    $('edit-transfer-delete-btn').style.display = 'none';
+    $('edit-transfer-date').value = today;
     fillTransferSelects(currentDetailAccountId, null);
-    document.getElementById('edit-transfer-amount-out').value = '';
-    document.getElementById('edit-transfer-amount-in').value = '';
-    document.getElementById('edit-transfer-desc').value = '';
-    new bootstrap.Modal(document.getElementById('editTransferModal')).show();
+    $('edit-transfer-amount-out').value = '';
+    $('edit-transfer-amount-in').value = '';
+    $('edit-transfer-desc').value = '';
+    new bootstrap.Modal($('editTransferModal')).show();
 }
 
 function openEditAccount(id) {
     const acc = accounts.find(a => a.id === id);
     if (!acc) return;
-    document.getElementById('edit-acc-id').value = id;
-    document.getElementById('edit-acc-name').value = acc.name;
-    document.getElementById('edit-acc-balance').value = calculateBalance(id).toFixed(2);
-    new bootstrap.Modal(document.getElementById('editAccountModal')).show();
+    $('edit-acc-id').value = id;
+    $('edit-acc-name').value = acc.name;
+    $('edit-acc-balance').value = calculateBalance(id).toFixed(2);
+    new bootstrap.Modal($('editAccountModal')).show();
 }
 
-document.getElementById('edit-account-form').addEventListener('submit', (e) => {
+$('edit-account-form').addEventListener('submit', (e) => {
     e.preventDefault();
-    const id = parseInt(document.getElementById('edit-acc-id').value);
-    const name = document.getElementById('edit-acc-name').value;
-    const newBalance = parseFloat(document.getElementById('edit-acc-balance').value);
+    const id = parseInt($('edit-acc-id').value);
+    const name = $('edit-acc-name').value;
+    const newBalance = parseFloat($('edit-acc-balance').value);
     const acc = accounts.find(a => a.id === id);
     if (acc) {
         const oldBalance = calculateBalance(id);
@@ -3242,7 +3243,7 @@ document.getElementById('edit-account-form').addEventListener('submit', (e) => {
         }
         saveUserData(); triggerAutoSave(); loadAllData(); filterUserData(); renderAccounts();
         displayedTransactionCount = 100; renderAllTransactions();
-        bootstrap.Modal.getInstance(document.getElementById('editAccountModal')).hide();
+        bootstrap.Modal.getInstance($('editAccountModal')).hide();
         showToast('账户已更新', 'success');
     }
 });
@@ -3253,24 +3254,24 @@ function openNewTransaction() {
     const today = new Date().toISOString().split('T')[0];
     const prefs = JSON.parse(localStorage.getItem('APP_last_trans_prefs') || '{}');
 
-    document.getElementById('edit-trans-id').value = '';
-    document.getElementById('edit-trans-mode').value = 'add';
-    document.getElementById('editTransactionModalTitle').textContent = '新增交易';
-    document.getElementById('edit-trans-submit-btn').textContent = '保存';
-    document.getElementById('edit-trans-delete-btn').style.display = 'none';
+    $('edit-trans-id').value = '';
+    $('edit-trans-mode').value = 'add';
+    $('editTransactionModalTitle').textContent = '新增交易';
+    $('edit-trans-submit-btn').textContent = '保存';
+    $('edit-trans-delete-btn').style.display = 'none';
 
     // 日期：记住上次日期，但若相差超过7天则用今天（防止默默记住老日期）
     const lastDate = prefs.date;
     const dateDiff = lastDate ? Math.abs(new Date(today) - new Date(lastDate)) / 86400000 : 99;
-    document.getElementById('edit-trans-date').value = (lastDate && dateDiff <= 7) ? lastDate : today;
+    $('edit-trans-date').value = (lastDate && dateDiff <= 7) ? lastDate : today;
 
     // 类型
-    const typeEl = document.getElementById('edit-trans-type');
+    const typeEl = $('edit-trans-type');
     typeEl.value = prefs.type || 'expense';
     updateEditFormCategories();
 
     // 账户
-    const accSelect = document.getElementById('edit-trans-account');
+    const accSelect = $('edit-trans-account');
     if (accSelect && accSelect.options.length > 0) {
         const lastAccOpt = prefs.accountId && [...accSelect.options].find(o => o.value == prefs.accountId);
         if (lastAccOpt) accSelect.value = prefs.accountId;
@@ -3278,21 +3279,21 @@ function openNewTransaction() {
     }
 
     // 分类（updateEditFormCategories 已填充选项，再设值）
-    const catSelect = document.getElementById('edit-trans-category');
+    const catSelect = $('edit-trans-category');
     if (catSelect && prefs.category) {
         const lastCatOpt = [...catSelect.options].find(o => o.value === prefs.category);
         if (lastCatOpt) catSelect.value = prefs.category;
     }
 
-    document.getElementById('edit-trans-amount').value = '';
-    document.getElementById('edit-trans-tags').value = '';
-    document.getElementById('edit-trans-desc').value = '';
-    new bootstrap.Modal(document.getElementById('editTransactionModal')).show();
+    $('edit-trans-amount').value = '';
+    $('edit-trans-tags').value = '';
+    $('edit-trans-desc').value = '';
+    new bootstrap.Modal($('editTransactionModal')).show();
 }
 
 function fillTransferSelects(fromValue, toValue) {
-    const fromSelect = document.getElementById('edit-transfer-from');
-    const toSelect = document.getElementById('edit-transfer-to');
+    const fromSelect = $('edit-transfer-from');
+    const toSelect = $('edit-transfer-to');
     fromSelect.innerHTML = '';
     accounts.filter(a => a.ownerName === currentUserName).forEach(a => {
         fromSelect.add(new Option(`${getAccountDisplayName(a)} (${CURRENCY_SYMBOLS[a.currency]})`, a.id));
@@ -3315,30 +3316,30 @@ function fillTransferSelects(fromValue, toValue) {
 
 function openNewTransfer() {
     const today = new Date().toISOString().split('T')[0];
-    document.getElementById('edit-transfer-id').value = '';
-    document.getElementById('edit-transfer-mode').value = 'add';
-    document.getElementById('editTransferModalTitle').textContent = '新增转账';
-    document.getElementById('edit-transfer-delete-btn').style.display = 'none';
-    document.getElementById('edit-transfer-date').value = today;
+    $('edit-transfer-id').value = '';
+    $('edit-transfer-mode').value = 'add';
+    $('editTransferModalTitle').textContent = '新增转账';
+    $('edit-transfer-delete-btn').style.display = 'none';
+    $('edit-transfer-date').value = today;
     fillTransferSelects(null, null);
-    document.getElementById('edit-transfer-amount-out').value = '';
-    document.getElementById('edit-transfer-amount-in').value = '';
-    document.getElementById('edit-transfer-desc').value = '';
-    new bootstrap.Modal(document.getElementById('editTransferModal')).show();
+    $('edit-transfer-amount-out').value = '';
+    $('edit-transfer-amount-in').value = '';
+    $('edit-transfer-desc').value = '';
+    new bootstrap.Modal($('editTransferModal')).show();
 }
 
 // ==================== 转账表单辅助 ====================
 
 function handleEditTransferAmountChange(direction) {
-    const fromId = document.getElementById('edit-transfer-from')?.value;
-    const toId   = document.getElementById('edit-transfer-to')?.value;
+    const fromId = $('edit-transfer-from')?.value;
+    const toId   = $('edit-transfer-to')?.value;
     if (!fromId || !toId) return;
     const accFrom = accounts.find(a => a.id == fromId);
     const accTo   = accounts.find(a => a.id == toId);
     if (!accFrom || !accTo || accFrom.currency !== accTo.currency) return;
 
-    const outEl = document.getElementById('edit-transfer-amount-out');
-    const inEl  = document.getElementById('edit-transfer-amount-in');
+    const outEl = $('edit-transfer-amount-out');
+    const inEl  = $('edit-transfer-amount-in');
     if (direction === 'out') {
         inEl.value = outEl.value;
     } else if (direction === 'in') {
@@ -3389,20 +3390,20 @@ function openEditTransaction(id) {
     if (!t || t.ownerName !== currentUserName) { alert('无法编辑此交易'); return; }
     if (t.isTransfer) { openEditTransfer(id); return; }
 
-    document.getElementById('edit-trans-id').value = t.id;
-    document.getElementById('edit-trans-mode').value = 'edit';
-    document.getElementById('editTransactionModalTitle').textContent = '编辑交易';
-    document.getElementById('edit-trans-submit-btn').textContent = '保存修改';
-    document.getElementById('edit-trans-delete-btn').style.display = '';
-    document.getElementById('edit-trans-date').value = t.date;
-    document.getElementById('edit-trans-type').value = t.type;
+    $('edit-trans-id').value = t.id;
+    $('edit-trans-mode').value = 'edit';
+    $('editTransactionModalTitle').textContent = '编辑交易';
+    $('edit-trans-submit-btn').textContent = '保存修改';
+    $('edit-trans-delete-btn').style.display = '';
+    $('edit-trans-date').value = t.date;
+    $('edit-trans-type').value = t.type;
     updateEditFormCategories();
-    document.getElementById('edit-trans-account').value = t.accountId;
-    document.getElementById('edit-trans-category').value = t.category;
-    document.getElementById('edit-trans-amount').value = Math.abs(t.amount);
-    document.getElementById('edit-trans-tags').value = t.tags || '';
-    document.getElementById('edit-trans-desc').value = t.desc || '';
-    new bootstrap.Modal(document.getElementById('editTransactionModal')).show();
+    $('edit-trans-account').value = t.accountId;
+    $('edit-trans-category').value = t.category;
+    $('edit-trans-amount').value = Math.abs(t.amount);
+    $('edit-trans-tags').value = t.tags || '';
+    $('edit-trans-desc').value = t.desc || '';
+    new bootstrap.Modal($('editTransactionModal')).show();
 }
 
 function openEditTransfer(id) {
@@ -3425,103 +3426,76 @@ function openEditTransfer(id) {
     }
     if (!tOut || !tIn) { alert('找不到配对的转账记录'); return; }
 
-    document.getElementById('edit-transfer-id').value = tOut.id;
-    document.getElementById('edit-transfer-mode').value = 'edit';
-    document.getElementById('editTransferModalTitle').textContent = '编辑转账';
-    document.getElementById('edit-transfer-submit-btn').textContent = '保存修改';
-    document.getElementById('edit-transfer-delete-btn').style.display = '';
-    document.getElementById('edit-transfer-date').value = tOut.date;
+    $('edit-transfer-id').value = tOut.id;
+    $('edit-transfer-mode').value = 'edit';
+    $('editTransferModalTitle').textContent = '编辑转账';
+    $('edit-transfer-submit-btn').textContent = '保存修改';
+    $('edit-transfer-delete-btn').style.display = '';
+    $('edit-transfer-date').value = tOut.date;
 
     fillTransferSelects(tOut.accountId, tIn.accountId);
 
-    document.getElementById('edit-transfer-amount-out').value = Math.abs(tOut.amount);
-    document.getElementById('edit-transfer-amount-in').value = Math.abs(tIn.amount);
+    $('edit-transfer-amount-out').value = Math.abs(tOut.amount);
+    $('edit-transfer-amount-in').value = Math.abs(tIn.amount);
 
     let desc = tOut.desc || '';
     const match = desc.match(/^转给\s*[^:：]+[:：]\s*(.*)$/);
-    document.getElementById('edit-transfer-desc').value = match ? match[1] : desc;
+    $('edit-transfer-desc').value = match ? match[1] : desc;
 
-    new bootstrap.Modal(document.getElementById('editTransferModal')).show();
+    new bootstrap.Modal($('editTransferModal')).show();
 }
 
 function maybeReturnToDetail() {
     if (openedFromDetail && currentDetailAccountId) {
         openedFromDetail = false;
-        const detailModal = bootstrap.Modal.getInstance(document.getElementById('accountDetailModal'));
-        if (detailModal) {
-            // 详情页仍然开着：只刷新内容，立即恢复滚动，不调 show() 避免跳顶
-            refreshAccountDetailContent(currentDetailAccountId);
-            if (detailScrollTop > 0) {
-                const body = document.querySelector('#accountDetailModal .modal-body');
-                if (body) body.scrollTop = detailScrollTop;
-            }
-        } else {
-            setTimeout(() => openAccountDetail(currentDetailAccountId, true), 350);
-        }
+        openAccountDetailTab(currentDetailAccountId);
     } else {
         openedFromDetail = false;
     }
 }
 
 function deleteCurrentTransaction() {
-    const id = parseFloat(document.getElementById('edit-trans-id').value);
+    const id = parseFloat($('edit-trans-id').value);
     if (confirm('确定删除此交易？')) {
-        bootstrap.Modal.getInstance(document.getElementById('editTransactionModal')).hide();
+        bootstrap.Modal.getInstance($('editTransactionModal')).hide();
         deleteTransaction(id);
         maybeReturnToDetail();
     }
 }
 
 function deleteCurrentTransfer() {
-    const id = parseFloat(document.getElementById('edit-transfer-id').value);
+    const id = parseFloat($('edit-transfer-id').value);
     if (confirm('确定删除此转账？')) {
-        bootstrap.Modal.getInstance(document.getElementById('editTransferModal')).hide();
+        bootstrap.Modal.getInstance($('editTransferModal')).hide();
         deleteTransaction(id);
         maybeReturnToDetail();
     }
 }
 
 function updateEditFormCategories() {
-    const type = document.getElementById('edit-trans-type').value;
-    const catSelect = document.getElementById('edit-trans-category');
+    const type = $('edit-trans-type').value;
+    const catSelect = $('edit-trans-category');
     catSelect.innerHTML = '';
     (type === 'expense' ? categories.expense : categories.income).forEach(c => catSelect.add(new Option(c, c)));
 }
 
-// 编辑 modal 关闭时：若账户详情仍开着，确保 body 保持 modal-open 锁定（防止 Bootstrap 解锁 body scroll）
+// 编辑弹窗关闭时：若来自账户详情，刷新详情视图
 function onSubModalHide() {
-    const detailModal = bootstrap.Modal.getInstance(document.getElementById('accountDetailModal'));
     maybeReturnToDetail();
-    if (detailModal) {
-        // Bootstrap 关闭子弹窗时会清理自己的 backdrop，但 accountDetailModal 的 backdrop 应保留
-        // 修复：确保 body 保持 modal-open，且 accountDetailModal 的 backdrop 完好
-        requestAnimationFrame(() => {
-            const detailEl = document.getElementById('accountDetailModal');
-            if (detailEl.classList.contains('show')) {
-                document.body.classList.add('modal-open');
-                // 若 backdrop 被清理掉了，补一个
-                if (!document.querySelector('.modal-backdrop')) {
-                    const bd = document.createElement('div');
-                    bd.className = 'modal-backdrop fade show';
-                    document.body.appendChild(bd);
-                }
-            }
-        });
-    }
 }
-document.getElementById('editTransactionModal').addEventListener('hidden.bs.modal', onSubModalHide);
-document.getElementById('editTransferModal').addEventListener('hidden.bs.modal', onSubModalHide);
+$('editTransactionModal').addEventListener('hidden.bs.modal', onSubModalHide);
+$('editTransferModal').addEventListener('hidden.bs.modal', onSubModalHide);
 
-document.getElementById('edit-transaction-form').addEventListener('submit', (e) => {
+$('edit-transaction-form').addEventListener('submit', (e) => {
     e.preventDefault();
-    const mode = document.getElementById('edit-trans-mode').value;
-    const date = document.getElementById('edit-trans-date').value;
-    const type = document.getElementById('edit-trans-type').value;
-    const accountId = document.getElementById('edit-trans-account').value;
-    const category = document.getElementById('edit-trans-category').value;
-    const amount = parseFloat(document.getElementById('edit-trans-amount').value);
-    const tags = document.getElementById('edit-trans-tags').value;
-    const desc = document.getElementById('edit-trans-desc').value;
+    const mode = $('edit-trans-mode').value;
+    const date = $('edit-trans-date').value;
+    const type = $('edit-trans-type').value;
+    const accountId = $('edit-trans-account').value;
+    const category = $('edit-trans-category').value;
+    const amount = parseFloat($('edit-trans-amount').value);
+    const tags = $('edit-trans-tags').value;
+    const desc = $('edit-trans-desc').value;
     const finalAmount = type === 'expense' ? -Math.abs(amount) : Math.abs(amount);
 
     if (mode === 'add') {
@@ -3535,18 +3509,18 @@ document.getElementById('edit-transaction-form').addEventListener('submit', (e) 
         saveUserData(); triggerAutoSave(); loadAllData(); filterUserData();
         displayedTransactionCount = 100; renderAllTransactions(); renderAccounts();
         // renderAccounts() -> updateSelectOptions() 会重置下拉框，需要手动还原
-        document.getElementById('edit-trans-account').value = accountId;
-        const catEl = document.getElementById('edit-trans-category');
+        $('edit-trans-account').value = accountId;
+        const catEl = $('edit-trans-category');
         if (catEl && [...catEl.options].find(o => o.value === category)) catEl.value = category;
         // 清空金额/标签/备注，不聚焦任何输入框
-        document.getElementById('edit-trans-amount').value = '';
-        document.getElementById('edit-trans-tags').value = '';
-        document.getElementById('edit-trans-desc').value = '';
-        const hintEl = document.getElementById('edit-trans-desc-hint');
+        $('edit-trans-amount').value = '';
+        $('edit-trans-tags').value = '';
+        $('edit-trans-desc').value = '';
+        const hintEl = $('edit-trans-desc-hint');
         if (hintEl) hintEl.style.display = 'none';
         showToast('✅ 已添加', 'success', 1500);
     } else {
-        const id = parseFloat(document.getElementById('edit-trans-id').value);
+        const id = parseFloat($('edit-trans-id').value);
         const t = transactions.find(x => x.id === id);
         if (t) {
             t.date = date; t.type = type; t.accountId = accountId;
@@ -3555,21 +3529,21 @@ document.getElementById('edit-transaction-form').addEventListener('submit', (e) 
             saveUserData(); triggerAutoSave(); filterUserData();
             displayedTransactionCount = 100;
             renderAllTransactions(); renderAccounts();
-            bootstrap.Modal.getInstance(document.getElementById('editTransactionModal')).hide();
+            bootstrap.Modal.getInstance($('editTransactionModal')).hide();
             maybeReturnToDetail();
         }
     }
 });
 
-document.getElementById('edit-transfer-form').addEventListener('submit', (e) => {
+$('edit-transfer-form').addEventListener('submit', (e) => {
     e.preventDefault();
-    const mode = document.getElementById('edit-transfer-mode').value;
-    const newDate = document.getElementById('edit-transfer-date').value;
-    const newFromId = document.getElementById('edit-transfer-from').value;
-    const newToId = document.getElementById('edit-transfer-to').value;
-    const newAmtOut = parseFloat(document.getElementById('edit-transfer-amount-out').value);
-    const newAmtIn = parseFloat(document.getElementById('edit-transfer-amount-in').value);
-    const newDesc = document.getElementById('edit-transfer-desc').value;
+    const mode = $('edit-transfer-mode').value;
+    const newDate = $('edit-transfer-date').value;
+    const newFromId = $('edit-transfer-from').value;
+    const newToId = $('edit-transfer-to').value;
+    const newAmtOut = parseFloat($('edit-transfer-amount-out').value);
+    const newAmtIn = parseFloat($('edit-transfer-amount-in').value);
+    const newDesc = $('edit-transfer-desc').value;
 
     if (newFromId === newToId) { alert('转出账户和转入账户不能相同'); return; }
     if (isNaN(newAmtOut) || isNaN(newAmtIn)) { alert('请输入有效的转账金额'); return; }
@@ -3598,12 +3572,12 @@ document.getElementById('edit-transfer-form').addEventListener('submit', (e) => 
         saveUserData(); triggerAutoSave(); loadAllData(); filterUserData();
         displayedTransactionCount = 100; renderAllTransactions(); renderAccounts();
         // 保持模态窗打开，清空金额/备注，不聚焦
-        document.getElementById('edit-transfer-amount-out').value = '';
-        document.getElementById('edit-transfer-amount-in').value = '';
-        document.getElementById('edit-transfer-desc').value = '';
+        $('edit-transfer-amount-out').value = '';
+        $('edit-transfer-amount-in').value = '';
+        $('edit-transfer-desc').value = '';
         showToast('✅ 已添加', 'success', 1500);
     } else {
-        const id = parseFloat(document.getElementById('edit-transfer-id').value);
+        const id = parseFloat($('edit-transfer-id').value);
         const tOut = transactions.find(x => x.id === id);
         if (!tOut || !tOut.isTransfer) { alert('找不到转账记录'); return; }
 
@@ -3626,17 +3600,17 @@ document.getElementById('edit-transfer-form').addEventListener('submit', (e) => 
         saveUserData(); triggerAutoSave(); filterUserData();
         displayedTransactionCount = 100; displayedTransferCount = 100;
         renderAllTransactions(); renderAccounts();
-        bootstrap.Modal.getInstance(document.getElementById('editTransferModal')).hide();
+        bootstrap.Modal.getInstance($('editTransferModal')).hide();
         maybeReturnToDetail();
     }
 });
 
 // ==================== 交易筛选功能 ====================
 function clearTransactionFilters() {
-    document.getElementById('trans-search-input').value = '';
-    document.getElementById('filter-start-date').value = '';
-    document.getElementById('filter-end-date').value = '';
-    document.getElementById('trans-user-filter').value = 'all';
+    $('trans-search-input').value = '';
+    $('filter-start-date').value = '';
+    $('filter-end-date').value = '';
+    $('trans-user-filter').value = 'all';
     displayedTransactionCount = 100; displayedTransferCount = 100;
     applyTransactionFilter();
 }
@@ -3661,8 +3635,8 @@ function quickDateFilter(p) {
     else if (p === 'month') { start = new Date(today.getFullYear(), today.getMonth(), 1); end = new Date(today.getFullYear(), today.getMonth() + 1, 0); }
     else if (p === 'lastmonth') { start = new Date(today.getFullYear(), today.getMonth() - 1, 1); end = new Date(today.getFullYear(), today.getMonth(), 0); }
     else if (p === 'year') { start = new Date(today.getFullYear(), 0, 1); end = new Date(today.getFullYear(), 11, 31); }
-    document.getElementById('filter-start-date').value = start ? formatLocal(start) : '';
-    document.getElementById('filter-end-date').value = end ? formatLocal(end) : '';
+    $('filter-start-date').value = start ? formatLocal(start) : '';
+    $('filter-end-date').value = end ? formatLocal(end) : '';
     displayedTransactionCount = 100; displayedTransferCount = 100;
     applyTransactionFilter();
 }
@@ -3686,9 +3660,9 @@ function toggleDisplayMode() {
 }
 
 function updateTransferModeButton() {
-    const button = document.getElementById('transfer-mode-toggle');
-    const icon = document.getElementById('transfer-mode-icon');
-    const text = document.getElementById('transfer-mode-text');
+    const button = $('transfer-mode-toggle');
+    const icon = $('transfer-mode-icon');
+    const text = $('transfer-mode-text');
     if (!button || !icon || !text) return;
     button.className = 'btn btn-sm';
     switch (transactionDisplayMode) {
@@ -3702,10 +3676,10 @@ function updateTransferModeButton() {
 }
 
 function getFilteredTransactions() {
-    const search = document.getElementById('trans-search-input').value.toLowerCase();
-    const startDate = document.getElementById('filter-start-date').value;
-    const endDate = document.getElementById('filter-end-date').value;
-    const userFilter = document.getElementById('trans-user-filter').value;
+    const search = $('trans-search-input').value.toLowerCase();
+    const startDate = $('filter-start-date').value;
+    const endDate = $('filter-end-date').value;
+    const userFilter = $('trans-user-filter').value;
     return transactions.filter(t => {
         if (t._isBaseline) return false; // 基准交易不在列表中显示
         if (transactionDisplayMode === 'transactions' && t.isTransfer) return false;
@@ -3733,9 +3707,9 @@ function initMobileSwipeGestures(card, transactionId) {
 
 // ==================== 交易列表渲染 ====================
 function renderAllTransactions() {
-    const tbody = document.getElementById('transaction-table-body');
+    const tbody = $('transaction-table-body');
     tbody.innerHTML = '';
-    const mobileContainer = document.getElementById('mobile-transaction-cards');
+    const mobileContainer = $('mobile-transaction-cards');
     if (mobileContainer) mobileContainer.innerHTML = '';
 
     let filtered = getFilteredTransactions();
@@ -3855,8 +3829,8 @@ function renderAllTransactions() {
         });
     }
 
-    const loadMoreContainer = document.getElementById('load-more-container');
-    const mobileLoadMore = document.getElementById('mobile-load-more-container');
+    const loadMoreContainer = $('load-more-container');
+    const mobileLoadMore = $('mobile-load-more-container');
     if (filtered.length > displayedTransactionCount) {
         if (loadMoreContainer) loadMoreContainer.classList.remove('d-none');
         if (mobileLoadMore) mobileLoadMore.classList.remove('d-none');
@@ -3935,9 +3909,9 @@ function findBestCategoryFromHistory(desc, type) {
  * 更新备注输入框下方的提示气泡
  */
 function updateDescHint(descId, hintId, typeId, catId, accId) {
-    const desc = document.getElementById(descId)?.value || '';
-    const type = document.getElementById(typeId)?.value || 'expense';
-    const hint = document.getElementById(hintId);
+    const desc = $(descId)?.value || '';
+    const type = $(typeId)?.value || 'expense';
+    const hint = $(hintId);
     if (!hint) return;
     if (desc.trim().length < 2) { hint.style.display = 'none'; return; }
 
@@ -3953,7 +3927,7 @@ function updateDescHint(descId, hintId, typeId, catId, accId) {
 }
 
 function applyDescHint(catId, category) {
-    const catEl = document.getElementById(catId);
+    const catEl = $(catId);
     if (catEl) catEl.value = category;
 }
 
@@ -4016,8 +3990,8 @@ async function checkHistoryCategories() {
 
 // ==================== 统计分析功能 ====================
 function applyStatsFilter() {
-    currentStatsFilter.startDate = document.getElementById('stats-start-date').value;
-    currentStatsFilter.endDate = document.getElementById('stats-end-date').value;
+    currentStatsFilter.startDate = $('stats-start-date').value;
+    currentStatsFilter.endDate = $('stats-end-date').value;
     renderStats();
 }
 
@@ -4033,20 +4007,20 @@ function quickStatsDateFilter(p) {
     else if (p === '24months') { start = new Date(today); start.setMonth(start.getMonth() - 24); end = today; }
     else if (p === 'year') { start = new Date(today.getFullYear(), 0, 1); end = new Date(today.getFullYear(), 11, 31); }
     else if (p === 'all') { start = ''; end = ''; }
-    document.getElementById('stats-start-date').value = start ? formatLocal(start) : '';
-    document.getElementById('stats-end-date').value = end ? formatLocal(end) : '';
+    $('stats-start-date').value = start ? formatLocal(start) : '';
+    $('stats-end-date').value = end ? formatLocal(end) : '';
     applyStatsFilter();
 }
 
 function switchStatsCurrency(c, el) {
-    document.querySelectorAll('#stats-currency-btns button').forEach(b => b.classList.remove('active'));
+    $$('#stats-currency-btns button').forEach(b => b.classList.remove('active'));
     el.classList.add('active');
     currentStatsFilter.currency = c;
     renderStats();
 }
 
 function switchAssetAggregation(type, el) {
-    document.querySelectorAll('.chart-card .btn-group button').forEach(b => b.classList.remove('active'));
+    $$('.chart-card .btn-group button').forEach(b => b.classList.remove('active'));
     el.classList.add('active');
     currentAssetAggregation = type;
     renderAssetHistoryChart(currentStatsFilter.user);
@@ -4071,19 +4045,19 @@ function renderStats() {
         if (amt > 0) inc += amt; else exp += amt;
     });
     const hiddenClass = amountsHidden ? 'amount-hidden' : '';
-    document.getElementById('stat-income-display').className = `text-success ${hiddenClass}`;
-    document.getElementById('stat-expense-display').className = `text-danger ${hiddenClass}`;
-    document.getElementById('stat-net-display').className = `text-primary ${hiddenClass}`;
-    document.getElementById('stat-income-display').innerText = formatAmount(inc, currentStatsFilter.currency);
-    document.getElementById('stat-expense-display').innerText = formatAmount(Math.abs(exp), currentStatsFilter.currency);
-    document.getElementById('stat-net-display').innerText = formatAmount(inc + exp, currentStatsFilter.currency);
+    $('stat-income-display').className = `text-success ${hiddenClass}`;
+    $('stat-expense-display').className = `text-danger ${hiddenClass}`;
+    $('stat-net-display').className = `text-primary ${hiddenClass}`;
+    $('stat-income-display').innerText = formatAmount(inc, currentStatsFilter.currency);
+    $('stat-expense-display').innerText = formatAmount(Math.abs(exp), currentStatsFilter.currency);
+    $('stat-net-display').innerText = formatAmount(inc + exp, currentStatsFilter.currency);
     renderExpenseChart(filtered);
     renderTagChart(filtered);
     renderTrendChart(filtered);
     renderAssetHistoryChart(currentStatsFilter.user);
     renderCategoryTrendChart(filtered);
     renderTotalExpenseTrendChart(filtered);
-    const sel = document.getElementById('category-trend-select');
+    const sel = $('category-trend-select');
     if (sel.options.length === 0) {
         categories.expense.forEach(c => sel.add(new Option(c, c)));
         if (categories.expense[0]) renderCategoryTrendChart(filtered);
@@ -4091,7 +4065,7 @@ function renderStats() {
 }
 
 function renderExpenseChart(data) {
-    const ctx = document.getElementById('expenseCategoryChart');
+    const ctx = $('expenseCategoryChart');
     if (!ctx) return;
     if (chartInstances.expense) { chartInstances.expense.destroy(); chartInstances.expense = null; }
     const cats = {};
@@ -4110,7 +4084,7 @@ function renderExpenseChart(data) {
 }
 
 function renderTagChart(data) {
-    const ctx = document.getElementById('tagStatsChart');
+    const ctx = $('tagStatsChart');
     if (!ctx) return;
     if (chartInstances.tags) { chartInstances.tags.destroy(); chartInstances.tags = null; }
     const tags = {};
@@ -4130,7 +4104,7 @@ function renderTagChart(data) {
 }
 
 function renderTrendChart(data) {
-    const ctx = document.getElementById('monthlyTrendChart');
+    const ctx = $('monthlyTrendChart');
     if (!ctx) return;
     if (chartInstances.trend) { chartInstances.trend.destroy(); chartInstances.trend = null; }
     const months = {};
@@ -4143,7 +4117,7 @@ function renderTrendChart(data) {
         if (amt > 0) months[m].inc += amt; else months[m].exp += Math.abs(amt);
     });
     const labels = Object.keys(months).sort();
-    const canvas = document.getElementById('monthlyTrendChart');
+    const canvas = $('monthlyTrendChart');
     canvas.width = Math.max(labels.length * 60, 400);
     chartInstances.trend = new Chart(ctx, {
         type: 'bar',
@@ -4160,7 +4134,7 @@ function renderTrendChart(data) {
 }
 
 function renderAssetHistoryChart(userFilter) {
-    const ctx = document.getElementById('assetHistoryChart');
+    const ctx = $('assetHistoryChart');
     if (!ctx) return;
     if (chartInstances.assetHistory) { chartInstances.assetHistory.destroy(); chartInstances.assetHistory = null; }
     const filteredAccounts = accounts;
@@ -4200,8 +4174,8 @@ function renderAssetHistoryChart(userFilter) {
 
     // 如有已存档年份，显示提示
     const archivedYrs = getArchivedYears();
-    const noticeEl = document.getElementById('history-chart-archive-notice');
-    const noticeText = document.getElementById('history-chart-archive-text');
+    const noticeEl = $('history-chart-archive-notice');
+    const noticeText = $('history-chart-archive-text');
     if (noticeEl && noticeText) {
         if (archivedYrs.length > 0) {
             noticeText.textContent = `${archivedYrs.join('、')} 年数据已归档，趋势图中仅显示基准交易节点，如需查看完整曲线请进入历史模式。`;
@@ -4214,8 +4188,8 @@ function renderAssetHistoryChart(userFilter) {
 
 
 function renderCategoryTrendChart(data) {
-    const cat = document.getElementById('category-trend-select').value;
-    const ctx = document.getElementById('categoryTrendChart');
+    const cat = $('category-trend-select').value;
+    const ctx = $('categoryTrendChart');
     if (!ctx) return;
     if (chartInstances.cattrend) { chartInstances.cattrend.destroy(); chartInstances.cattrend = null; }
     if (!cat) return;
@@ -4227,7 +4201,7 @@ function renderCategoryTrendChart(data) {
         months[m] = (months[m] || 0) + amt;
     });
     const labels = Object.keys(months).sort();
-    const canvas = document.getElementById('categoryTrendChart');
+    const canvas = $('categoryTrendChart');
     canvas.width = Math.max(labels.length * 60, 400);
     chartInstances.cattrend = new Chart(ctx, {
         type: 'bar',
@@ -4237,7 +4211,7 @@ function renderCategoryTrendChart(data) {
 }
 
 function renderTotalExpenseTrendChart(data) {
-    const ctx = document.getElementById('totalExpenseTrendChart');
+    const ctx = $('totalExpenseTrendChart');
     if (!ctx) return;
     if (chartInstances.totalExpense) { chartInstances.totalExpense.destroy(); chartInstances.totalExpense = null; }
     const months = {};
@@ -4248,7 +4222,7 @@ function renderTotalExpenseTrendChart(data) {
         months[m] = (months[m] || 0) + amt;
     });
     const labels = Object.keys(months).sort();
-    const canvas = document.getElementById('totalExpenseTrendChart');
+    const canvas = $('totalExpenseTrendChart');
     canvas.width = Math.max(labels.length * 60, 400);
     chartInstances.totalExpense = new Chart(ctx, {
         type: 'bar',
@@ -4260,17 +4234,17 @@ function renderTotalExpenseTrendChart(data) {
 // ==================== 下拉选项更新 ====================
 function updateSelectOptions() {
     const fill = (id, arr) => {
-        const el = document.getElementById(id);
+        const el = $(id);
         if (!el) return;
         el.innerHTML = '';
         arr.forEach(x => el.add(new Option(x, x)));
     };
     fill('edit-trans-category', categories.expense);
-    const plannedType = document.getElementById('planned-type')?.value || 'expense';
+    const plannedType = $('planned-type')?.value || 'expense';
     fill('planned-category', plannedType === 'expense' ? categories.expense : categories.income);
 
     const accFill = (id, includeOthers) => {
-        const el = document.getElementById(id);
+        const el = $(id);
         if (!el) return;
         el.innerHTML = '';
         const accsToShow = includeOthers ? accounts : userAccounts;
@@ -4280,7 +4254,7 @@ function updateSelectOptions() {
     };
     accFill('edit-trans-account', false); accFill('planned-account', false); accFill('edit-planned-account', false);
 
-    const uf = document.getElementById('trans-user-filter');
+    const uf = $('trans-user-filter');
     if (uf) {
         const cv = uf.value;
         uf.innerHTML = '<option value="all">所有用户</option>';
@@ -4293,23 +4267,24 @@ function updateSelectOptions() {
 function switchTab(t, el) {
     // 切换 tab 前强制关闭所有打开的弹窗，清理残留 backdrop
     ['accountDetailModal','editTransactionModal','editTransferModal','editAccountModal'].forEach(id => {
-        const inst = bootstrap.Modal.getInstance(document.getElementById(id));
+        const inst = bootstrap.Modal.getInstance($(id));
         if (inst) inst.hide();
     });
     // 清理可能残留的 backdrop（Bootstrap 偶尔不会完全清理堆叠场景下的遮罩）
-    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+    $$('.modal-backdrop').forEach(el => el.remove());
     document.body.classList.remove('modal-open');
     document.body.style.removeProperty('overflow');
     document.body.style.removeProperty('padding-right');
-    // 重置 detail 状态
+    // 重置 detail 状态（切换到非详情页时清空 currentDetailAccountId）
     openedFromDetail = false;
+    if (t !== 'account-detail') currentDetailAccountId = null;
 
-    document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active-view'));
-    document.getElementById(`view-${t}`).classList.add('active-view');
-    document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
-    el.classList.add('active');
-    const fab = document.getElementById('mobile-fab-group');
-    if (fab) fab.classList.toggle('d-none', t !== 'transactions');
+    $$('.view-section').forEach(v => v.classList.remove('active-view'));
+    $(`view-${t}`).classList.add('active-view');
+    $$('.nav-link').forEach(n => n.classList.remove('active'));
+    if (el) el.classList.add('active');
+    const fab = $('mobile-fab-group');
+    if (fab) fab.classList.toggle('d-none', t !== 'transactions' && t !== 'account-detail');
     if (t === 'stats') renderStats();
     if (t === 'planned') renderPlannedTransactions();
     if (t === 'settings') { renderExchangeRateSettings(); initPasswordHint(); renderUserManagement(); renderArchiveManagementUI(); }
@@ -4325,7 +4300,7 @@ let _toastTimer = null;
  * duration: ms，0 = 不自动消失
  */
 function showToast(msg, type = 'success', duration = 3000) {
-    const el = document.getElementById('app-toast');
+    const el = $('app-toast');
     if (!el) return;
     clearTimeout(_toastTimer);
 
@@ -4352,39 +4327,39 @@ function showToast(msg, type = 'success', duration = 3000) {
 
 function hideToast() {
     clearTimeout(_toastTimer);
-    document.getElementById('app-toast')?.classList.remove('show');
+    $('app-toast')?.classList.remove('show');
 }
 
 // ==================== 金额显示/隐藏切换 ====================
 function toggleAmountVisibility() {
     amountsHidden = !amountsHidden;
     renderAccounts();
-    if (document.getElementById('view-stats').classList.contains('active-view')) renderStats();
+    if ($('view-stats').classList.contains('active-view')) renderStats();
 }
 
 // ==================== 密码修改 ====================
 function openChangePwdModal() {
     ['pwd-current','pwd-new','pwd-confirm'].forEach(id => {
-        const el = document.getElementById(id);
+        const el = $(id);
         if (el) el.value = '';
     });
-    const msg = document.getElementById('pwd-change-msg');
+    const msg = $('pwd-change-msg');
     if (msg) msg.style.display = 'none';
-    new bootstrap.Modal(document.getElementById('changePwdModal')).show();
+    new bootstrap.Modal($('changePwdModal')).show();
     // Focus first relevant field after animation
     setTimeout(() => {
         const first = userPassword
-            ? document.getElementById('pwd-current')
-            : document.getElementById('pwd-new');
+            ? $('pwd-current')
+            : $('pwd-new');
         if (first) first.focus();
     }, 350);
 }
 
 function changeDataPassword() {
-    const currentInput = document.getElementById('pwd-current').value;
-    const newPwd       = document.getElementById('pwd-new').value;
-    const confirmPwd   = document.getElementById('pwd-confirm').value;
-    const msgEl        = document.getElementById('pwd-change-msg');
+    const currentInput = $('pwd-current').value;
+    const newPwd       = $('pwd-new').value;
+    const confirmPwd   = $('pwd-confirm').value;
+    const msgEl        = $('pwd-change-msg');
 
     const showMsg = (text, type) => {
         msgEl.style.display = 'block';
@@ -4411,13 +4386,13 @@ function changeDataPassword() {
 
     userPassword = newPwd;
     triggerAutoSave();
-    bootstrap.Modal.getInstance(document.getElementById('changePwdModal')).hide();
+    bootstrap.Modal.getInstance($('changePwdModal')).hide();
     initPasswordHint();
     showToast('密码已更新，请导出加密文件保存', 'success');
 }
 
 function initPasswordHint() {
-    const hint = document.getElementById('pwd-status-hint');
+    const hint = $('pwd-status-hint');
     if (!hint) return;
     hint.textContent = userPassword ? '当前文件已加密（有密码）' : '当前文件无密码（JSON 明文）';
 }
@@ -4438,7 +4413,7 @@ function getActiveForeignCurrencies() {
 }
 
 function renderStatsCurrencyButtons() {
-    const container = document.getElementById('stats-currency-btns');
+    const container = $('stats-currency-btns');
     if (!container) return;
     const activeForeign = getActiveForeignCurrencies();
     // Always show CNY; only show foreign currencies that have accounts
@@ -4459,13 +4434,13 @@ function renderStatsCurrencyButtons() {
 }
 
 function renderExchangeRateSettings() {
-    const container = document.getElementById('exchange-rate-inputs');
+    const container = $('exchange-rate-inputs');
     if (!container) return;
     container.innerHTML = '';
     const activeForeign = getActiveForeignCurrencies();
     if (activeForeign.length === 0) {
         container.innerHTML = '<p class="text-muted small">暂无外币账户，添加外币账户后此处将显示汇率设置。</p>';
-        document.getElementById('current-exchange-rate').innerText = '-';
+        $('current-exchange-rate').innerText = '-';
         return;
     }
     activeForeign.forEach(cur => {
@@ -4478,7 +4453,7 @@ function renderExchangeRateSettings() {
             <span class="input-group-text" style="width:100px;">1 ${cur.symbol} (${cur.code})</span>
             <input type="number" step="0.0001" class="form-control" id="${inputId}" value="${rate}">
             <span class="input-group-text">¥</span>
-            <button class="btn btn-outline-primary btn-sm" onclick="setExchangeRate('${cur.code}', 'RMB', document.getElementById('${inputId}').value)">保存</button>`;
+            <button class="btn btn-outline-primary btn-sm" onclick="setExchangeRate('${cur.code}', 'RMB', $('${inputId}').value)">保存</button>`;
         container.appendChild(div);
     });
     const summaryParts = activeForeign.map(cur => {
@@ -4486,7 +4461,7 @@ function renderExchangeRateSettings() {
         const rate = exchangeRates[key] || DEFAULT_RATES[key] || 1;
         return `1 ${cur.symbol} = ${rate} ¥`;
     });
-    document.getElementById('current-exchange-rate').innerText = summaryParts.join(' | ');
+    $('current-exchange-rate').innerText = summaryParts.join(' | ');
 }
 
 function setExchangeRate(from, to, rate) {
@@ -4500,7 +4475,7 @@ function setExchangeRate(from, to, rate) {
 // ==================== 类别管理 ====================
 function renderCategorySettings() {
     const render = (type, id) => {
-        const div = document.getElementById(id);
+        const div = $(id);
         if (!div) return;
         div.innerHTML = '';
         if (!categories[type]) return;
@@ -4536,7 +4511,7 @@ function dropCategory(e, type) { e.preventDefault(); }
 
 function addCategory(e, type) {
     e.preventDefault();
-    const input = document.getElementById(type === 'expense' ? 'new-expense-cat' : 'new-income-cat');
+    const input = $(type === 'expense' ? 'new-expense-cat' : 'new-income-cat');
     const val = input.value.trim();
     if (val && !categories[type].includes(val)) {
         categories[type].push(val); input.value = '';
@@ -4595,7 +4570,7 @@ function stopColumnResize() {
 
 // ==================== 图表显示/隐藏切换 ====================
 function toggleChartVisibility(wrapperId, btn) {
-    const wrapper = document.getElementById(wrapperId);
+    const wrapper = $(wrapperId);
     const isHidden = wrapper.classList.contains('d-none');
     if (isHidden) {
         wrapper.classList.remove('d-none');
@@ -4610,7 +4585,7 @@ function toggleChartVisibility(wrapperId, btn) {
 
 // ==================== 计划交易功能 ====================
 function renderPlannedTransactions() {
-    const container = document.getElementById('planned-list-container');
+    const container = $('planned-list-container');
     if (!container) return;
     container.innerHTML = '';
     if (userPlannedTransactions.length === 0) {
@@ -4661,8 +4636,8 @@ function renderPlannedTransactions() {
 }
 
 function updatePlannedCategories(prefix = 'planned') {
-    const type = document.getElementById(`${prefix}-type`).value;
-    const select = document.getElementById(`${prefix}-category`);
+    const type = $(`${prefix}-type`).value;
+    const select = $(`${prefix}-category`);
     if (!select) return;
     select.innerHTML = '';
     (type === 'expense' ? categories.expense : categories.income).forEach(c => select.add(new Option(c, c)));
@@ -4670,68 +4645,68 @@ function updatePlannedCategories(prefix = 'planned') {
 
 function updateEditPlannedCategories() { updatePlannedCategories('edit-planned'); }
 
-document.getElementById('add-planned-form').addEventListener('submit', (e) => {
+$('add-planned-form').addEventListener('submit', (e) => {
     e.preventDefault();
     const plan = {
         id: Date.now(),
-        name: document.getElementById('planned-name').value,
-        type: document.getElementById('planned-type').value,
-        accountId: document.getElementById('planned-account').value,
-        category: document.getElementById('planned-category').value,
-        amount: parseFloat(document.getElementById('planned-amount').value),
-        recurrence: document.getElementById('planned-recurrence').value,
-        startDate: document.getElementById('planned-start-date').value,
-        endDate: document.getElementById('planned-end-date').value || null,
-        dayOfMonth: parseInt(document.getElementById('planned-day-of-month').value),
+        name: $('planned-name').value,
+        type: $('planned-type').value,
+        accountId: $('planned-account').value,
+        category: $('planned-category').value,
+        amount: parseFloat($('planned-amount').value),
+        recurrence: $('planned-recurrence').value,
+        startDate: $('planned-start-date').value,
+        endDate: $('planned-end-date').value || null,
+        dayOfMonth: parseInt($('planned-day-of-month').value),
         lastGenerated: null, ownerName: currentUserName,
-        desc: document.getElementById('planned-desc').value,
-        tags: document.getElementById('planned-tags').value,
+        desc: $('planned-desc').value,
+        tags: $('planned-tags').value,
         updatedAt: Date.now()
     };
     plannedTransactions.push(plan);
     saveUserData(); triggerAutoSave(); loadAllData(); filterUserData(); renderPlannedTransactions();
-    bootstrap.Modal.getInstance(document.getElementById('addPlannedModal')).hide();
+    bootstrap.Modal.getInstance($('addPlannedModal')).hide();
     e.target.reset(); showToast('计划已创建', 'success');
 });
 
 function openEditPlanned(id) {
     const plan = plannedTransactions.find(p => p.id === id);
     if (!plan || plan.ownerName !== currentUserName) return;
-    document.getElementById('edit-planned-id').value = plan.id;
-    document.getElementById('edit-planned-name').value = plan.name;
-    document.getElementById('edit-planned-type').value = plan.type;
+    $('edit-planned-id').value = plan.id;
+    $('edit-planned-name').value = plan.name;
+    $('edit-planned-type').value = plan.type;
     updateEditPlannedCategories();
-    document.getElementById('edit-planned-account').value = plan.accountId;
-    document.getElementById('edit-planned-category').value = plan.category;
-    document.getElementById('edit-planned-amount').value = plan.amount;
-    document.getElementById('edit-planned-recurrence').value = plan.recurrence;
-    document.getElementById('edit-planned-start-date').value = plan.startDate;
-    document.getElementById('edit-planned-end-date').value = plan.endDate || '';
-    document.getElementById('edit-planned-desc').value = plan.desc || '';
-    document.getElementById('edit-planned-tags').value = plan.tags || '';
-    document.getElementById('edit-planned-day-of-month').value = plan.dayOfMonth;
-    new bootstrap.Modal(document.getElementById('editPlannedModal')).show();
+    $('edit-planned-account').value = plan.accountId;
+    $('edit-planned-category').value = plan.category;
+    $('edit-planned-amount').value = plan.amount;
+    $('edit-planned-recurrence').value = plan.recurrence;
+    $('edit-planned-start-date').value = plan.startDate;
+    $('edit-planned-end-date').value = plan.endDate || '';
+    $('edit-planned-desc').value = plan.desc || '';
+    $('edit-planned-tags').value = plan.tags || '';
+    $('edit-planned-day-of-month').value = plan.dayOfMonth;
+    new bootstrap.Modal($('editPlannedModal')).show();
 }
 
-document.getElementById('edit-planned-form').addEventListener('submit', (e) => {
+$('edit-planned-form').addEventListener('submit', (e) => {
     e.preventDefault();
-    const id = parseInt(document.getElementById('edit-planned-id').value);
+    const id = parseInt($('edit-planned-id').value);
     const plan = plannedTransactions.find(p => p.id === id);
     if (plan) {
-        plan.name = document.getElementById('edit-planned-name').value;
-        plan.type = document.getElementById('edit-planned-type').value;
-        plan.accountId = document.getElementById('edit-planned-account').value;
-        plan.category = document.getElementById('edit-planned-category').value;
-        plan.amount = parseFloat(document.getElementById('edit-planned-amount').value);
-        plan.recurrence = document.getElementById('edit-planned-recurrence').value;
-        plan.startDate = document.getElementById('edit-planned-start-date').value;
-        plan.endDate = document.getElementById('edit-planned-end-date').value || null;
-        plan.dayOfMonth = parseInt(document.getElementById('edit-planned-day-of-month').value);
-        plan.desc = document.getElementById('edit-planned-desc').value;
-        plan.tags = document.getElementById('edit-planned-tags').value;
+        plan.name = $('edit-planned-name').value;
+        plan.type = $('edit-planned-type').value;
+        plan.accountId = $('edit-planned-account').value;
+        plan.category = $('edit-planned-category').value;
+        plan.amount = parseFloat($('edit-planned-amount').value);
+        plan.recurrence = $('edit-planned-recurrence').value;
+        plan.startDate = $('edit-planned-start-date').value;
+        plan.endDate = $('edit-planned-end-date').value || null;
+        plan.dayOfMonth = parseInt($('edit-planned-day-of-month').value);
+        plan.desc = $('edit-planned-desc').value;
+        plan.tags = $('edit-planned-tags').value;
         plan.updatedAt = Date.now();
         saveUserData(); triggerAutoSave(); loadAllData(); filterUserData(); renderPlannedTransactions();
-        bootstrap.Modal.getInstance(document.getElementById('editPlannedModal')).hide();
+        bootstrap.Modal.getInstance($('editPlannedModal')).hide();
         showToast('计划已更新', 'success');
     }
 });
@@ -4800,9 +4775,9 @@ function getNextGenerationDate(plan) {
 // ==================== 数据导出/导入工具 ====================
 
 function toggleAdvancedExportSection() {
-    const card = document.getElementById('adv-export-card');
-    const toggleText = document.getElementById('adv-export-toggle-text');
-    const toggleIcon = document.getElementById('adv-export-toggle-icon');
+    const card = $('adv-export-card');
+    const toggleText = $('adv-export-toggle-text');
+    const toggleIcon = $('adv-export-toggle-icon');
     if (card.style.display === 'none') {
         card.style.display = 'block';
         toggleText.textContent = '隐藏高级导出';
@@ -4817,7 +4792,7 @@ function toggleAdvancedExportSection() {
 // ==================== 用户管理 ====================
 
 function renderUserManagement() {
-    const container = document.getElementById('user-management-list');
+    const container = $('user-management-list');
     if (!container) return;
     container.innerHTML = '';
     if (!dataUsers || dataUsers.length === 0) {
@@ -4840,7 +4815,7 @@ function renderUserManagement() {
 
 function addUserFromSettings(e) {
     e.preventDefault();
-    const input = document.getElementById('new-user-input');
+    const input = $('new-user-input');
     const name = input.value.trim();
     if (!name) return;
     if (dataUsers.includes(name)) { alert(`用户 "${name}" 已存在`); return; }
@@ -4873,7 +4848,7 @@ function renameUser(oldName) {
         currentUser.name = trimmed;
         document.querySelector('.user-name-full').innerText = trimmed;
         document.querySelector('.user-name-short').innerText = trimmed.charAt(0).toUpperCase();
-        document.getElementById('mobile-current-user').innerText = trimmed;
+        $('mobile-current-user').innerText = trimmed;
     }
     saveUserData(); triggerAutoSave();
     renderUserManagement();
