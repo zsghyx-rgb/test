@@ -1,6 +1,4 @@
-<!DOCTYPE html>
-<html lang="zh-CN" data-bs-theme="auto">
-<head>
+<!DOCTYPE html><html lang="zh-CN" data-bs-theme="dark"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>APP</title>
@@ -409,7 +407,7 @@ body {
     .account-card h5 { font-size: 0.95rem !important; }
 
     .excel-table-container { display: none; }
-    #mobile-transaction-list { display: block !important; }
+    #mobile-transaction-list { display: flex !important; flex-direction: column; flex: 1; overflow-y: auto; min-height: 0; }
 
     .mobile-transaction-card {
         background: var(--bs-body-bg);
@@ -541,17 +539,15 @@ body {
         <h4 class="text-center mb-3 text-primary"><i class="bi bi-wallet2"></i> APP v2.0</h4>
 
         <!-- GAS URL 配置（首次填写，之后折叠） -->
-        <div class="mb-3" id="gas-url-section">
-            <div id="gas-url-saved-bar" class="d-flex align-items-center justify-content-between" style="display:none!important;">
+        <div class="mb-3" id="gas-url-section" style="display: none;">
+            <div id="gas-url-saved-bar" class="d-flex align-items-center justify-content-between" style="">
                 <span class="small text-success"><i class="bi bi-cloud-check"></i> Drive 已连接</span>
                 <button class="btn btn-link btn-sm p-0 text-muted" onclick="showGasUrlInput()">修改</button>
             </div>
-            <div id="gas-url-input-bar">
+            <div id="gas-url-input-bar" style="display: none;">
                 <label class="form-label small text-muted fw-bold">GAS Web App URL</label>
                 <div class="input-group input-group-sm">
-                    <input type="text" class="form-control" id="gas-url-input"
-                           placeholder="https://script.google.com/macros/s/.../exec"
-                           autocomplete="off" spellcheck="false">
+                    <input type="text" class="form-control" id="gas-url-input" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off" spellcheck="false">
                     <button class="btn btn-outline-success" type="button" onclick="saveGasUrl()">
                         <i class="bi bi-check-lg"></i> 保存
                     </button>
@@ -561,17 +557,15 @@ body {
         </div>
 
         <!-- GAS Token 配置（与 URL 同样的保存逻辑） -->
-        <div class="mb-3" id="gas-token-section">
-            <div id="gas-token-saved-bar" class="d-flex align-items-center justify-content-between" style="display:none!important;">
+        <div class="mb-3" id="gas-token-section" style="display: none;">
+            <div id="gas-token-saved-bar" class="d-flex align-items-center justify-content-between" style="">
                 <span class="small text-success"><i class="bi bi-shield-check"></i> Token 已保存</span>
                 <button class="btn btn-link btn-sm p-0 text-muted" onclick="showGasTokenInput()">修改</button>
             </div>
-            <div id="gas-token-input-bar">
+            <div id="gas-token-input-bar" style="display: none;">
                 <label class="form-label small text-muted fw-bold">GAS Token</label>
                 <div class="input-group input-group-sm">
-                    <input type="password" class="form-control" id="gas-token-input"
-                           placeholder="在 GAS 脚本中设置的 token"
-                           autocomplete="off" spellcheck="false">
+                    <input type="password" class="form-control" id="gas-token-input" placeholder="在 GAS 脚本中设置的 token" autocomplete="off" spellcheck="false">
                     <button class="btn btn-outline-success" type="button" onclick="saveGasToken()">
                         <i class="bi bi-check-lg"></i> 保存
                     </button>
@@ -583,19 +577,16 @@ body {
             <!-- 在线/离线模式切换 -->
             <div class="d-flex align-items-center justify-content-between mb-2">
                 <label class="form-label small text-muted fw-bold mb-0">① 选择数据文件</label>
-                <button id="offline-mode-btn" class="btn btn-sm" onclick="toggleOfflineMode()"
-                        style="font-size:0.72rem; padding:0.2rem 0.6rem;">
-                </button>
+                <button id="offline-mode-btn" class="btn btn-sm btn-warning" onclick="toggleOfflineMode()" style="font-size:0.72rem; padding:0.2rem 0.6rem;"><i class="bi bi-wifi-off"></i> 离线模式</button>
             </div>
             <!-- 离线模式：手动选择文件 -->
-            <div id="offline-file-bar">
+            <div id="offline-file-bar" style="">
                 <div class="d-flex gap-2">
-                    <input type="file" class="form-control form-control-sm" id="data-import-file"
-                           accept=".enc,.json,.txt" onchange="onFileSelected()">
+                    <input type="file" class="form-control form-control-sm" id="data-import-file" accept=".enc,.json,.txt" onchange="onFileSelected()">
                 </div>
             </div>
             <!-- 在线模式：Drive 自动加载 -->
-            <div id="online-drive-bar">
+            <div id="online-drive-bar" style="display: none;">
                 <div class="d-flex gap-2 align-items-center">
                     <span class="small text-muted flex-fill">将自动从 Google Drive 加载</span>
                     <button class="btn btn-outline-primary btn-sm text-nowrap" onclick="loadFromDrive()" title="从 Google Drive 加载 data.enc">
@@ -603,19 +594,15 @@ body {
                     </button>
                 </div>
             </div>
-            <div id="file-status" class="form-text mt-1">请选择本地文件，或从 Google Drive 加载</div>
+            <div id="file-status" class="form-text mt-1"><span class="text-warning">⚠️ 离线模式：已清空在线数据，请手动选择本地文件</span></div>
         </div>
 
         <!-- Step 2: 输入密码 (enc文件才显示) -->
-        <div class="mb-3" id="password-section" style="display:none;">
+        <div class="mb-3" id="password-section" style="display: none;">
             <label class="form-label small text-muted fw-bold">② 输入密码</label>
             <div class="input-group input-group-sm">
-                <input type="text" id="login-username-hint" name="username"
-                       autocomplete="username" style="display:none;" aria-hidden="true">
-                <input type="password" class="form-control" id="login-password"
-                       name="password" placeholder="输入数据文件密码" 
-                       autocomplete="current-password"
-                       onkeydown="if(event.key==='Enter') decryptAndLoadData()">
+                <input type="text" id="login-username-hint" name="username" autocomplete="username" style="display:none;" aria-hidden="true">
+                <input type="password" class="form-control" id="login-password" name="password" placeholder="输入数据文件密码" autocomplete="current-password" onkeydown="if(event.key==='Enter') decryptAndLoadData()">
                 <button class="btn btn-primary" type="button" onclick="decryptAndLoadData()">
                     <i class="bi bi-unlock"></i> 解密
                 </button>
@@ -681,7 +668,7 @@ body {
                     <span class="user-name-full">User</span>
                     <span class="user-name-short">U</span>
                 </div>
-                <div class="user-status" id="sync-mode-status">本地模式</div>
+                <div class="user-status" id="sync-mode-status">离线模式</div>
             </div>
             <button class="btn btn-sm btn-outline-secondary w-100 mb-1" onclick="switchUser()" style="font-size: 0.7rem; padding: 0.3rem;">
                 <i class="bi bi-arrow-left-right"></i> 切换
@@ -824,7 +811,7 @@ body {
                                 </div>
                             </div>
                             <div>
-                                <button class="btn btn-sm btn-outline-primary" id="transfer-mode-toggle" onclick="toggleDisplayMode()" title="点击切换显示模式">
+                                <button class="btn btn-sm btn-primary" id="transfer-mode-toggle" onclick="toggleDisplayMode()" title="点击切换显示模式">
                                     <i class="bi bi-eye" id="transfer-mode-icon"></i>
                                     <span id="transfer-mode-text">收支+转账</span>
                                 </button>
@@ -1082,7 +1069,7 @@ body {
 
                 <div class="col-12 col-md-6">
                     <div class="card shadow-sm h-100">
-                        <div class="card-header bg-transparent fw-bold">数据导出 & 同步</div>
+                        <div class="card-header bg-transparent fw-bold">数据导出 &amp; 同步</div>
                         <div class="card-body">
                             <p class="text-muted small mb-3">
                                 <i class="bi bi-info-circle"></i>
@@ -1131,7 +1118,7 @@ body {
                         <div class="card-body">
                             <div id="user-management-list" class="mb-3"></div>
                             <form onsubmit="addUserFromSettings(event)" class="d-flex gap-2">
-                                <input type="text" class="form-control form-control-sm" id="new-user-input" placeholder="新用户名" required>
+                                <input type="text" class="form-control form-control-sm" id="new-user-input" placeholder="新用户名" required="">
                                 <button class="btn btn-outline-success btn-sm text-nowrap" type="submit">
                                     <i class="bi bi-plus-lg"></i> 添加
                                 </button>
@@ -1149,7 +1136,7 @@ body {
                                     <h6 class="text-danger border-bottom pb-2">支出类别</h6>
                                     <div id="expense-cat-container" class="d-flex flex-wrap gap-2 mb-3 p-2 rounded" style="background-color: var(--bs-tertiary-bg);" ondragover="allowDrop(event)" ondrop="dropCategory(event, 'expense')"></div>
                                     <form onsubmit="addCategory(event, 'expense')" class="input-group input-group-sm">
-                                        <input type="text" class="form-control" id="new-expense-cat" placeholder="新类别名" required>
+                                        <input type="text" class="form-control" id="new-expense-cat" placeholder="新类别名" required="">
                                         <button class="btn btn-outline-danger" type="submit">添加</button>
                                     </form>
                                 </div>
@@ -1157,7 +1144,7 @@ body {
                                     <h6 class="text-success border-bottom pb-2">收入类别</h6>
                                     <div id="income-cat-container" class="d-flex flex-wrap gap-2 mb-3 p-2 rounded" style="background-color: var(--bs-tertiary-bg);" ondragover="allowDrop(event)" ondrop="dropCategory(event, 'income')"></div>
                                     <form onsubmit="addCategory(event, 'income')" class="input-group input-group-sm">
-                                        <input type="text" class="form-control" id="new-income-cat" placeholder="新类别名" required>
+                                        <input type="text" class="form-control" id="new-income-cat" placeholder="新类别名" required="">
                                         <button class="btn btn-outline-success" type="submit">添加</button>
                                     </form>
                                 </div>
@@ -1239,7 +1226,7 @@ body {
                 <form id="add-planned-form">
                     <div class="mb-3">
                         <label class="form-label">计划名称</label>
-                        <input type="text" class="form-control" id="planned-name" placeholder="如：每月房租" required>
+                        <input type="text" class="form-control" id="planned-name" placeholder="如：每月房租" required="">
                     </div>
                     <div class="row g-2 mb-3">
                         <div class="col-6">
@@ -1251,34 +1238,34 @@ body {
                         </div>
                         <div class="col-6">
                             <label class="form-label">账户</label>
-                            <select class="form-select" id="planned-account" required></select>
+                            <select class="form-select" id="planned-account" required=""></select>
                         </div>
                     </div>
                     <div class="row g-2 mb-3">
                         <div class="col-6">
                             <label class="form-label">类别</label>
-                            <select class="form-select" id="planned-category" required></select>
+                            <select class="form-select" id="planned-category" required=""></select>
                         </div>
                         <div class="col-6">
                             <label class="form-label">金额</label>
-                            <input type="number" step="0.01" class="form-control" id="planned-amount" required>
+                            <input type="number" step="0.01" class="form-control" id="planned-amount" required="">
                         </div>
                     </div>
                     <div class="row g-2 mb-3">
                         <div class="col-6">
                             <label class="form-label">重复规则</label>
-                            <input type="text" class="form-control" value="每月" disabled>
+                            <input type="text" class="form-control" value="每月" disabled="">
                             <input type="hidden" id="planned-recurrence" value="monthly">
                         </div>
                         <div class="col-6">
                             <label class="form-label">每月第几天</label>
-                            <input type="number" min="1" max="31" class="form-control" id="planned-day-of-month" value="1" required>
+                            <input type="number" min="1" max="31" class="form-control" id="planned-day-of-month" value="1" required="">
                         </div>
                     </div>
                     <div class="row g-2 mb-3">
                         <div class="col-6">
                             <label class="form-label">开始日期</label>
-                            <input type="date" class="form-control" id="planned-start-date" required>
+                            <input type="date" class="form-control" id="planned-start-date" required="">
                         </div>
                         <div class="col-6">
                             <label class="form-label">结束日期 (可选)</label>
@@ -1315,7 +1302,7 @@ body {
                     <input type="hidden" id="edit-planned-id">
                     <div class="mb-3">
                         <label class="form-label">计划名称</label>
-                        <input type="text" class="form-control" id="edit-planned-name" required>
+                        <input type="text" class="form-control" id="edit-planned-name" required="">
                     </div>
                     <div class="row g-2 mb-3">
                         <div class="col-6">
@@ -1327,34 +1314,34 @@ body {
                         </div>
                         <div class="col-6">
                             <label class="form-label">账户</label>
-                            <select class="form-select" id="edit-planned-account" required></select>
+                            <select class="form-select" id="edit-planned-account" required=""></select>
                         </div>
                     </div>
                     <div class="row g-2 mb-3">
                         <div class="col-6">
                             <label class="form-label">类别</label>
-                            <select class="form-select" id="edit-planned-category" required></select>
+                            <select class="form-select" id="edit-planned-category" required=""></select>
                         </div>
                         <div class="col-6">
                             <label class="form-label">金额</label>
-                            <input type="number" step="0.01" class="form-control" id="edit-planned-amount" required>
+                            <input type="number" step="0.01" class="form-control" id="edit-planned-amount" required="">
                         </div>
                     </div>
                     <div class="row g-2 mb-3">
                         <div class="col-6">
                             <label class="form-label">重复规则</label>
-                            <input type="text" class="form-control" value="每月" disabled>
+                            <input type="text" class="form-control" value="每月" disabled="">
                             <input type="hidden" id="edit-planned-recurrence" value="monthly">
                         </div>
                         <div class="col-6">
                             <label class="form-label">每月第几天</label>
-                            <input type="number" min="1" max="31" class="form-control" id="edit-planned-day-of-month" value="1" required>
+                            <input type="number" min="1" max="31" class="form-control" id="edit-planned-day-of-month" value="1" required="">
                         </div>
                     </div>
                     <div class="row g-2 mb-3">
                         <div class="col-6">
                             <label class="form-label">开始日期</label>
-                            <input type="date" class="form-control" id="edit-planned-start-date" required>
+                            <input type="date" class="form-control" id="edit-planned-start-date" required="">
                         </div>
                         <div class="col-6">
                             <label class="form-label">结束日期 (可选)</label>
@@ -1390,7 +1377,7 @@ body {
                 <form id="add-account-form">
                     <div class="mb-3">
                         <label class="form-label">账户名称</label>
-                        <input type="text" class="form-control" id="acc-name" required>
+                        <input type="text" class="form-control" id="acc-name" required="">
                     </div>
                     <div class="row g-2 mb-3">
                         <div class="col-6">
@@ -1415,7 +1402,7 @@ body {
                     </div>
                     <div class="mb-3">
                         <label class="form-label">初始余额</label>
-                        <input type="number" step="0.01" class="form-control" id="acc-balance" value="0" required>
+                        <input type="number" step="0.01" class="form-control" id="acc-balance" value="0" required="">
                     </div>
                     <button type="submit" class="btn btn-primary w-100">保存</button>
                 </form>
@@ -1471,11 +1458,11 @@ body {
                     <input type="hidden" id="edit-acc-id">
                     <div class="mb-3">
                         <label class="form-label">账户名称</label>
-                        <input type="text" class="form-control" id="edit-acc-name" required>
+                        <input type="text" class="form-control" id="edit-acc-name" required="">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">账户余额</label>
-                        <input type="number" step="0.01" class="form-control" id="edit-acc-balance" required>
+                        <input type="number" step="0.01" class="form-control" id="edit-acc-balance" required="">
                         <div class="form-text">修改余额将自动生成一笔调整记录</div>
                     </div>
                     <button type="submit" class="btn btn-primary w-100">保存修改</button>
@@ -1499,7 +1486,7 @@ body {
                     <input type="hidden" id="edit-trans-mode" value="edit"><!-- edit or add -->
                     <div class="mb-2">
                         <label class="compact-form-label">日期</label>
-                        <input type="date" class="form-control compact-form-control" id="edit-trans-date" required>
+                        <input type="date" class="form-control compact-form-control" id="edit-trans-date" required="">
                     </div>
                     <div class="row g-2 mb-2">
                         <div class="col-6">
@@ -1511,17 +1498,17 @@ body {
                         </div>
                         <div class="col-6">
                             <label class="compact-form-label">账户</label>
-                            <select class="form-select compact-form-control" id="edit-trans-account" required></select>
+                            <select class="form-select compact-form-control" id="edit-trans-account" required=""></select>
                         </div>
                     </div>
                     <div class="row g-2 mb-2">
                         <div class="col-6">
                             <label class="compact-form-label">类别</label>
-                            <select class="form-select compact-form-control" id="edit-trans-category" required></select>
+                            <select class="form-select compact-form-control" id="edit-trans-category" required=""></select>
                         </div>
                         <div class="col-6">
                             <label class="compact-form-label">金额</label>
-                            <input type="number" step="0.01" class="form-control compact-form-control" id="edit-trans-amount" required>
+                            <input type="number" step="0.01" class="form-control compact-form-control" id="edit-trans-amount" required="">
                         </div>
                     </div>
                     <div class="mb-2">
@@ -1530,13 +1517,11 @@ body {
                     </div>
                     <div class="mb-2">
                         <label class="compact-form-label">备注</label>
-                        <input type="text" class="form-control compact-form-control" id="edit-trans-desc"
-                            oninput="updateDescHint('edit-trans-desc','edit-trans-desc-hint','edit-trans-type','edit-trans-category','edit-trans-account')">
+                        <input type="text" class="form-control compact-form-control" id="edit-trans-desc" oninput="updateDescHint('edit-trans-desc','edit-trans-desc-hint','edit-trans-type','edit-trans-category','edit-trans-account')">
                         <div id="edit-trans-desc-hint" style="display:none;align-items:center;gap:6px;margin-top:3px;padding:3px 8px;border-radius:5px;background:rgba(var(--bs-primary-rgb),0.08);border:1px solid rgba(var(--bs-primary-rgb),0.2);font-size:0.78rem;"></div>
                     </div>
                     <button type="submit" class="btn btn-primary btn-sm w-100 mt-2" id="edit-trans-submit-btn">保存修改</button>
-                    <button type="button" class="btn btn-outline-danger btn-sm w-100 mt-2 d-md-none" id="edit-trans-delete-btn"
-                            onclick="deleteCurrentTransaction()">删除交易</button>
+                    <button type="button" class="btn btn-outline-danger btn-sm w-100 mt-2 d-md-none" id="edit-trans-delete-btn" onclick="deleteCurrentTransaction()">删除交易</button>
                 </form>
             </div>
         </div>
@@ -1557,26 +1542,26 @@ body {
                     <input type="hidden" id="edit-transfer-mode" value="edit"><!-- edit or add -->
                     <div class="mb-2">
                         <label class="compact-form-label">日期</label>
-                        <input type="date" class="form-control compact-form-control" id="edit-transfer-date" required>
+                        <input type="date" class="form-control compact-form-control" id="edit-transfer-date" required="">
                     </div>
                     <div class="row g-2 mb-2">
                         <div class="col-6">
                             <label class="compact-form-label">转出账户</label>
-                            <select class="form-select compact-form-control" id="edit-transfer-from" onchange="handleEditTransferAmountChange()" required></select>
+                            <select class="form-select compact-form-control" id="edit-transfer-from" onchange="handleEditTransferAmountChange()" required=""></select>
                         </div>
                         <div class="col-6">
                             <label class="compact-form-label">转出金额</label>
-                            <input type="number" step="0.01" class="form-control compact-form-control" id="edit-transfer-amount-out" oninput="handleEditTransferAmountChange('out')" required>
+                            <input type="number" step="0.01" class="form-control compact-form-control" id="edit-transfer-amount-out" oninput="handleEditTransferAmountChange('out')" required="">
                         </div>
                     </div>
                     <div class="row g-2 mb-2">
                         <div class="col-6">
                             <label class="compact-form-label">转入账户</label>
-                            <select class="form-select compact-form-control" id="edit-transfer-to" onchange="handleEditTransferAmountChange()" required></select>
+                            <select class="form-select compact-form-control" id="edit-transfer-to" onchange="handleEditTransferAmountChange()" required=""></select>
                         </div>
                         <div class="col-6">
                             <label class="compact-form-label">转入金额</label>
-                            <input type="number" step="0.01" class="form-control compact-form-control" id="edit-transfer-amount-in" oninput="handleEditTransferAmountChange('in')" required>
+                            <input type="number" step="0.01" class="form-control compact-form-control" id="edit-transfer-amount-in" oninput="handleEditTransferAmountChange('in')" required="">
                         </div>
                     </div>
                     <div class="mb-2">
@@ -1584,8 +1569,7 @@ body {
                         <input type="text" class="form-control compact-form-control" id="edit-transfer-desc">
                     </div>
                     <button type="submit" class="btn btn-primary btn-sm w-100 mt-2" id="edit-transfer-submit-btn">保存修改</button>
-                    <button type="button" class="btn btn-outline-danger btn-sm w-100 mt-2 d-md-none" id="edit-transfer-delete-btn"
-                            onclick="deleteCurrentTransfer()">删除转账</button>
+                    <button type="button" class="btn btn-outline-danger btn-sm w-100 mt-2 d-md-none" id="edit-transfer-delete-btn" onclick="deleteCurrentTransfer()">删除转账</button>
                 </form>
             </div>
         </div>
@@ -1603,19 +1587,15 @@ body {
             <div class="modal-body">
                 <div class="mb-3">
                     <label class="form-label small fw-bold">当前密码</label>
-                    <input type="password" class="form-control form-control-sm" id="pwd-current"
-                           placeholder="输入当前密码" autocomplete="current-password">
+                    <input type="password" class="form-control form-control-sm" id="pwd-current" placeholder="输入当前密码" autocomplete="current-password">
                 </div>
                 <div class="mb-3">
                     <label class="form-label small fw-bold">新密码</label>
-                    <input type="password" class="form-control form-control-sm" id="pwd-new"
-                           placeholder="至少 8 位" autocomplete="new-password">
+                    <input type="password" class="form-control form-control-sm" id="pwd-new" placeholder="至少 8 位" autocomplete="new-password">
                 </div>
                 <div class="mb-3">
                     <label class="form-label small fw-bold">确认新密码</label>
-                    <input type="password" class="form-control form-control-sm" id="pwd-confirm"
-                           placeholder="再次输入新密码" autocomplete="new-password"
-                           onkeydown="if(event.key==='Enter') changeDataPassword()">
+                    <input type="password" class="form-control form-control-sm" id="pwd-confirm" placeholder="再次输入新密码" autocomplete="new-password" onkeydown="if(event.key==='Enter') changeDataPassword()">
                 </div>
                 <div id="pwd-change-msg" class="small mb-2" style="display:none;"></div>
             </div>
@@ -3185,24 +3165,50 @@ function renderDetailContent(id) {
         desktopTbody.innerHTML = '';
         acctTrans.forEach(t => {
             const isTransfer = t.isTransfer;
-            if (isTransfer && t.type === 'income') return;
+            const isTransferIn = isTransfer && t.type === 'income';
             let canEdit = t.ownerName === currentUserName && !t._isArchived;
-            const typeText = isTransfer ? '转账' : (t.amount < 0 ? '支出' : '收入');
-            const typeColorClass = isTransfer ? 'text-warning' : (t.amount < 0 ? 'text-danger' : 'text-success');
-            const amtColorClass = t.amount < 0 ? 'text-danger' : (isTransfer ? 'text-warning' : 'text-success');
+            let typeText, typeColorClass, amtColorClass;
 
-            let toAccDisplay = '', amountInDisplay = '';
+            let toAccDisplay = '', peerAmtDisplay = '';
+
             if (isTransfer) {
                 const { tOut, tIn } = resolveTransfer(t);
                 if (tOut) canEdit = (tOut.ownerName === currentUserName) && !t._isArchived;
-                if (tIn) {
-                    const accTo = accounts.find(a => a.id == tIn.accountId);
-                    if (accTo) {
-                        toAccDisplay = `<small>${getAccountDisplayName(accTo)}</small>`;
-                        amountInDisplay = `<div class="text-end fw-bold text-success">${CURRENCY_SYMBOLS[accTo.currency]}${formatAmount(Math.abs(tIn.amount), accTo.currency)}</div>`;
+
+                if (isTransferIn) {
+                    // 转入：显示来源（转出方）账户
+                    typeText = '转入';
+                    typeColorClass = 'text-warning';
+                    amtColorClass = 'text-success';
+                    if (tOut) {
+                        const accFrom = accounts.find(a => a.id == tOut.accountId);
+                        if (accFrom) {
+                            toAccDisplay = `<small>${getAccountDisplayName(accFrom)}</small>`;
+                            peerAmtDisplay = `<div class="text-end text-muted"><small>${CURRENCY_SYMBOLS[accFrom.currency]}${formatAmount(Math.abs(tOut.amount), accFrom.currency)}</small></div>`;
+                        }
+                    }
+                } else {
+                    // 转出：显示目标（转入方）账户
+                    typeText = '转账';
+                    typeColorClass = 'text-warning';
+                    amtColorClass = 'text-warning';
+                    if (tIn) {
+                        const accTo = accounts.find(a => a.id == tIn.accountId);
+                        if (accTo) {
+                            toAccDisplay = `<small>${getAccountDisplayName(accTo)}</small>`;
+                            peerAmtDisplay = `<div class="text-end fw-bold text-success">${CURRENCY_SYMBOLS[accTo.currency]}${formatAmount(Math.abs(tIn.amount), accTo.currency)}</div>`;
+                        }
                     }
                 }
+            } else {
+                typeText = t.amount < 0 ? '支出' : '收入';
+                typeColorClass = t.amount < 0 ? 'text-danger' : 'text-success';
+                amtColorClass = t.amount < 0 ? 'text-danger' : 'text-success';
             }
+
+            const displayAmt = isTransferIn
+                ? `+${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}`
+                : `${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}`;
 
             const editBtns = canEdit
                 ? (isTransfer
@@ -3215,9 +3221,9 @@ function renderDetailContent(id) {
                 <td>${t.date}</td>
                 <td><div class="${typeColorClass}">${typeText}</div></td>
                 <td>${t.category || ''}</td>
-                <td><div class="fw-bold ${amtColorClass} text-end">${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}</div></td>
+                <td><div class="fw-bold ${amtColorClass} text-end">${displayAmt}</div></td>
                 <td>${toAccDisplay}</td>
-                <td>${amountInDisplay}</td>
+                <td>${peerAmtDisplay}</td>
                 <td><div class="desc-content" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;" title="${(t.desc||'').replace(/"/g,'&quot;')}">${t.desc||''}</div></td>
                 <td>${t.tags||''}</td>
                 <td><div class="text-center">${editBtns}</div></td>`;
@@ -5021,5 +5027,6 @@ if ('serviceWorker' in navigator) {
     });
 }
 </script>
-</body>
-</html>
+
+
+</body></html>
