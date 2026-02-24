@@ -3574,8 +3574,11 @@ function updateEditFormCategories() {
 
 // 编辑弹窗关闭时：若来自账户详情，刷新详情视图
 function onSubModalHide() {
+    const hintEl = $('edit-trans-desc-hint');
+    if (hintEl) hintEl.style.display = 'none';
     maybeReturnToDetail();
 }
+
 $('editTransactionModal').addEventListener('hidden.bs.modal', onSubModalHide);
 $('editTransferModal').addEventListener('hidden.bs.modal', onSubModalHide);
 
