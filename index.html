@@ -3008,7 +3008,7 @@ let currentDetailAccountId = null;
 let openedFromDetail = false;
 let detailScrollTop = 0;  // 记录账户详情滚动位置
 
-function openAccountDetail(id, restoreScroll = false) {
+function refreshAccountDetailContent(id) {
     const acc = accounts.find(a => a.id === id);
     if (!acc) return;
     currentDetailAccountId = id;
@@ -3030,7 +3030,6 @@ function openAccountDetail(id, restoreScroll = false) {
         empty.classList.remove('d-none');
     } else {
         empty.classList.add('d-none');
-        const acc = accounts.find(a => a.id === id); // re-ref for closure
         container.innerHTML = '';
         acctTrans.slice(0, 100).forEach(t => {
             const isTransfer = t.isTransfer;
@@ -3045,7 +3044,6 @@ function openAccountDetail(id, restoreScroll = false) {
             let iconColor = amtColor;
 
             if (isTransfer) {
-                // Find the paired transfer to determine from/to
                 let tOut, tIn;
                 if (t.transferPairId) {
                     const pair = transactions.filter(x => x.transferPairId === t.transferPairId);
@@ -3073,12 +3071,10 @@ function openAccountDetail(id, restoreScroll = false) {
                     ${toName}
                 </span>`;
 
-                // desc after stripping prefix
                 let cleanDesc = t.desc || '';
                 if (cleanDesc.includes(': ')) cleanDesc = cleanDesc.split(': ')[1];
                 if (cleanDesc) subLine += ' · ' + cleanDesc;
             } else {
-                // Normal income / expense
                 let title = t.category || '';
                 const tagsHtml = t.tags
                     ? `<span style="font-size:0.72rem;color:var(--bs-secondary);margin-left:4px;">@${t.tags}</span>`
@@ -3088,7 +3084,6 @@ function openAccountDetail(id, restoreScroll = false) {
             }
 
             const amtSign = (!isTransfer && t.amount >= 0) ? '+' : (isTransfer ? '' : '');
-            // For transfer: show the amount that affects *this* account
             const displayAmt = `${amtSign}${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}`;
 
             const item = document.createElement('div');
@@ -3125,20 +3120,34 @@ function openAccountDetail(id, restoreScroll = false) {
         });
     }
 
-    // Only show edit/delete for current user's accounts
     const isOwner = acc.ownerName === currentUserName;
     document.querySelector('#accountDetailModal .modal-footer').style.display = isOwner ? 'flex' : 'none';
+}
+
+function openAccountDetail(id, restoreScroll = false) {
+    refreshAccountDetailContent(id);
 
     const modalEl = document.getElementById('accountDetailModal');
-    const modalInstance = new bootstrap.Modal(modalEl);
-    modalInstance.show();
+    const existing = bootstrap.Modal.getInstance(modalEl);
+    if (!existing) {
+        // 首次打开：创建实例并 show
+        const modalInstance = new bootstrap.Modal(modalEl);
+        modalInstance.show();
+    }
+    // 已经打开时不调 show()，避免重置滚动位置
 
-    // 恢复滚动位置（从编辑页返回时）
+    // 恢复滚动位置（从子弹窗关闭返回时立即恢复，不等 shown 事件）
     if (restoreScroll && detailScrollTop > 0) {
-        modalEl.addEventListener('shown.bs.modal', () => {
-            const body = modalEl.querySelector('.modal-body');
-            if (body) body.scrollTop = detailScrollTop;
-        }, { once: true });
+        const body = modalEl.querySelector('.modal-body');
+        if (body) {
+            body.scrollTop = detailScrollTop;
+        } else {
+            // 首次打开时用事件
+            modalEl.addEventListener('shown.bs.modal', () => {
+                const b = modalEl.querySelector('.modal-body');
+                if (b) b.scrollTop = detailScrollTop;
+            }, { once: true });
+        }
     }
 }
 
@@ -3438,10 +3447,14 @@ function openEditTransfer(id) {
 function maybeReturnToDetail() {
     if (openedFromDetail && currentDetailAccountId) {
         openedFromDetail = false;
-        // 如果账户详情窗口仍然开着（背景保持模式），只刷新内容，不重新打开
         const detailModal = bootstrap.Modal.getInstance(document.getElementById('accountDetailModal'));
         if (detailModal) {
-            openAccountDetail(currentDetailAccountId, true);
+            // 详情页仍然开着：只刷新内容，立即恢复滚动，不调 show() 避免跳顶
+            refreshAccountDetailContent(currentDetailAccountId);
+            if (detailScrollTop > 0) {
+                const body = document.querySelector('#accountDetailModal .modal-body');
+                if (body) body.scrollTop = detailScrollTop;
+            }
         } else {
             setTimeout(() => openAccountDetail(currentDetailAccountId, true), 350);
         }
@@ -3477,11 +3490,23 @@ function updateEditFormCategories() {
 
 // 编辑 modal 关闭时：若账户详情仍开着，确保 body 保持 modal-open 锁定（防止 Bootstrap 解锁 body scroll）
 function onSubModalHide() {
-    maybeReturnToDetail();
     const detailModal = bootstrap.Modal.getInstance(document.getElementById('accountDetailModal'));
+    maybeReturnToDetail();
     if (detailModal) {
-        // Bootstrap 在子弹窗关闭时移除了 body.modal-open，手动补回
-        setTimeout(() => { document.body.classList.add('modal-open'); }, 0);
+        // Bootstrap 关闭子弹窗时会清理自己的 backdrop，但 accountDetailModal 的 backdrop 应保留
+        // 修复：确保 body 保持 modal-open，且 accountDetailModal 的 backdrop 完好
+        requestAnimationFrame(() => {
+            const detailEl = document.getElementById('accountDetailModal');
+            if (detailEl.classList.contains('show')) {
+                document.body.classList.add('modal-open');
+                // 若 backdrop 被清理掉了，补一个
+                if (!document.querySelector('.modal-backdrop')) {
+                    const bd = document.createElement('div');
+                    bd.className = 'modal-backdrop fade show';
+                    document.body.appendChild(bd);
+                }
+            }
+        });
     }
 }
 document.getElementById('editTransactionModal').addEventListener('hidden.bs.modal', onSubModalHide);
@@ -4266,11 +4291,23 @@ function updateSelectOptions() {
 
 // ==================== 标签页切换 ====================
 function switchTab(t, el) {
+    // 切换 tab 前强制关闭所有打开的弹窗，清理残留 backdrop
+    ['accountDetailModal','editTransactionModal','editTransferModal','editAccountModal'].forEach(id => {
+        const inst = bootstrap.Modal.getInstance(document.getElementById(id));
+        if (inst) inst.hide();
+    });
+    // 清理可能残留的 backdrop（Bootstrap 偶尔不会完全清理堆叠场景下的遮罩）
+    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+    document.body.classList.remove('modal-open');
+    document.body.style.removeProperty('overflow');
+    document.body.style.removeProperty('padding-right');
+    // 重置 detail 状态
+    openedFromDetail = false;
+
     document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active-view'));
     document.getElementById(`view-${t}`).classList.add('active-view');
     document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
     el.classList.add('active');
-    // 交易页才显示悬浮按钮
     const fab = document.getElementById('mobile-fab-group');
     if (fab) fab.classList.toggle('d-none', t !== 'transactions');
     if (t === 'stats') renderStats();
