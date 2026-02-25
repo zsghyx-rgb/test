@@ -1486,11 +1486,11 @@ body {
                 <form id="edit-transaction-form">
                     <input type="hidden" id="edit-trans-id">
                     <input type="hidden" id="edit-trans-mode" value="edit"><!-- edit or add -->
-                    <div class="mb-2">
-                        <label class="compact-form-label">日期</label>
-                        <input type="date" class="form-control compact-form-control" id="edit-trans-date" required="">
-                    </div>
                     <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="compact-form-label">日期</label>
+                            <input type="date" class="form-control compact-form-control" id="edit-trans-date" required="">
+                        </div>
                         <div class="col-6">
                             <label class="compact-form-label">类型</label>
                             <select class="form-select compact-form-control" id="edit-trans-type" onchange="updateEditFormCategories()">
@@ -1498,24 +1498,26 @@ body {
                                 <option value="income">收入</option>
                             </select>
                         </div>
+                    </div>
+                    <div class="row g-2 mb-2">
                         <div class="col-6">
                             <label class="compact-form-label">账户</label>
                             <select class="form-select compact-form-control" id="edit-trans-account" required=""></select>
                         </div>
-                    </div>
-                    <div class="row g-2 mb-2">
                         <div class="col-6">
                             <label class="compact-form-label">类别</label>
                             <select class="form-select compact-form-control" id="edit-trans-category" required=""></select>
                         </div>
+                    </div>
+                    <div class="row g-2 mb-2">
                         <div class="col-6">
                             <label class="compact-form-label">金额</label>
                             <input type="number" step="0.01" class="form-control compact-form-control" id="edit-trans-amount" required="">
                         </div>
-                    </div>
-                    <div class="mb-2">
-                        <label class="compact-form-label">标签</label>
-                        <input type="text" class="form-control compact-form-control" id="edit-trans-tags">
+                        <div class="col-6">
+                            <label class="compact-form-label">标签</label>
+                            <input type="text" class="form-control compact-form-control" id="edit-trans-tags">
+                        </div>
                     </div>
                     <div class="mb-2">
                         <label class="compact-form-label">备注</label>
@@ -1525,15 +1527,22 @@ body {
                     <!-- 附件（仅支出显示） -->
                     <div class="mb-2" id="attachment-section" style="display:none;">
                         <label class="compact-form-label">附件</label>
-                        <input type="file" id="attachment-file-input" accept="image/*" capture="environment" class="d-none" onchange="handleAttachmentSelected(this)">
+                        <!-- 两个独立 input：一个图库，一个相机 -->
+                        <input type="file" id="attachment-file-input" accept="image/*" class="d-none" onchange="handleAttachmentSelected(this)">
+                        <input type="file" id="attachment-camera-input" accept="image/*" capture="environment" class="d-none" onchange="handleAttachmentSelected(this)">
                         <div id="attachment-preview" style="display:none;position:relative;margin-bottom:6px;">
-                            <img id="attachment-img" src="" style="max-width:100%;max-height:160px;border-radius:6px;border:1px solid var(--bs-border-color);object-fit:cover;">
+                            <img id="attachment-img" src="" style="max-width:100%;max-height:90px;border-radius:6px;border:1px solid var(--bs-border-color);object-fit:cover;">
                             <button type="button" onclick="removeAttachment()" style="position:absolute;top:4px;right:4px;border:none;background:rgba(0,0,0,0.5);color:#fff;border-radius:50%;width:22px;height:22px;font-size:0.75rem;line-height:1;cursor:pointer;">✕</button>
                             <div id="attachment-upload-status" style="font-size:0.75rem;color:var(--bs-secondary);margin-top:3px;"></div>
                         </div>
-                        <button type="button" class="btn btn-outline-secondary btn-sm w-100" id="attachment-pick-btn" onclick="document.getElementById('attachment-file-input').click()">
-                            <i class="bi bi-image me-1"></i>从图库选择 / 拍照
-                        </button>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-outline-secondary btn-sm flex-fill" onclick="document.getElementById('attachment-file-input').click()">
+                                <i class="bi bi-image me-1"></i>图库
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm flex-fill" onclick="document.getElementById('attachment-camera-input').click()">
+                                <i class="bi bi-camera me-1"></i>拍照
+                            </button>
+                        </div>
                         <input type="hidden" id="edit-trans-attachment-id" value="">
                     </div>
                     <button type="submit" class="btn btn-primary btn-sm w-100 mt-2" id="edit-trans-submit-btn">保存修改</button>
@@ -3521,7 +3530,6 @@ function openEditTransaction(id) {
             img.src = getDriveAttachmentUrl(t.attachmentId);
             preview.style.display = '';
             if (status) status.textContent = '已上传到 Drive';
-            $('attachment-pick-btn').textContent = '更换附件';
         }
     }
     new bootstrap.Modal($('editTransactionModal')).show();
@@ -4071,44 +4079,93 @@ function getDriveAttachmentUrl(fileId) {
 }
 
 function resetAttachmentUI() {
-    const input = $('attachment-file-input');
+    const inputFile = $('attachment-file-input');
+    const inputCam  = $('attachment-camera-input');
     const preview = $('attachment-preview');
     const img = $('attachment-img');
     const status = $('attachment-upload-status');
     const idField = $('edit-trans-attachment-id');
-    const pickBtn = $('attachment-pick-btn');
-    if (input) input.value = '';
+    if (inputFile) inputFile.value = '';
+    if (inputCam)  inputCam.value  = '';
     if (preview) preview.style.display = 'none';
     if (img) img.src = '';
     if (status) status.textContent = '';
     if (idField) idField.value = '';
-    if (pickBtn) pickBtn.innerHTML = '<i class="bi bi-image me-1"></i>从图库选择 / 拍照';
 }
 
 function removeAttachment() {
     resetAttachmentUI();
 }
 
+async function compressImage(file, maxKB = 200) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = e => {
+            const img = new Image();
+            img.onload = () => {
+                let quality = 0.85;
+                let w = img.width, h = img.height;
+                // 若尺寸超大先等比缩小
+                const maxPx = 1920;
+                if (w > maxPx || h > maxPx) {
+                    const ratio = Math.min(maxPx / w, maxPx / h);
+                    w = Math.round(w * ratio);
+                    h = Math.round(h * ratio);
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = w; canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+
+                const tryCompress = (q) => {
+                    canvas.toBlob(blob => {
+                        if (!blob) { resolve(file); return; }
+                        if (blob.size <= maxKB * 1024 || q < 0.2) {
+                            resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+                        } else {
+                            tryCompress(Math.max(q - 0.1, 0.15));
+                        }
+                    }, 'image/jpeg', q);
+                };
+                tryCompress(quality);
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
 async function handleAttachmentSelected(input) {
-    const file = input.files[0];
+    let file = input.files[0];
     if (!file) return;
 
     const preview = $('attachment-preview');
     const img = $('attachment-img');
     const status = $('attachment-upload-status');
     const idField = $('edit-trans-attachment-id');
-    const pickBtn = $('attachment-pick-btn');
 
-    // 立即显示本地预览
-    const reader = new FileReader();
-    reader.onload = e => { if (img) img.src = e.target.result; };
-    reader.readAsDataURL(file);
+    // 立即显示本地预览（压缩前）
+    const localReader = new FileReader();
+    localReader.onload = e => { if (img) img.src = e.target.result; };
+    localReader.readAsDataURL(file);
     if (preview) preview.style.display = '';
-    if (status) status.textContent = '上传中…';
-    if (pickBtn) pickBtn.disabled = true;
+    if (status) status.textContent = '处理中…';
 
     try {
         if (!GAS_URL) throw new Error('请先配置 GAS URL');
+
+        // 压缩到 200KB 以内
+        if (file.size > 200 * 1024) {
+            if (status) status.textContent = '压缩中…';
+            file = await compressImage(file, 200);
+        }
+
+        // 压缩后更新预览
+        const previewReader = new FileReader();
+        previewReader.onload = e => { if (img) img.src = e.target.result; };
+        previewReader.readAsDataURL(file);
+
+        if (status) status.textContent = '上传中…';
 
         // 读取为 base64
         const base64 = await new Promise((resolve, reject) => {
@@ -4121,12 +4178,12 @@ async function handleAttachmentSelected(input) {
         const payload = JSON.stringify({
             action: 'uploadAttachment',
             token: GAS_TOKEN,
-            filename: `attachment_${Date.now()}.${file.name.split('.').pop()}`,
-            mimeType: file.type,
+            filename: `attachment_${Date.now()}.jpg`,
+            mimeType: 'image/jpeg',
             data: base64
         });
 
-        const resp = await fetch(GAS_URL, {
+        const resp = await fetch(`${GAS_URL}?token=${encodeURIComponent(GAS_TOKEN)}`, {
             method: 'POST',
             body: payload,
             headers: { 'Content-Type': 'text/plain' }
@@ -4139,12 +4196,10 @@ async function handleAttachmentSelected(input) {
         if (!result.fileId) throw new Error('未返回 fileId');
 
         if (idField) idField.value = result.fileId;
-        if (status) status.textContent = '✅ 已上传到 Drive';
-        if (pickBtn) { pickBtn.innerHTML = '<i class="bi bi-image me-1"></i>更换附件'; pickBtn.disabled = false; }
+        if (status) status.textContent = `✅ 已上传（${Math.round(file.size/1024)}KB）`;
 
     } catch (err) {
         if (status) status.textContent = '❌ 上传失败：' + err.message;
-        if (pickBtn) pickBtn.disabled = false;
         console.error('附件上传失败', err);
     }
 }
