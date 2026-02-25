@@ -331,11 +331,36 @@ body {
 .chart-scroll-container { overflow-x: auto; overflow-y: hidden; }
 .chart-scroll-container canvas { min-width: 100%; }
 
-.btn-confirm-fixed {
-    width: 3.5em !important;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-    flex-shrink: 0 !important;
+/* 多图缩略图样式 */
+.thumb-wrapper {
+    position: relative;
+    width: calc(33.33% - 6px); /* 三列布局 */
+    aspect-ratio: 1 / 1;
+}
+.thumb-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid var(--bs-border-color);
+    cursor: zoom-in;
+}
+.thumb-remove {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: rgba(220, 53, 69, 0.9);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
 }
 
 @media (max-width: 768px) {
@@ -686,7 +711,7 @@ body {
         <div id="view-accounts" class="view-section">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h4 class="mb-0">我的资产</h4>
-                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAccountModal">
+                <button class="btn btn-primary" onclick="openNewAccount()">
                     <i class="bi bi-plus-lg"></i>
                 </button>
             </div>
@@ -1008,7 +1033,7 @@ body {
         <div id="view-planned" class="view-section">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h4 class="mb-0">计划交易</h4>
-                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPlannedModal">
+                <button class="btn btn-primary" onclick="openNewPlanned()">
                     <i class="bi bi-plus-lg"></i>
                 </button>
             </div>
@@ -1202,183 +1227,112 @@ body {
 
 <!-- ==================== 模态框 ==================== -->
 
-<!-- 新增计划交易 -->
-<div class="modal fade" id="addPlannedModal" tabindex="-1">
+<!-- 新增/编辑计划交易 -->
+<div class="modal fade" id="plannedModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">新增计划交易</h5>
+            <div class="modal-header py-2">
+                <h5 class="modal-title fs-6" id="plannedModalTitle">新增计划交易</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="add-planned-form">
-                    <div class="mb-3">
-                        <label class="form-label">计划名称</label>
-                        <input type="text" class="form-control" id="planned-name" placeholder="如：每月房租" required="">
+                <form id="planned-form">
+                    <input type="hidden" id="planned-id">
+                    <input type="hidden" id="planned-mode" value="add">
+                    <div class="mb-2">
+                        <label class="compact-form-label">计划名称</label>
+                        <input type="text" class="form-control compact-form-control" id="planned-name" placeholder="如：每月房租" required="">
                     </div>
-                    <div class="row g-2 mb-3">
+                    <div class="row g-2 mb-2">
                         <div class="col-6">
-                            <label class="form-label">类型</label>
-                            <select class="form-select" id="planned-type" onchange="updatePlannedCategories()">
+                            <label class="compact-form-label">类型</label>
+                            <select class="form-select compact-form-control" id="planned-type" onchange="updatePlannedCategories()">
                                 <option value="expense">支出</option>
                                 <option value="income">收入</option>
                             </select>
                         </div>
                         <div class="col-6">
-                            <label class="form-label">账户</label>
-                            <select class="form-select" id="planned-account" required=""></select>
+                            <label class="compact-form-label">账户</label>
+                            <select class="form-select compact-form-control" id="planned-account" required=""></select>
                         </div>
                     </div>
-                    <div class="row g-2 mb-3">
+                    <div class="row g-2 mb-2">
                         <div class="col-6">
-                            <label class="form-label">类别</label>
-                            <select class="form-select" id="planned-category" required=""></select>
+                            <label class="compact-form-label">类别</label>
+                            <select class="form-select compact-form-control" id="planned-category" required=""></select>
                         </div>
                         <div class="col-6">
-                            <label class="form-label">金额</label>
-                            <input type="number" step="0.01" class="form-control" id="planned-amount" required="">
+                            <label class="compact-form-label">金额</label>
+                            <input type="number" step="0.01" class="form-control compact-form-control" id="planned-amount" required="">
                         </div>
                     </div>
-                    <div class="row g-2 mb-3">
+                    <div class="row g-2 mb-2">
                         <div class="col-6">
-                            <label class="form-label">重复规则</label>
-                            <input type="text" class="form-control" value="每月" disabled="">
+                            <label class="compact-form-label">重复规则</label>
+                            <input type="text" class="form-control compact-form-control" value="每月" disabled="">
                             <input type="hidden" id="planned-recurrence" value="monthly">
                         </div>
                         <div class="col-6">
-                            <label class="form-label">每月第几天</label>
-                            <input type="number" min="1" max="31" class="form-control" id="planned-day-of-month" value="1" required="">
+                            <label class="compact-form-label">每月第几天</label>
+                            <input type="number" min="1" max="31" class="form-control compact-form-control" id="planned-day-of-month" value="1" required="">
                         </div>
                     </div>
-                    <div class="row g-2 mb-3">
+                    <div class="row g-2 mb-2">
                         <div class="col-6">
-                            <label class="form-label">开始日期</label>
-                            <input type="date" class="form-control" id="planned-start-date" required="">
+                            <label class="compact-form-label">开始日期</label>
+                            <input type="date" class="form-control compact-form-control" id="planned-start-date" required="">
                         </div>
                         <div class="col-6">
-                            <label class="form-label">结束日期 (可选)</label>
-                            <input type="date" class="form-control" id="planned-end-date">
-                        </div>
-                    </div>
-                    <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <label class="form-label">备注</label>
-                            <input type="text" class="form-control" id="planned-desc">
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label">标签</label>
-                            <input type="text" class="form-control" id="planned-tags">
+                            <label class="compact-form-label">结束日期 (可选)</label>
+                            <input type="date" class="form-control compact-form-control" id="planned-end-date">
                         </div>
                     </div>
-                    <button type="submit" class="btn btn-primary w-100">保存计划</button>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="compact-form-label">备注</label>
+                            <input type="text" class="form-control compact-form-control" id="planned-desc">
+                        </div>
+                        <div class="col-6">
+                            <label class="compact-form-label">标签</label>
+                            <input type="text" class="form-control compact-form-control" id="planned-tags">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm w-100 mt-2" id="planned-submit-btn">保存计划</button>
                 </form>
             </div>
         </div>
     </div>
 </div>
 
-<!-- 编辑计划交易 -->
-<div class="modal fade" id="editPlannedModal" tabindex="-1">
+<!-- 新增/编辑账户 -->
+<div class="modal fade" id="accountModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">编辑计划交易</h5>
+            <div class="modal-header py-2">
+                <h5 class="modal-title fs-6" id="accountModalTitle">新增账户</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="edit-planned-form">
-                    <input type="hidden" id="edit-planned-id">
-                    <div class="mb-3">
-                        <label class="form-label">计划名称</label>
-                        <input type="text" class="form-control" id="edit-planned-name" required="">
+                <form id="account-form">
+                    <input type="hidden" id="acc-id">
+                    <input type="hidden" id="acc-mode" value="add">
+                    <div class="mb-2">
+                        <label class="compact-form-label">账户名称</label>
+                        <input type="text" class="form-control compact-form-control" id="acc-name" required="">
                     </div>
-                    <div class="row g-2 mb-3">
+                    <!-- 仅新增时显示 -->
+                    <div class="row g-2 mb-2" id="acc-add-only-fields">
                         <div class="col-6">
-                            <label class="form-label">类型</label>
-                            <select class="form-select" id="edit-planned-type" onchange="updateEditPlannedCategories()">
-                                <option value="expense">支出</option>
-                                <option value="income">收入</option>
-                            </select>
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label">账户</label>
-                            <select class="form-select" id="edit-planned-account" required=""></select>
-                        </div>
-                    </div>
-                    <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <label class="form-label">类别</label>
-                            <select class="form-select" id="edit-planned-category" required=""></select>
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label">金额</label>
-                            <input type="number" step="0.01" class="form-control" id="edit-planned-amount" required="">
-                        </div>
-                    </div>
-                    <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <label class="form-label">重复规则</label>
-                            <input type="text" class="form-control" value="每月" disabled="">
-                            <input type="hidden" id="edit-planned-recurrence" value="monthly">
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label">每月第几天</label>
-                            <input type="number" min="1" max="31" class="form-control" id="edit-planned-day-of-month" value="1" required="">
-                        </div>
-                    </div>
-                    <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <label class="form-label">开始日期</label>
-                            <input type="date" class="form-control" id="edit-planned-start-date" required="">
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label">结束日期 (可选)</label>
-                            <input type="date" class="form-control" id="edit-planned-end-date">
-                        </div>
-                    </div>
-                    <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <label class="form-label">备注</label>
-                            <input type="text" class="form-control" id="edit-planned-desc">
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label">标签</label>
-                            <input type="text" class="form-control" id="edit-planned-tags">
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100">保存修改</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- 新增账户 -->
-<div class="modal fade" id="addAccountModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">新增账户</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="add-account-form">
-                    <div class="mb-3">
-                        <label class="form-label">账户名称</label>
-                        <input type="text" class="form-control" id="acc-name" required="">
-                    </div>
-                    <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <label class="form-label">类型</label>
-                            <select class="form-select" id="acc-type">
+                            <label class="compact-form-label">类型</label>
+                            <select class="form-select compact-form-control" id="acc-type">
                                 <option value="Asset">资产</option>
                                 <option value="Liability">负债</option>
                                 <option value="Receivable">应收</option>
                             </select>
                         </div>
                         <div class="col-6">
-                            <label class="form-label">币种</label>
-                            <select class="form-select" id="acc-currency">
+                            <label class="compact-form-label">币种</label>
+                            <select class="form-select compact-form-control" id="acc-currency">
                                 <option value="RMB">CNY (人民币)</option>
                                 <option value="EUR">EUR (欧元)</option>
                                 <option value="USD">USD (美元)</option>
@@ -1388,38 +1342,12 @@ body {
                             </select>
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">初始余额</label>
-                        <input type="number" step="0.01" class="form-control" id="acc-balance" value="0" required="">
+                    <div class="mb-2">
+                        <label class="compact-form-label" id="acc-balance-label">初始余额</label>
+                        <input type="number" step="0.01" class="form-control compact-form-control" id="acc-balance" value="0" required="">
+                        <div class="form-text d-none" id="acc-balance-hint">修改余额将自动生成一笔调整记录</div>
                     </div>
-                    <button type="submit" class="btn btn-primary w-100">保存</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- 编辑账户 -->
-<div class="modal fade" id="editAccountModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">编辑账户</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="edit-account-form">
-                    <input type="hidden" id="edit-acc-id">
-                    <div class="mb-3">
-                        <label class="form-label">账户名称</label>
-                        <input type="text" class="form-control" id="edit-acc-name" required="">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">账户余额</label>
-                        <input type="number" step="0.01" class="form-control" id="edit-acc-balance" required="">
-                        <div class="form-text">修改余额将自动生成一笔调整记录</div>
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100">保存修改</button>
+                    <button type="submit" class="btn btn-primary btn-sm w-100 mt-2" id="acc-submit-btn">保存</button>
                 </form>
             </div>
         </div>
@@ -1477,32 +1405,30 @@ body {
 
                     <div class="mb-2">
                         <label class="compact-form-label">备注</label>
-                        <div class="input-group">
+                        <div class="input-group" id="desc-input-group">
                             <input type="text" class="form-control compact-form-control" id="edit-trans-desc" 
                                    oninput="updateDescHint('edit-trans-desc','edit-trans-desc-hint','edit-trans-type','edit-trans-category','edit-trans-account')"
                                    placeholder="添加备注...">
-                            <button type="button" class="btn btn-outline-secondary btn-sm" style="width: 45px;" onclick="document.getElementById('attachment-file-input').click()">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="attachment-btn" style="width: 45px;" onclick="document.getElementById('attachment-file-input').click()">
                                 <i class="bi bi-image"></i>
                             </button>
                         </div>
                         <div id="edit-trans-desc-hint" style="display:none;align-items:center;gap:6px;margin-top:3px;padding:3px 8px;border-radius:5px;background:rgba(var(--bs-primary-rgb),0.08);border:1px solid rgba(var(--bs-primary-rgb),0.2);font-size:0.78rem;"></div>
                     </div>
 
-                    <div class="mb-2" id="attachment-section" style="display:none;">
-                        <input type="file" id="attachment-file-input" accept="image/*" class="d-none" onchange="handleAttachmentSelected(this)">
-                        
-                        <div id="attachment-preview" style="display:none;position:relative;margin-top:8px;">
-                            <img id="attachment-img" src="" 
-                                 style="max-width:100%; max-height:120px; border-radius:6px; border:1px solid var(--bs-border-color); object-fit:cover; cursor: zoom-in;" 
-                                 onclick="showFullImagePreview()" 
-                                 title="点击查看大图">
-                            <button type="button" onclick="removeAttachment()" 
-                                    style="position:absolute;top:4px;right:4px;border:none;background:rgba(0,0,0,0.5);color:#fff;border-radius:50%;width:22px;height:22px;font-size:0.75rem;line-height:1;cursor:pointer;">✕</button>
-                            <div id="attachment-upload-status" style="font-size:0.75rem;color:var(--bs-secondary);margin-top:3px;"></div>
-                        </div>
-                        <input type="hidden" id="edit-trans-attachment-id" value="">
-                    </div>
+<div class="mb-2" id="attachment-section" style="display:none;">
+    <input type="file" id="attachment-file-input" accept="image/*" class="d-none" onchange="handleAttachmentSelected(this)">
+    
+    <div id="attachment-preview-container" class="d-flex flex-wrap gap-2 mt-2" style="display:none !important;">
+        </div>
+    
+    <div id="attachment-upload-status" class="small text-muted mt-1" style="display:none;">
+        <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+        <span class="ms-1">正在上传图片...</span>
+    </div>
 
+    <input type="hidden" id="edit-trans-attachment-id" value="">
+</div>
                     <button type="submit" class="btn btn-primary btn-sm w-100 mt-2" id="edit-trans-submit-btn">保存修改</button>
                     <button type="button" class="btn btn-outline-danger btn-sm w-100 mt-2 d-md-none" id="edit-trans-delete-btn" onclick="deleteCurrentTransaction()">删除交易</button>
                 </form>
@@ -1644,7 +1570,6 @@ let currentSortDirection = 'desc';
 let amountsHidden = false;
 let searchDebounceTimer = null;
 let displayedTransactionCount = 100;
-let displayedTransferCount = 100;
 let currentAssetAggregation = 'month';
 let transactionDisplayMode = 'all';
 
@@ -1699,9 +1624,7 @@ function formatAmount(amt, currency) {
 
 
 // ==================== 移动端手势变量 ====================
-let touchStartX = 0, touchStartY = 0, touchCurrentX = 0;
-let currentSwipeCard = null, swipeThreshold = 80;
-let tapTimeout = null, isSwiping = false;
+
 
 // ==================== 分类词库 ====================
 
@@ -2892,7 +2815,7 @@ function importTransferCsv() {
             successCount++;
         }
         saveUserData(); triggerAutoSave(); loadAllData(); filterUserData();
-        displayedTransferCount = 100; renderAllTransactions(); renderAccounts();
+        renderAllTransactions(); renderAccounts();
         if (failLog.length > 0) alert(`导入完成。成功: ${successCount}。失败原因:\n${failLog.join('\n')}`);
         else if (successCount === 0) alert('导入失败');
         else alert(`成功导入 ${successCount} 条转账`);
@@ -3023,20 +2946,81 @@ function deleteAccount(id) {
 }
 
 // ==================== 账户添加/编辑 ====================
-$('add-account-form').addEventListener('submit', (e) => {
+function openNewAccount() {
+    $('acc-id').value = '';
+    $('acc-mode').value = 'add';
+    $('accountModalTitle').textContent = '新增账户';
+    $('acc-submit-btn').textContent = '保存';
+    $('acc-name').value = '';
+    $('acc-type').value = 'Asset';
+    $('acc-currency').value = 'RMB';
+    $('acc-balance').value = '0';
+    $('acc-add-only-fields').style.display = '';
+    $('acc-balance-label').textContent = '初始余额';
+    $('acc-balance-hint').classList.add('d-none');
+    new bootstrap.Modal($('accountModal')).show();
+}
+
+function openEditAccount(id) {
+    const acc = accounts.find(a => a.id === id);
+    if (!acc) return;
+    $('acc-id').value = id;
+    $('acc-mode').value = 'edit';
+    $('accountModalTitle').textContent = '编辑账户';
+    $('acc-submit-btn').textContent = '保存修改';
+    $('acc-name').value = acc.name;
+    $('acc-balance').value = calculateBalance(id).toFixed(2);
+    $('acc-add-only-fields').style.display = 'none';
+    $('acc-balance-label').textContent = '账户余额';
+    $('acc-balance-hint').classList.remove('d-none');
+    new bootstrap.Modal($('accountModal')).show();
+}
+
+$('account-form').addEventListener('submit', (e) => {
     e.preventDefault();
-    accounts.push({
-        id: Date.now(),
-        name: $('acc-name').value,
-        accountType: $('acc-type').value,
-        currency: $('acc-currency').value,
-        initialBalance: parseFloat($('acc-balance').value),
-        ownerName: currentUserName,
-        updatedAt: Date.now()
-    });
-    saveUserData(); triggerAutoSave(); loadAllData(); filterUserData(); renderAccounts();
-    bootstrap.Modal.getInstance($('addAccountModal')).hide();
-    e.target.reset();
+    const mode = $('acc-mode').value;
+    const name = $('acc-name').value;
+    const balance = parseFloat($('acc-balance').value);
+
+    if (mode === 'add') {
+        accounts.push({
+            id: Date.now(),
+            name,
+            accountType: $('acc-type').value,
+            currency: $('acc-currency').value,
+            initialBalance: balance,
+            ownerName: currentUserName,
+            updatedAt: Date.now()
+        });
+        saveUserData(); triggerAutoSave(); loadAllData(); filterUserData(); renderAccounts();
+        bootstrap.Modal.getInstance($('accountModal')).hide();
+        e.target.reset();
+        showToast('账户已添加', 'success');
+    } else {
+        const id = parseInt($('acc-id').value);
+        const acc = accounts.find(a => a.id === id);
+        if (acc) {
+            const oldBalance = calculateBalance(id);
+            const diff = balance - oldBalance;
+            acc.name = name;
+            acc.updatedAt = Date.now();
+            if (Math.abs(diff) > 0.01) {
+                transactions.unshift({
+                    id: Date.now() + Math.random(),
+                    date: new Date().toISOString().split('T')[0],
+                    type: diff > 0 ? 'income' : 'expense',
+                    accountId: id, amount: diff, category: '其他',
+                    desc: `余额调整 (${oldBalance.toFixed(2)} → ${balance.toFixed(2)})`,
+                    ownerName: currentUserName, isTransfer: false, tags: '', updatedAt: Date.now()
+                });
+            }
+            saveUserData(); triggerAutoSave(); loadAllData(); filterUserData(); renderAccounts();
+            displayedTransactionCount = 100; renderAllTransactions();
+            bootstrap.Modal.getInstance($('accountModal')).hide();
+            showToast('账户已更新', 'success');
+            if (currentDetailAccountId === id) refreshDetailContent(id);
+        }
+    }
 });
 
 let currentDetailAccountId = null;
@@ -3227,7 +3211,6 @@ function refreshDetailContent(id) {
 
 // 保留旧名称兼容
 function openAccountDetail(id) { openAccountDetailTab(id); }
-function refreshAccountDetailContent(id) { openAccountDetailTab(id); }
 
 function editAccountFromDetail() {
     openEditAccount(currentDetailAccountId);
@@ -3282,45 +3265,6 @@ function openNewTransferFromDetail() {
     $('edit-transfer-desc').value = '';
     new bootstrap.Modal($('editTransferModal')).show();
 }
-
-function openEditAccount(id) {
-    const acc = accounts.find(a => a.id === id);
-    if (!acc) return;
-    $('edit-acc-id').value = id;
-    $('edit-acc-name').value = acc.name;
-    $('edit-acc-balance').value = calculateBalance(id).toFixed(2);
-    new bootstrap.Modal($('editAccountModal')).show();
-}
-
-$('edit-account-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const id = parseInt($('edit-acc-id').value);
-    const name = $('edit-acc-name').value;
-    const newBalance = parseFloat($('edit-acc-balance').value);
-    const acc = accounts.find(a => a.id === id);
-    if (acc) {
-        const oldBalance = calculateBalance(id);
-        const diff = newBalance - oldBalance;
-        acc.name = name;
-        acc.updatedAt = Date.now();
-        if (Math.abs(diff) > 0.01) {
-            transactions.unshift({
-                id: Date.now() + Math.random(),
-                date: new Date().toISOString().split('T')[0],
-                type: diff > 0 ? 'income' : 'expense',
-                accountId: id, amount: diff, category: '其他',
-                desc: `余额调整 (${oldBalance.toFixed(2)} → ${newBalance.toFixed(2)})`,
-                ownerName: currentUserName, isTransfer: false, tags: '', updatedAt: Date.now()
-            });
-        }
-        saveUserData(); triggerAutoSave(); loadAllData(); filterUserData(); renderAccounts();
-        displayedTransactionCount = 100; renderAllTransactions();
-        bootstrap.Modal.getInstance($('editAccountModal')).hide();
-        showToast('账户已更新', 'success');
-        // 若当前在该账户详情页，刷新
-        if (currentDetailAccountId === id) refreshDetailContent(id);
-    }
-});
 
 // ==================== 交易模式切换 ====================
 // ==================== 新增交易 / 转账入口 ====================
@@ -3426,12 +3370,6 @@ function handleEditTransferAmountChange(direction) {
 }
 
 // ==================== 交易添加/删除/编辑 ====================
-function addTransaction(t) {
-    transactions.unshift(t);
-    saveUserData(); loadAllData(); filterUserData();
-    displayedTransactionCount = 100; renderAllTransactions(); renderAccounts();
-}
-
 function deleteTransaction(id) {
     const t = transactions.find(x => x.id === id);
     if (!t) { alert('找不到记录'); return; }
@@ -3454,7 +3392,7 @@ function deleteTransaction(id) {
             transactions = transactions.filter(x => x.id !== id);
         }
         saveUserData(); triggerAutoSave(); filterUserData();
-        displayedTransactionCount = 100; displayedTransferCount = 100;
+        displayedTransactionCount = 100;
         renderAllTransactions(); renderAccounts();
     }
 }
@@ -3481,14 +3419,8 @@ function openEditTransaction(id) {
     resetAttachmentUI();
     if (t.attachmentId) {
         $('edit-trans-attachment-id').value = t.attachmentId;
-        const preview = $('attachment-preview');
-        const img = $('attachment-img');
-        const status = $('attachment-upload-status');
-        if (preview && img) {
-            img.src = getDriveAttachmentUrl(t.attachmentId);
-            preview.style.display = '';
-            if (status) status.textContent = '已上传到 Drive';
-        }
+        const ids = t.attachmentId.split(',').filter(id => id.trim());
+        renderAttachmentThumbs(ids);
     }
     new bootstrap.Modal($('editTransactionModal')).show();
 }
@@ -3564,9 +3496,12 @@ function updateEditFormCategories() {
     const catSelect = $('edit-trans-category');
     catSelect.innerHTML = '';
     (type === 'expense' ? categories.expense : categories.income).forEach(c => catSelect.add(new Option(c, c)));
-    // 附件区域只在支出时显示
+    // 附件区域和相机按钮只在支出时显示
     const attachSec = $('attachment-section');
-    if (attachSec) attachSec.style.display = type === 'expense' ? '' : 'none';
+    const attachBtn = $('attachment-btn');
+    const isExpense = type === 'expense';
+    if (attachSec) attachSec.style.display = isExpense ? '' : 'none';
+    if (attachBtn) attachBtn.style.display = isExpense ? '' : 'none';
 }
 
 // 编辑弹窗关闭时：若来自账户详情，刷新详情视图
@@ -3700,7 +3635,7 @@ $('edit-transfer-form').addEventListener('submit', (e) => {
         tIn.updatedAt = Date.now();
 
         saveUserData(); triggerAutoSave(); filterUserData();
-        displayedTransactionCount = 100; displayedTransferCount = 100;
+        displayedTransactionCount = 100;
         renderAllTransactions(); renderAccounts();
         bootstrap.Modal.getInstance($('editTransferModal')).hide();
         maybeReturnToDetail();
@@ -3713,20 +3648,20 @@ function clearTransactionFilters() {
     $('filter-start-date').value = '';
     $('filter-end-date').value = '';
     $('trans-user-filter').value = 'all';
-    displayedTransactionCount = 100; displayedTransferCount = 100;
+    displayedTransactionCount = 100;
     applyTransactionFilter();
 }
 
 function handleSearchInput() {
     if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
     searchDebounceTimer = setTimeout(() => {
-        displayedTransactionCount = 100; displayedTransferCount = 100;
+        displayedTransactionCount = 100;
         applyTransactionFilter();
     }, 300);
 }
 
 function applyTransactionFilter() {
-    displayedTransactionCount = 100; displayedTransferCount = 100;
+    displayedTransactionCount = 100;
     renderAllTransactions();
 }
 
@@ -3739,7 +3674,7 @@ function quickDateFilter(p) {
     else if (p === 'year') { start = new Date(today.getFullYear(), 0, 1); end = new Date(today.getFullYear(), 11, 31); }
     $('filter-start-date').value = start ? formatLocal(start) : '';
     $('filter-end-date').value = end ? formatLocal(end) : '';
-    displayedTransactionCount = 100; displayedTransferCount = 100;
+    displayedTransactionCount = 100;
     applyTransactionFilter();
 }
 
@@ -3749,7 +3684,7 @@ function sortTransactions(field) {
     } else {
         currentSortField = field; currentSortDirection = 'desc';
     }
-    displayedTransactionCount = 100; displayedTransferCount = 100;
+    displayedTransactionCount = 100;
     renderAllTransactions();
 }
 
@@ -3757,7 +3692,7 @@ function toggleDisplayMode() {
     const modes = ['all', 'transactions', 'transfers'];
     transactionDisplayMode = modes[(modes.indexOf(transactionDisplayMode) + 1) % modes.length];
     updateTransferModeButton();
-    displayedTransactionCount = 100; displayedTransferCount = 100;
+    displayedTransactionCount = 100;
     renderAllTransactions();
 }
 
@@ -4038,19 +3973,16 @@ function getDriveAttachmentUrl(fileId) {
 
 function resetAttachmentUI() {
     const inputFile = $('attachment-file-input');
-    const preview = $('attachment-preview');
-    const img = $('attachment-img');
+    const container = $('attachment-preview-container');
     const status = $('attachment-upload-status');
     const idField = $('edit-trans-attachment-id');
     if (inputFile) inputFile.value = '';
-    if (preview) preview.style.display = 'none';
-    if (img) img.src = '';
-    if (status) status.textContent = '';
+    if (container) {
+        container.innerHTML = '';
+        container.style.setProperty('display', 'none', 'important');
+    }
+    if (status) { status.textContent = ''; status.style.display = 'none'; }
     if (idField) idField.value = '';
-}
-
-function removeAttachment() {
-    resetAttachmentUI();
 }
 
 async function compressImage(file, maxKB = 200) {
@@ -4091,99 +4023,138 @@ async function compressImage(file, maxKB = 200) {
     });
 }
 
+// 1. 全局状态变量
+let isUploadingAttachment = false;
+
+// 2. 拦截模态框关闭（在 window load 中初始化）
+window.addEventListener('load', () => {
+    const editModalEl = document.getElementById('editTransactionModal');
+    editModalEl.addEventListener('hide.bs.modal', function (event) {
+        if (isUploadingAttachment) {
+            event.preventDefault(); // 阻止关闭
+            alert('图片正在同步至网盘，请稍候...');
+        }
+    });
+    updateTransferModeButton();
+});
+
+// 3. 处理文件选择与上传
 async function handleAttachmentSelected(input) {
-    let file = input.files[0];
+    const file = input.files[0];
     if (!file) return;
 
-    const preview = $('attachment-preview');
-    const img = $('attachment-img');
-    const status = $('attachment-upload-status');
-    const idField = $('edit-trans-attachment-id');
+    // 获取当前已有的 ID 数组
+    let currentIds = $('edit-trans-attachment-id').value ? $('edit-trans-attachment-id').value.split(',').filter(id => id.trim()) : [];
+    if (currentIds.length >= 3) {
+        alert('最多只能上传 3 张照片');
+        input.value = '';
+        return;
+    }
 
-    // 立即显示本地预览（压缩前）
-    const localReader = new FileReader();
-    localReader.onload = e => { if (img) img.src = e.target.result; };
-    localReader.readAsDataURL(file);
-    if (preview) preview.style.display = '';
-    if (status) status.textContent = '处理中…';
+    // 设置上传状态
+    isUploadingAttachment = true;
+    $('attachment-upload-status').style.display = 'block';
+    $('edit-trans-submit-btn').disabled = true; // 禁用保存按钮
 
     try {
-        if (!GAS_URL) throw new Error('请先配置 GAS URL');
+        // 压缩图片后再上传
+        const compressedFile = await compressImage(file, 200);
 
-        // 压缩到 200KB 以内
-        if (file.size > 200 * 1024) {
-            if (status) status.textContent = '压缩中…';
-            file = await compressImage(file, 200);
-        }
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            const base64Data = e.target.result.split(',')[1];
+            const fileName = `attach_${Date.now()}.jpg`;
 
-        // 压缩后更新预览
-        const previewReader = new FileReader();
-        previewReader.onload = e => { if (img) img.src = e.target.result; };
-        previewReader.readAsDataURL(file);
+            try {
+                const response = await fetch(gasRequestUrl({
+                    action: 'uploadFile',
+                    fileName: fileName,
+                    mimeType: 'image/jpeg'
+                }), {
+                    method: 'POST',
+                    body: base64Data
+                });
+                const result = await response.json();
 
-        if (status) status.textContent = '上传中…';
-
-        // 读取为 base64
-        const base64 = await new Promise((resolve, reject) => {
-            const r = new FileReader();
-            r.onload = () => resolve(r.result.split(',')[1]);
-            r.onerror = reject;
-            r.readAsDataURL(file);
-        });
-
-        const payload = JSON.stringify({
-            action: 'uploadAttachment',
-            token: GAS_TOKEN,
-            filename: `attachment_${Date.now()}.jpg`,
-            mimeType: 'image/jpeg',
-            data: base64
-        });
-
-        const resp = await fetch(`${GAS_URL}?token=${encodeURIComponent(GAS_TOKEN)}`, {
-            method: 'POST',
-            body: payload,
-            headers: { 'Content-Type': 'text/plain' }
-        });
-        const text = (await resp.text()).trim();
-        let result;
-        try { result = JSON.parse(text); } catch { throw new Error('GAS 返回格式错误: ' + text); }
-
-        if (result.error) throw new Error(result.error);
-        if (!result.fileId) throw new Error('未返回 fileId');
-
-        if (idField) idField.value = result.fileId;
-        if (status) status.textContent = `✅ 已上传（${Math.round(file.size/1024)}KB）`;
-
+                if (result.status === 'success') {
+                    // 将新 ID 加入数组
+                    currentIds.push(result.fileId);
+                    $('edit-trans-attachment-id').value = currentIds.join(',');
+                    // 重新渲染预览
+                    renderAttachmentThumbs(currentIds);
+                } else {
+                    alert('上传失败: ' + result.message);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('网络错误，上传失败');
+            } finally {
+                isUploadingAttachment = false;
+                $('attachment-upload-status').style.display = 'none';
+                $('edit-trans-submit-btn').disabled = false;
+                input.value = ''; // 清空 input 方便下次触发
+            }
+        };
+        reader.readAsDataURL(compressedFile);
     } catch (err) {
-        if (status) status.textContent = '❌ 上传失败：' + err.message;
-        console.error('附件上传失败', err);
+        console.error(err);
+        alert('图片处理失败');
+        isUploadingAttachment = false;
+        $('attachment-upload-status').style.display = 'none';
+        $('edit-trans-submit-btn').disabled = false;
+        input.value = '';
     }
 }
 
-//大图预览800px
-function showFullImagePreview() {
-    const imgElement = document.getElementById('attachment-img');
-    if (!imgElement || !imgElement.src) return;
-
-    // 创建全屏遮罩
-    const overlay = document.createElement('div');
-    overlay.style = `
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.95); z-index: 9999;
-        display: flex; align-items: center; justify-content: center;
-        cursor: zoom-out;
-    `;
-
-    const fullImg = document.createElement('img');
-    fullImg.src = imgElement.src; // 沿用 w800 链接
-    fullImg.style = "max-width: 95%; max-height: 95%; object-fit: contain; border-radius: 4px;";
-
-    // 点击遮罩任何地方关闭
-    overlay.onclick = () => document.body.removeChild(overlay);
+// 4. 渲染多张缩略图
+function renderAttachmentThumbs(ids) {
+    const container = $('attachment-preview-container');
+    container.innerHTML = '';
     
+    if (!ids || ids.length === 0) {
+        container.style.setProperty('display', 'none', 'important');
+        return;
+    }
+
+    container.style.setProperty('display', 'flex', 'important');
+    ids.forEach((id, index) => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'thumb-wrapper';
+        
+        // 使用你之前确认的 800px 接口
+        const url = `https://drive.google.com/thumbnail?id=${id}&sz=w800`;
+        
+        wrapper.innerHTML = `
+            <img src="${url}" class="thumb-img" onclick="showFullImagePreviewFromSrc('${url}')">
+            <button type="button" class="thumb-remove" onclick="removeSpecificAttachment(${index})">✕</button>
+        `;
+        container.appendChild(wrapper);
+    });
+}
+
+// 5. 删除特定位置的图片
+function removeSpecificAttachment(index) {
+    const rawVal = $('edit-trans-attachment-id').value;
+    let ids = rawVal ? rawVal.split(',').filter(id => id.trim()) : [];
+    ids.splice(index, 1);
+    $('edit-trans-attachment-id').value = ids.join(',');
+    renderAttachmentThumbs(ids);
+}
+
+// 6. 适配全屏预览 (稍微修改下之前的函数名/参数)
+function showFullImagePreviewFromSrc(src) {
+    const overlay = document.createElement('div');
+    overlay.style = `position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); 
+                     z-index:9999; display:flex; align-items:center; justify-content:center; cursor:zoom-out;`;
+    const fullImg = document.createElement('img');
+    fullImg.src = src;
+    fullImg.style = "max-width:95%; max-height:95%; object-fit:contain;";
+    overlay.onclick = () => document.body.removeChild(overlay);
     overlay.appendChild(fullImg);
     document.body.appendChild(overlay);
 }
+
+
 
 function applyDescHint(catId, category) {
     const catEl = $(catId);
@@ -4282,7 +4253,7 @@ function switchAssetAggregation(type, el) {
     $$('.chart-card .btn-group button').forEach(b => b.classList.remove('active'));
     el.classList.add('active');
     currentAssetAggregation = type;
-    renderAssetHistoryChart(currentStatsFilter.user);
+    renderAssetHistoryChart();
 }
 
 function renderStats() {
@@ -4313,7 +4284,7 @@ function renderStats() {
     renderExpenseChart(filtered);
     renderTagChart(filtered);
     renderTrendChart(filtered);
-    renderAssetHistoryChart(currentStatsFilter.user);
+    renderAssetHistoryChart();
     renderCategoryTrendChart(filtered);
     renderTotalExpenseTrendChart(filtered);
     const sel = $('category-trend-select');
@@ -4392,7 +4363,7 @@ function renderTrendChart(data) {
     });
 }
 
-function renderAssetHistoryChart(userFilter) {
+function renderAssetHistoryChart() {
     const ctx = $('assetHistoryChart');
     if (!ctx) return;
     if (chartInstances.assetHistory) { chartInstances.assetHistory.destroy(); chartInstances.assetHistory = null; }
@@ -4512,7 +4483,7 @@ function updateSelectOptions() {
             el.add(new Option(`${getAccountDisplayName(a)} (${CURRENCY_SYMBOLS[a.currency] || a.currency})`, a.id));
         });
     };
-    accFill('edit-trans-account', false); accFill('planned-account', false); accFill('edit-planned-account', false);
+    accFill('edit-trans-account', false); accFill('planned-account', false);
 
     const uf = $('trans-user-filter');
     if (uf) {
@@ -4526,7 +4497,7 @@ function updateSelectOptions() {
 // ==================== 标签页切换 ====================
 function switchTab(t, el) {
     // 切换 tab 前强制关闭所有打开的弹窗，清理残留 backdrop
-    ['editTransactionModal','editTransferModal','editAccountModal'].forEach(id => {
+    ['editTransactionModal','editTransferModal','accountModal','plannedModal'].forEach(id => {
         const inst = bootstrap.Modal.getInstance($(id));
         if (inst) inst.hide();
     });
@@ -4895,79 +4866,102 @@ function renderPlannedTransactions() {
     });
 }
 
-function updatePlannedCategories(prefix = 'planned') {
-    const type = $(`${prefix}-type`).value;
-    const select = $(`${prefix}-category`);
+function updatePlannedCategories() {
+    const type = $('planned-type').value;
+    const select = $('planned-category');
     if (!select) return;
     select.innerHTML = '';
     (type === 'expense' ? categories.expense : categories.income).forEach(c => select.add(new Option(c, c)));
 }
 
-function updateEditPlannedCategories() { updatePlannedCategories('edit-planned'); }
 
-$('add-planned-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const plan = {
-        id: Date.now(),
-        name: $('planned-name').value,
-        type: $('planned-type').value,
-        accountId: $('planned-account').value,
-        category: $('planned-category').value,
-        amount: parseFloat($('planned-amount').value),
-        recurrence: $('planned-recurrence').value,
-        startDate: $('planned-start-date').value,
-        endDate: $('planned-end-date').value || null,
-        dayOfMonth: parseInt($('planned-day-of-month').value),
-        lastGenerated: null, ownerName: currentUserName,
-        desc: $('planned-desc').value,
-        tags: $('planned-tags').value,
-        updatedAt: Date.now()
-    };
-    plannedTransactions.push(plan);
-    saveUserData(); triggerAutoSave(); loadAllData(); filterUserData(); renderPlannedTransactions();
-    bootstrap.Modal.getInstance($('addPlannedModal')).hide();
-    e.target.reset(); showToast('计划已创建', 'success');
-});
+
+function openNewPlanned() {
+    $('planned-id').value = '';
+    $('planned-mode').value = 'add';
+    $('plannedModalTitle').textContent = '新增计划交易';
+    $('planned-submit-btn').textContent = '保存计划';
+    $('planned-name').value = '';
+    $('planned-type').value = 'expense';
+    updatePlannedCategories();
+    $('planned-amount').value = '';
+    $('planned-recurrence').value = 'monthly';
+    $('planned-day-of-month').value = '1';
+    $('planned-start-date').value = new Date().toISOString().split('T')[0];
+    $('planned-end-date').value = '';
+    $('planned-desc').value = '';
+    $('planned-tags').value = '';
+    new bootstrap.Modal($('plannedModal')).show();
+}
 
 function openEditPlanned(id) {
     const plan = plannedTransactions.find(p => p.id === id);
     if (!plan || plan.ownerName !== currentUserName) return;
-    $('edit-planned-id').value = plan.id;
-    $('edit-planned-name').value = plan.name;
-    $('edit-planned-type').value = plan.type;
-    updateEditPlannedCategories();
-    $('edit-planned-account').value = plan.accountId;
-    $('edit-planned-category').value = plan.category;
-    $('edit-planned-amount').value = plan.amount;
-    $('edit-planned-recurrence').value = plan.recurrence;
-    $('edit-planned-start-date').value = plan.startDate;
-    $('edit-planned-end-date').value = plan.endDate || '';
-    $('edit-planned-desc').value = plan.desc || '';
-    $('edit-planned-tags').value = plan.tags || '';
-    $('edit-planned-day-of-month').value = plan.dayOfMonth;
-    new bootstrap.Modal($('editPlannedModal')).show();
+    $('planned-id').value = plan.id;
+    $('planned-mode').value = 'edit';
+    $('plannedModalTitle').textContent = '编辑计划交易';
+    $('planned-submit-btn').textContent = '保存修改';
+    $('planned-name').value = plan.name;
+    $('planned-type').value = plan.type;
+    updatePlannedCategories();
+    $('planned-account').value = plan.accountId;
+    $('planned-category').value = plan.category;
+    $('planned-amount').value = plan.amount;
+    $('planned-recurrence').value = plan.recurrence;
+    $('planned-start-date').value = plan.startDate;
+    $('planned-end-date').value = plan.endDate || '';
+    $('planned-desc').value = plan.desc || '';
+    $('planned-tags').value = plan.tags || '';
+    $('planned-day-of-month').value = plan.dayOfMonth;
+    new bootstrap.Modal($('plannedModal')).show();
 }
 
-$('edit-planned-form').addEventListener('submit', (e) => {
+$('planned-form').addEventListener('submit', (e) => {
     e.preventDefault();
-    const id = parseInt($('edit-planned-id').value);
-    const plan = plannedTransactions.find(p => p.id === id);
-    if (plan) {
-        plan.name = $('edit-planned-name').value;
-        plan.type = $('edit-planned-type').value;
-        plan.accountId = $('edit-planned-account').value;
-        plan.category = $('edit-planned-category').value;
-        plan.amount = parseFloat($('edit-planned-amount').value);
-        plan.recurrence = $('edit-planned-recurrence').value;
-        plan.startDate = $('edit-planned-start-date').value;
-        plan.endDate = $('edit-planned-end-date').value || null;
-        plan.dayOfMonth = parseInt($('edit-planned-day-of-month').value);
-        plan.desc = $('edit-planned-desc').value;
-        plan.tags = $('edit-planned-tags').value;
-        plan.updatedAt = Date.now();
+    const mode = $('planned-mode').value;
+
+    if (mode === 'add') {
+        const plan = {
+            id: Date.now(),
+            name: $('planned-name').value,
+            type: $('planned-type').value,
+            accountId: $('planned-account').value,
+            category: $('planned-category').value,
+            amount: parseFloat($('planned-amount').value),
+            recurrence: $('planned-recurrence').value,
+            startDate: $('planned-start-date').value,
+            endDate: $('planned-end-date').value || null,
+            dayOfMonth: parseInt($('planned-day-of-month').value),
+            lastGenerated: null, ownerName: currentUserName,
+            desc: $('planned-desc').value,
+            tags: $('planned-tags').value,
+            updatedAt: Date.now()
+        };
+        plannedTransactions.push(plan);
         saveUserData(); triggerAutoSave(); loadAllData(); filterUserData(); renderPlannedTransactions();
-        bootstrap.Modal.getInstance($('editPlannedModal')).hide();
-        showToast('计划已更新', 'success');
+        bootstrap.Modal.getInstance($('plannedModal')).hide();
+        e.target.reset();
+        showToast('计划已创建', 'success');
+    } else {
+        const id = parseInt($('planned-id').value);
+        const plan = plannedTransactions.find(p => p.id === id);
+        if (plan) {
+            plan.name = $('planned-name').value;
+            plan.type = $('planned-type').value;
+            plan.accountId = $('planned-account').value;
+            plan.category = $('planned-category').value;
+            plan.amount = parseFloat($('planned-amount').value);
+            plan.recurrence = $('planned-recurrence').value;
+            plan.startDate = $('planned-start-date').value;
+            plan.endDate = $('planned-end-date').value || null;
+            plan.dayOfMonth = parseInt($('planned-day-of-month').value);
+            plan.desc = $('planned-desc').value;
+            plan.tags = $('planned-tags').value;
+            plan.updatedAt = Date.now();
+            saveUserData(); triggerAutoSave(); loadAllData(); filterUserData(); renderPlannedTransactions();
+            bootstrap.Modal.getInstance($('plannedModal')).hide();
+            showToast('计划已更新', 'success');
+        }
     }
 });
 
