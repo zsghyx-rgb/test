@@ -5189,6 +5189,12 @@ if ('serviceWorker' in navigator) {
         }).catch(err => {
             console.warn('[PWA] SW registration failed:', err);
         });
+
+        navigator.serviceWorker.addEventListener('message', e => {
+            if (e.data?.type === 'HTML_UPDATED') {
+                showToast('🔄 有新版本，下次打开生效', 'info', 5000);
+            }
+        });
     });
 }
 </script>
