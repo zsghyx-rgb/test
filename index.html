@@ -4143,6 +4143,7 @@ function renderAttachmentThumbs(ids) {
 
 // 5. 删除特定位置的图片
 function removeSpecificAttachment(index) {
+if (!confirm('确定删除这张附件吗？')) return;
     const rawVal = $('edit-trans-attachment-id').value;
     let ids = rawVal ? rawVal.split(',').filter(id => id.trim()) : [];
     ids.splice(index, 1);
