@@ -1638,8 +1638,8 @@ function gasRequestUrl(options = {}) {
     if (GAS_TOKEN)        params.push(`token=${encodeURIComponent(GAS_TOKEN)}`);
     if (options.action)   params.push(`action=${encodeURIComponent(options.action)}`);
     if (options.file)     params.push(`file=${encodeURIComponent(options.file)}`);
-    if (options.fileName) params.push(`fileName=${encodeURIComponent(options.fileName)}`);
-    if (options.mimeType) params.push(`mimeType=${encodeURIComponent(options.mimeType)}`);
+    if (options.fileName) params.push(`fileName=${encodeURIComponent(options.fileName)}`); // ← 补上
+    if (options.mimeType) params.push(`mimeType=${encodeURIComponent(options.mimeType)}`); // ← 补上
     return params.length ? `${GAS_URL}?${params.join('&')}` : GAS_URL;
 }
 
@@ -4068,24 +4068,27 @@ async function handleAttachmentSelected(input) {
             const fileName = `attach_${Date.now()}.jpg`;
 
             try {
-                const response = await fetch(gasRequestUrl({
-                    action: 'uploadFile',
-                    fileName: fileName,
-                    mimeType: 'image/jpeg'
-                }), {
+                const payload = JSON.stringify({
+                    action: 'uploadAttachment',
+                    filename: fileName,
+                    mimeType: 'image/jpeg',
+                    data: base64Data
+                });
+                const response = await fetch(`${GAS_URL}?token=${encodeURIComponent(GAS_TOKEN)}`, {
                     method: 'POST',
-                    body: base64Data
+                    body: payload,
+                    headers: { 'Content-Type': 'text/plain' }
                 });
                 const result = await response.json();
 
-                if (result.status === 'success') {
+                if (result.fileId) {
                     // 将新 ID 加入数组
                     currentIds.push(result.fileId);
                     $('edit-trans-attachment-id').value = currentIds.join(',');
                     // 重新渲染预览
                     renderAttachmentThumbs(currentIds);
                 } else {
-                    alert('上传失败: ' + result.message);
+                    alert('上传失败: ' + (result.error || '未知错误'));
                 }
             } catch (err) {
                 console.error(err);
