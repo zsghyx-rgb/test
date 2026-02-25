@@ -4056,11 +4056,14 @@ async function handleAttachmentSelected(input) {
     // 设置上传状态
     isUploadingAttachment = true;
     $('attachment-upload-status').style.display = 'block';
-    $('edit-trans-submit-btn').disabled = true; // 禁用保存按钮
+    $('attachment-upload-status').textContent = '压缩中…';
+    $('edit-trans-submit-btn').disabled = true;
 
     try {
         // 压缩图片后再上传
         const compressedFile = await compressImage(file, 200);
+
+        $('attachment-upload-status').textContent = '上传中…';
 
         const reader = new FileReader();
         reader.onload = async function(e) {
@@ -4082,22 +4085,23 @@ async function handleAttachmentSelected(input) {
                 const result = await response.json();
 
                 if (result.fileId) {
-                    // 将新 ID 加入数组
                     currentIds.push(result.fileId);
                     $('edit-trans-attachment-id').value = currentIds.join(',');
-                    // 重新渲染预览
                     renderAttachmentThumbs(currentIds);
+                    // 显示压缩后的实际上传大小
+                    $('attachment-upload-status').textContent = `✅ 已上传（${Math.round(compressedFile.size / 1024)}KB）`;
                 } else {
+                    $('attachment-upload-status').textContent = '';
                     alert('上传失败: ' + (result.error || '未知错误'));
                 }
             } catch (err) {
                 console.error(err);
+                $('attachment-upload-status').textContent = '';
                 alert('网络错误，上传失败');
             } finally {
                 isUploadingAttachment = false;
-                $('attachment-upload-status').style.display = 'none';
                 $('edit-trans-submit-btn').disabled = false;
-                input.value = ''; // 清空 input 方便下次触发
+                input.value = '';
             }
         };
         reader.readAsDataURL(compressedFile);
@@ -4105,6 +4109,7 @@ async function handleAttachmentSelected(input) {
         console.error(err);
         alert('图片处理失败');
         isUploadingAttachment = false;
+        $('attachment-upload-status').textContent = '';
         $('attachment-upload-status').style.display = 'none';
         $('edit-trans-submit-btn').disabled = false;
         input.value = '';
@@ -4115,7 +4120,7 @@ async function handleAttachmentSelected(input) {
 function renderAttachmentThumbs(ids) {
     const container = $('attachment-preview-container');
     container.innerHTML = '';
-    
+
     if (!ids || ids.length === 0) {
         container.style.setProperty('display', 'none', 'important');
         return;
@@ -4125,10 +4130,9 @@ function renderAttachmentThumbs(ids) {
     ids.forEach((id, index) => {
         const wrapper = document.createElement('div');
         wrapper.className = 'thumb-wrapper';
-        
-        // 使用你之前确认的 800px 接口
+
         const url = `https://drive.google.com/thumbnail?id=${id}&sz=w800`;
-        
+
         wrapper.innerHTML = `
             <img src="${url}" class="thumb-img" onclick="showFullImagePreviewFromSrc('${url}')">
             <button type="button" class="thumb-remove" onclick="removeSpecificAttachment(${index})">✕</button>
@@ -4146,7 +4150,7 @@ function removeSpecificAttachment(index) {
     renderAttachmentThumbs(ids);
 }
 
-// 6. 适配全屏预览 (稍微修改下之前的函数名/参数)
+// 6. 全屏预览
 function showFullImagePreviewFromSrc(src) {
     const overlay = document.createElement('div');
     overlay.style = `position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); 
