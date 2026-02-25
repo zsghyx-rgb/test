@@ -1635,9 +1635,11 @@ function formatAmount(amt, currency) {
 /** 构建带 token 的请求 URL，支持 file / action 额外参数 */
 function gasRequestUrl(options = {}) {
     const params = [];
-    if (GAS_TOKEN) params.push(`token=${encodeURIComponent(GAS_TOKEN)}`);
-    if (options.action) params.push(`action=${encodeURIComponent(options.action)}`);
-    if (options.file)   params.push(`file=${encodeURIComponent(options.file)}`);
+    if (GAS_TOKEN)        params.push(`token=${encodeURIComponent(GAS_TOKEN)}`);
+    if (options.action)   params.push(`action=${encodeURIComponent(options.action)}`);
+    if (options.file)     params.push(`file=${encodeURIComponent(options.file)}`);
+    if (options.fileName) params.push(`fileName=${encodeURIComponent(options.fileName)}`);
+    if (options.mimeType) params.push(`mimeType=${encodeURIComponent(options.mimeType)}`);
     return params.length ? `${GAS_URL}?${params.join('&')}` : GAS_URL;
 }
 
