@@ -888,10 +888,12 @@ body {
 
         <!-- ==================== 统计视图 ==================== -->
         <div id="view-stats" class="view-section">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h4 class="mb-0">数据分析</h4>
-                <div class="btn-group" id="stats-currency-btns">
-                    <!-- dynamically rendered based on account currencies -->
+            <div class="d-flex align-items-center mb-3 gap-2">
+                <h4 class="mb-0 flex-shrink-0">数据分析</h4>
+                <div style="overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex:1;min-width:0;">
+                    <div class="btn-group flex-nowrap" id="stats-currency-btns" style="white-space:nowrap;">
+                        <!-- dynamically rendered based on account currencies -->
+                    </div>
                 </div>
             </div>
 
@@ -1519,6 +1521,20 @@ body {
                         <label class="compact-form-label">备注</label>
                         <input type="text" class="form-control compact-form-control" id="edit-trans-desc" oninput="updateDescHint('edit-trans-desc','edit-trans-desc-hint','edit-trans-type','edit-trans-category','edit-trans-account')">
                         <div id="edit-trans-desc-hint" style="display:none;align-items:center;gap:6px;margin-top:3px;padding:3px 8px;border-radius:5px;background:rgba(var(--bs-primary-rgb),0.08);border:1px solid rgba(var(--bs-primary-rgb),0.2);font-size:0.78rem;"></div>
+                    </div>
+                    <!-- 附件（仅支出显示） -->
+                    <div class="mb-2" id="attachment-section" style="display:none;">
+                        <label class="compact-form-label">附件</label>
+                        <input type="file" id="attachment-file-input" accept="image/*" capture="environment" class="d-none" onchange="handleAttachmentSelected(this)">
+                        <div id="attachment-preview" style="display:none;position:relative;margin-bottom:6px;">
+                            <img id="attachment-img" src="" style="max-width:100%;max-height:160px;border-radius:6px;border:1px solid var(--bs-border-color);object-fit:cover;">
+                            <button type="button" onclick="removeAttachment()" style="position:absolute;top:4px;right:4px;border:none;background:rgba(0,0,0,0.5);color:#fff;border-radius:50%;width:22px;height:22px;font-size:0.75rem;line-height:1;cursor:pointer;">✕</button>
+                            <div id="attachment-upload-status" style="font-size:0.75rem;color:var(--bs-secondary);margin-top:3px;"></div>
+                        </div>
+                        <button type="button" class="btn btn-outline-secondary btn-sm w-100" id="attachment-pick-btn" onclick="document.getElementById('attachment-file-input').click()">
+                            <i class="bi bi-image me-1"></i>从图库选择 / 拍照
+                        </button>
+                        <input type="hidden" id="edit-trans-attachment-id" value="">
                     </div>
                     <button type="submit" class="btn btn-primary btn-sm w-100 mt-2" id="edit-trans-submit-btn">保存修改</button>
                     <button type="button" class="btn btn-outline-danger btn-sm w-100 mt-2 d-md-none" id="edit-trans-delete-btn" onclick="deleteCurrentTransaction()">删除交易</button>
@@ -3179,12 +3195,12 @@ function renderDetailContent(id) {
                     // 转入：显示来源（转出方）账户
                     typeText = '转入';
                     typeColorClass = 'text-warning';
-                    amtColorClass = 'text-success';
+                    amtColorClass = 'text-warning';
                     if (tOut) {
                         const accFrom = accounts.find(a => a.id == tOut.accountId);
                         if (accFrom) {
                             toAccDisplay = `<small>${getAccountDisplayName(accFrom)}</small>`;
-                            peerAmtDisplay = `<div class="text-end text-muted"><small>${CURRENCY_SYMBOLS[accFrom.currency]}${formatAmount(Math.abs(tOut.amount), accFrom.currency)}</small></div>`;
+                            peerAmtDisplay = `<div class="text-end text-warning"><small>${CURRENCY_SYMBOLS[accFrom.currency]}${formatAmount(Math.abs(tOut.amount), accFrom.currency)}</small></div>`;
                         }
                     }
                 } else {
@@ -3196,7 +3212,7 @@ function renderDetailContent(id) {
                         const accTo = accounts.find(a => a.id == tIn.accountId);
                         if (accTo) {
                             toAccDisplay = `<small>${getAccountDisplayName(accTo)}</small>`;
-                            peerAmtDisplay = `<div class="text-end fw-bold text-success">${CURRENCY_SYMBOLS[accTo.currency]}${formatAmount(Math.abs(tIn.amount), accTo.currency)}</div>`;
+                            peerAmtDisplay = `<div class="text-end fw-bold text-warning">${CURRENCY_SYMBOLS[accTo.currency]}${formatAmount(Math.abs(tIn.amount), accTo.currency)}</div>`;
                         }
                     }
                 }
@@ -3206,9 +3222,7 @@ function renderDetailContent(id) {
                 amtColorClass = t.amount < 0 ? 'text-danger' : 'text-success';
             }
 
-            const displayAmt = isTransferIn
-                ? `+${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}`
-                : `${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}`;
+            const displayAmt = `${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}`;
 
             const editBtns = canEdit
                 ? (isTransfer
@@ -3496,6 +3510,20 @@ function openEditTransaction(id) {
     $('edit-trans-amount').value = Math.abs(t.amount);
     $('edit-trans-tags').value = t.tags || '';
     $('edit-trans-desc').value = t.desc || '';
+    // 加载附件
+    resetAttachmentUI();
+    if (t.attachmentId) {
+        $('edit-trans-attachment-id').value = t.attachmentId;
+        const preview = $('attachment-preview');
+        const img = $('attachment-img');
+        const status = $('attachment-upload-status');
+        if (preview && img) {
+            img.src = getDriveAttachmentUrl(t.attachmentId);
+            preview.style.display = '';
+            if (status) status.textContent = '已上传到 Drive';
+            $('attachment-pick-btn').textContent = '更换附件';
+        }
+    }
     new bootstrap.Modal($('editTransactionModal')).show();
 }
 
@@ -3570,15 +3598,18 @@ function updateEditFormCategories() {
     const catSelect = $('edit-trans-category');
     catSelect.innerHTML = '';
     (type === 'expense' ? categories.expense : categories.income).forEach(c => catSelect.add(new Option(c, c)));
+    // 附件区域只在支出时显示
+    const attachSec = $('attachment-section');
+    if (attachSec) attachSec.style.display = type === 'expense' ? '' : 'none';
 }
 
 // 编辑弹窗关闭时：若来自账户详情，刷新详情视图
 function onSubModalHide() {
     const hintEl = $('edit-trans-desc-hint');
     if (hintEl) hintEl.style.display = 'none';
+    resetAttachmentUI();
     maybeReturnToDetail();
 }
-
 $('editTransactionModal').addEventListener('hidden.bs.modal', onSubModalHide);
 $('editTransferModal').addEventListener('hidden.bs.modal', onSubModalHide);
 
@@ -3592,6 +3623,7 @@ $('edit-transaction-form').addEventListener('submit', (e) => {
     const amount = parseFloat($('edit-trans-amount').value);
     const tags = $('edit-trans-tags').value;
     const desc = $('edit-trans-desc').value;
+    const attachmentId = $('edit-trans-attachment-id')?.value || '';
     const finalAmount = type === 'expense' ? -Math.abs(amount) : Math.abs(amount);
 
     if (mode === 'add') {
@@ -3600,6 +3632,7 @@ $('edit-transaction-form').addEventListener('submit', (e) => {
         transactions.unshift({
             id: Date.now() + Math.random(), date, type, accountId,
             amount: finalAmount, category, tags, desc,
+            ...(attachmentId ? { attachmentId } : {}),
             ownerName: currentUserName, isTransfer: false, updatedAt: Date.now()
         });
         saveUserData(); triggerAutoSave(); loadAllData(); filterUserData();
@@ -3616,6 +3649,7 @@ $('edit-transaction-form').addEventListener('submit', (e) => {
         $('edit-trans-desc').value = '';
         const hintEl = $('edit-trans-desc-hint');
         if (hintEl) hintEl.style.display = 'none';
+        resetAttachmentUI();
         showToast('✅ 已添加', 'success', 1500);
     } else {
         const id = parseFloat($('edit-trans-id').value);
@@ -3623,6 +3657,8 @@ $('edit-transaction-form').addEventListener('submit', (e) => {
         if (t) {
             t.date = date; t.type = type; t.accountId = accountId;
             t.category = category; t.amount = finalAmount; t.tags = tags; t.desc = desc;
+            if (attachmentId) t.attachmentId = attachmentId;
+            else delete t.attachmentId;
             t.updatedAt = Date.now();
             saveUserData(); triggerAutoSave(); filterUserData();
             displayedTransactionCount = 100;
@@ -3864,10 +3900,10 @@ function renderAllTransactions() {
             <td><div class="text-start ps-2 ${typeColorClass}">${typeText}</div></td>
             <td>${t.category || ''}</td>
             <td><small>${getAccountDisplayName(acc)}</small></td>
-            <td><div class="text-end fw-bold ${t.amount < 0 ? 'text-danger' : 'text-success'}">${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}</div></td>
+            <td><div class="text-end fw-bold ${t.isTransfer ? 'text-warning' : (t.amount < 0 ? 'text-danger' : 'text-success')}">${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}</div></td>
             <td>${toAccountDisplay}</td>
             <td>${amountInDisplay}</td>
-            <td><div class="desc-content" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:250px;" title="${(t.desc||'').replace(/"/g,'&quot;')}">${t.desc||''}</div></td>
+            <td><div class="desc-content" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:250px;" title="${(t.desc||'').replace(/"/g,'&quot;')}">${t.desc||''}${t.attachmentId ? ` <a href="${getDriveAttachmentUrl(t.attachmentId)}" target="_blank" title="查看附件" onclick="event.stopPropagation()"><i class="bi bi-paperclip text-muted"></i></a>` : ''}</div></td>
             <td>${t.tags||''}</td>
             <td><span class="badge bg-secondary">${t.ownerName}</span></td>
             <td><div class="text-center">${editBtns}</div></td>`;
@@ -3889,6 +3925,7 @@ function renderAllTransactions() {
             let descClean = t.desc || '';
             if (descClean.includes(': ')) descClean = descClean.split(': ')[1];
             const finalNote = descClean ? `#${descClean}` : (t.isTransfer ? '#转账' : '');
+            const attachIcon = t.attachmentId ? ` <a href="${getDriveAttachmentUrl(t.attachmentId)}" target="_blank" onclick="event.stopPropagation()"><i class="bi bi-paperclip" style="color:var(--bs-secondary);font-size:0.75rem;"></i></a>` : '';
 
             if (t.isTransfer && t.type === 'expense') {
                 const accTo = accounts.find(a => a.id == t.relatedAccountId);
@@ -3901,7 +3938,7 @@ function renderAllTransactions() {
                 card.innerHTML = `
                     <div class="card-line-1">
                         <span class="text-muted small me-2">${t.date}</span>
-                        <div class="flex-grow-1 me-2" style="min-width:0;"><div class="text-muted small scrolling-note">${finalNote}${tagsDisplay}</div></div>
+                        <div class="flex-grow-1 me-2" style="min-width:0;"><div class="text-muted small scrolling-note">${finalNote}${tagsDisplay}${attachIcon}</div></div>
                         <div class="amount-transfer fw-bold">${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}</div>
                     </div>
                     <div class="card-line-2 d-flex justify-content-between align-items-center">
@@ -3913,7 +3950,7 @@ function renderAllTransactions() {
                 card.innerHTML = `
                     <div class="card-line-1">
                         <span class="text-muted small me-2">${t.date}</span>
-                        <div class="flex-grow-1 me-2" style="min-width:0;"><div class="text-muted small scrolling-note">${finalNote}${tagsDisplay}</div></div>
+                        <div class="flex-grow-1 me-2" style="min-width:0;"><div class="text-muted small scrolling-note">${finalNote}${tagsDisplay}${attachIcon}</div></div>
                         <div class="${amountClass} fw-bold">${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}</div>
                     </div>
                     <div class="card-line-2">
@@ -4024,6 +4061,92 @@ function updateDescHint(descId, hintId, typeId, catId, accId) {
         ` <span style="color:var(--bs-secondary);font-size:0.72rem;">(${result.count}次)</span></span>` +
         `<button type="button" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size:0.73rem;"` +
         ` onclick="applyDescHint('${catId}','${result.category}')">应用</button>`;
+}
+
+// ==================== 附件功能 ====================
+
+function getDriveAttachmentUrl(fileId) {
+    // 使用 Google Drive 直接预览链接
+    return `https://drive.google.com/thumbnail?id=${fileId}&sz=w800`;
+}
+
+function resetAttachmentUI() {
+    const input = $('attachment-file-input');
+    const preview = $('attachment-preview');
+    const img = $('attachment-img');
+    const status = $('attachment-upload-status');
+    const idField = $('edit-trans-attachment-id');
+    const pickBtn = $('attachment-pick-btn');
+    if (input) input.value = '';
+    if (preview) preview.style.display = 'none';
+    if (img) img.src = '';
+    if (status) status.textContent = '';
+    if (idField) idField.value = '';
+    if (pickBtn) pickBtn.innerHTML = '<i class="bi bi-image me-1"></i>从图库选择 / 拍照';
+}
+
+function removeAttachment() {
+    resetAttachmentUI();
+}
+
+async function handleAttachmentSelected(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const preview = $('attachment-preview');
+    const img = $('attachment-img');
+    const status = $('attachment-upload-status');
+    const idField = $('edit-trans-attachment-id');
+    const pickBtn = $('attachment-pick-btn');
+
+    // 立即显示本地预览
+    const reader = new FileReader();
+    reader.onload = e => { if (img) img.src = e.target.result; };
+    reader.readAsDataURL(file);
+    if (preview) preview.style.display = '';
+    if (status) status.textContent = '上传中…';
+    if (pickBtn) pickBtn.disabled = true;
+
+    try {
+        if (!GAS_URL) throw new Error('请先配置 GAS URL');
+
+        // 读取为 base64
+        const base64 = await new Promise((resolve, reject) => {
+            const r = new FileReader();
+            r.onload = () => resolve(r.result.split(',')[1]);
+            r.onerror = reject;
+            r.readAsDataURL(file);
+        });
+
+        const payload = JSON.stringify({
+            action: 'uploadAttachment',
+            token: GAS_TOKEN,
+            filename: `attachment_${Date.now()}.${file.name.split('.').pop()}`,
+            mimeType: file.type,
+            data: base64
+        });
+
+        const resp = await fetch(GAS_URL, {
+            method: 'POST',
+            body: payload,
+            headers: { 'Content-Type': 'text/plain' }
+        });
+        const text = (await resp.text()).trim();
+        let result;
+        try { result = JSON.parse(text); } catch { throw new Error('GAS 返回格式错误: ' + text); }
+
+        if (result.error) throw new Error(result.error);
+        if (!result.fileId) throw new Error('未返回 fileId');
+
+        if (idField) idField.value = result.fileId;
+        if (status) status.textContent = '✅ 已上传到 Drive';
+        if (pickBtn) { pickBtn.innerHTML = '<i class="bi bi-image me-1"></i>更换附件'; pickBtn.disabled = false; }
+
+    } catch (err) {
+        if (status) status.textContent = '❌ 上传失败：' + err.message;
+        if (pickBtn) pickBtn.disabled = false;
+        console.error('附件上传失败', err);
+    }
 }
 
 function applyDescHint(catId, category) {
