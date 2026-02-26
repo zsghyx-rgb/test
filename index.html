@@ -1,7 +1,7 @@
 <!DOCTYPE html><html lang="zh-CN" data-bs-theme="dark"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Test-APP</title>
+    <title>Test-app</title>
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0d6efd">
@@ -547,7 +547,7 @@ body {
 <!-- ==================== 登录界面 ==================== -->
 <div id="login-overlay">
     <div class="card shadow p-3 p-md-4" style="width: 480px; max-width: 95%;">
-        <h4 class="text-center mb-3 text-primary"><i class="bi bi-wallet2"></i> Test-APP v1.0.1</h4>
+        <h4 class="text-center mb-3 text-primary"><i class="bi bi-wallet2"></i> Test-app v1.0.2</h4>
 
         <!-- GAS URL 配置（首次填写，之后折叠） -->
         <div class="mb-3" id="gas-url-section" style="display: none;">
@@ -643,7 +643,7 @@ body {
     <div class="sidebar">
         <div class="brand-title">
             <i class="bi bi-wallet2"></i>
-            <span style="font-size: 0.7rem;">Test-APP</span>
+            <span style="font-size: 0.7rem;">Test-app</span>
         </div>
         <ul class="nav nav-pills flex-md-column mb-auto">
             <li class="nav-item">
@@ -1947,13 +1947,6 @@ function onDataLoaded() {
         btn.onclick = () => loginWithUser(name);
         container.appendChild(btn);
     });
-
-    // 只有一个用户时自动登录，多个用户时滚动到用户选择区
-    if (dataUsers.length === 1) {
-        loginWithUser(dataUsers[0]);
-    } else {
-        $('user-section').scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
 }
 
 /**
@@ -2511,10 +2504,48 @@ async function syncToDrive(manual = false, forcePush = false) {
     saveUserData();
 
     try {
-        // 直接用本地数据推送，不做 pull-merge
-        const finalData = inMemoryLoadedData;
+        let finalData = inMemoryLoadedData;
 
-        // 加密打包并推送
+        if (!forcePush) {
+            // ── 步骤 1：拉取 Drive 最新版本 ──
+            let remoteData = null;
+            try {
+                const pullResp = await fetch(gasRequestUrl());
+                if (pullResp.ok) {
+                    const raw = (await pullResp.text()).trim();
+                    if (raw && raw !== 'UNAUTHORIZED') {
+                        try {
+                            remoteData = JSON.parse(raw);
+                        } catch (_) {
+                            if (userPassword) {
+                                try {
+                                    const bytes = CryptoJS.AES.decrypt(raw, userPassword);
+                                    remoteData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+                                } catch (_) { }
+                            }
+                        }
+                    }
+                }
+            } catch (_) { }
+
+            // ── 步骤 2：合并 ──
+            if (remoteData) {
+                finalData = mergeData(inMemoryLoadedData, remoteData);
+                inMemoryLoadedData = finalData;
+                accounts = []; transactions = []; plannedTransactions = [];
+                Object.entries(finalData.allUserData || {}).forEach(([u, uData]) => {
+                    accounts.push(...(uData.accounts || []).map(a => ({...a, ownerName: u})));
+                    transactions.push(...(uData.transactions || []).map(t => ({...t, ownerName: u})));
+                    if (uData.plannedTransactions) {
+                        plannedTransactions.push(...uData.plannedTransactions.map(p => ({...p, ownerName: u})));
+                    }
+                });
+                filterUserData();
+                loadAllData();
+            }
+        }
+
+        // ── 步骤 3：加密打包并推送 ──
         let content;
         if (userPassword) {
             content = CryptoJS.AES.encrypt(JSON.stringify(finalData), userPassword).toString();
@@ -3247,7 +3278,7 @@ function openNewTransaction() {
     $('edit-trans-submit-btn').textContent = '保存';
     $('edit-trans-delete-btn').style.display = 'none';
 
-    // 日期：固定默认今天
+    // 日期：默认今天
     $('edit-trans-date').value = today;
 
     // 类型
@@ -5088,24 +5119,6 @@ function removeUser(name) {
     showToast(`已删除用户 "${name}"`, 'success');
 }
 
-// ==================== 数据一致性检查和修复 ====================
-function checkDataConsistency() {
-    const issues = [];
-    transactions.forEach(t => {
-        if (!t.isTransfer) {
-            const exists = categories[t.type] && categories[t.type].includes(t.category);
-            if (!exists && t.category !== '未分类') issues.push({ type: 'invalid_trans_category', transId: t.id, category: t.category });
-        }
-    });
-    if (plannedTransactions && plannedTransactions.length > 0) {
-        plannedTransactions.forEach(p => {
-            const exists = categories[p.type] && categories[p.type].includes(p.category);
-            if (!exists && p.category !== '未分类') issues.push({ type: 'invalid_plan_category', planId: p.id, category: p.category });
-        });
-    }
-    return issues;
-}
-    
 // ==================== 初始化 ====================
 window.addEventListener('load', () => {
     updateTransferModeButton();
