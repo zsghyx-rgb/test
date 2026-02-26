@@ -547,69 +547,82 @@ body {
 <!-- ==================== 登录界面 ==================== -->
 <div id="login-overlay">
     <div class="card shadow p-3 p-md-4" style="width: 480px; max-width: 95%;">
-        <h4 class="text-center mb-3 text-primary"><i class="bi bi-wallet2"></i> Test-app v1.0.2</h4>
 
-        <!-- GAS URL 配置（首次填写，之后折叠） -->
-        <div class="mb-3" id="gas-url-section" style="display: none;">
-            <div id="gas-url-saved-bar" class="d-flex align-items-center justify-content-between" style="">
-                <span class="small text-success"><i class="bi bi-cloud-check"></i> Drive 已连接</span>
-                <button class="btn btn-link btn-sm p-0 text-muted" onclick="showGasUrlInput()">修改</button>
-            </div>
-            <div id="gas-url-input-bar" style="display: none;">
-                <label class="form-label small text-muted fw-bold">GAS Web App URL</label>
-                <div class="input-group input-group-sm">
-                    <input type="text" class="form-control" id="gas-url-input" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off" spellcheck="false">
-                    <button class="btn btn-outline-success" type="button" onclick="saveGasUrl()">
-                        <i class="bi bi-check-lg"></i> 保存
-                    </button>
+        <!-- 标题栏 + 齿轮 -->
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h4 class="mb-0 text-primary"><i class="bi bi-wallet2"></i> Test-app v1.0.3</h4>
+            <button class="btn btn-sm btn-outline-secondary" onclick="toggleLoginSettings()" title="连接设置">
+                <i class="bi bi-gear" id="login-settings-gear"></i>
+            </button>
+        </div>
+
+        <!-- 齿轮设置面板（默认隐藏） -->
+        <div id="login-settings-panel" style="display:none;" class="border rounded p-3 mb-3 bg-body-tertiary">
+            <div class="small text-muted fw-bold mb-2"><i class="bi bi-plug"></i> 连接设置（仅存储在本设备）</div>
+
+            <!-- GAS URL -->
+            <div class="mb-2">
+                <div id="gas-url-saved-bar" class="d-flex align-items-center justify-content-between">
+                    <span class="small text-success"><i class="bi bi-cloud-check"></i> Drive 已连接</span>
+                    <button class="btn btn-link btn-sm p-0 text-muted" onclick="showGasUrlInput()">修改</button>
                 </div>
-                <div class="form-text">此 URL 只存在本设备浏览器中，不会上传</div>
+                <div id="gas-url-input-bar" style="display:none;">
+                    <label class="form-label small mb-1">GAS Web App URL</label>
+                    <div class="input-group input-group-sm">
+                        <input type="text" class="form-control" id="gas-url-input" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off" spellcheck="false">
+                        <button class="btn btn-outline-success" type="button" onclick="saveGasUrl()"><i class="bi bi-check-lg"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GAS Token -->
+            <div class="mb-2">
+                <div id="gas-token-saved-bar" class="d-flex align-items-center justify-content-between">
+                    <span class="small text-success"><i class="bi bi-shield-check"></i> Token 已保存</span>
+                    <button class="btn btn-link btn-sm p-0 text-muted" onclick="showGasTokenInput()">修改</button>
+                </div>
+                <div id="gas-token-input-bar" style="display:none;">
+                    <label class="form-label small mb-1">GAS Token</label>
+                    <div class="input-group input-group-sm">
+                        <input type="password" class="form-control" id="gas-token-input" placeholder="在 GAS 脚本中设置的 token" autocomplete="off" spellcheck="false">
+                        <button class="btn btn-outline-success" type="button" onclick="saveGasToken()"><i class="bi bi-check-lg"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 设备昵称 -->
+            <div>
+                <label class="form-label small mb-1">设备昵称 <span class="text-muted">(可选，用于访问日志)</span></label>
+                <div class="input-group input-group-sm">
+                    <input type="text" class="form-control" id="device-name-input" placeholder="如：家里iPad、公司电脑" maxlength="30" autocomplete="off">
+                    <button class="btn btn-outline-secondary" type="button" onclick="saveDeviceName()"><i class="bi bi-check-lg"></i></button>
+                </div>
+                <div class="form-text" id="device-name-hint"></div>
             </div>
         </div>
 
-        <!-- GAS Token 配置（与 URL 同样的保存逻辑） -->
-        <div class="mb-3" id="gas-token-section" style="display: none;">
-            <div id="gas-token-saved-bar" class="d-flex align-items-center justify-content-between" style="">
-                <span class="small text-success"><i class="bi bi-shield-check"></i> Token 已保存</span>
-                <button class="btn btn-link btn-sm p-0 text-muted" onclick="showGasTokenInput()">修改</button>
-            </div>
-            <div id="gas-token-input-bar" style="display: none;">
-                <label class="form-label small text-muted fw-bold">GAS Token</label>
-                <div class="input-group input-group-sm">
-                    <input type="password" class="form-control" id="gas-token-input" placeholder="在 GAS 脚本中设置的 token" autocomplete="off" spellcheck="false">
-                    <button class="btn btn-outline-success" type="button" onclick="saveGasToken()">
-                        <i class="bi bi-check-lg"></i> 保存
-                    </button>
-                </div>
-                <div class="form-text">Token 只存在本设备浏览器中，不会上传</div>
-            </div>
-        </div>
+        <!-- ① 选择数据文件 -->
         <div class="mb-3">
-            <!-- 在线/离线模式切换 -->
             <div class="d-flex align-items-center justify-content-between mb-2">
                 <label class="form-label small text-muted fw-bold mb-0">① 选择数据文件</label>
                 <button id="offline-mode-btn" class="btn btn-sm btn-warning" onclick="toggleOfflineMode()" style="font-size:0.72rem; padding:0.2rem 0.6rem;"><i class="bi bi-wifi-off"></i> 离线模式</button>
             </div>
-            <!-- 离线模式：手动选择文件 -->
-            <div id="offline-file-bar" style="">
-                <div class="d-flex gap-2">
-                    <input type="file" class="form-control form-control-sm" id="data-import-file" accept=".enc,.json,.txt" onchange="onFileSelected()">
-                </div>
+            <div id="offline-file-bar">
+                <input type="file" class="form-control form-control-sm" id="data-import-file" accept=".enc,.json,.txt" onchange="onFileSelected()">
             </div>
-            <!-- 在线模式：Drive 自动加载 -->
-            <div id="online-drive-bar" style="display: none;">
+            <div id="online-drive-bar" style="display:none;">
                 <div class="d-flex gap-2 align-items-center">
                     <span class="small text-muted flex-fill">将自动从 Google Drive 加载</span>
-                    <button class="btn btn-outline-primary btn-sm text-nowrap" onclick="loadFromDrive()" title="从 Google Drive 加载 data.enc">
+                    <button class="btn btn-outline-primary btn-sm text-nowrap" onclick="loadFromDrive()">
                         <i class="bi bi-cloud-arrow-down"></i> 重新加载
                     </button>
                 </div>
             </div>
-            <div id="file-status" class="form-text mt-1"><span class="text-warning">⚠️ 离线模式：已清空在线数据，请手动选择本地文件</span></div>
+            <div id="file-status" class="form-text mt-1"><span class="text-warning">⚠️ 离线模式：请手动选择本地文件</span></div>
         </div>
 
-        <!-- Step 2: 输入密码 (enc文件才显示) -->
-        <div class="mb-3" id="password-section" style="display: none;">
+        <!-- ② 输入密码 -->
+        <div class="mb-3" id="password-section" style="display:none;">
             <label class="form-label small text-muted fw-bold">② 输入密码</label>
             <div class="input-group input-group-sm">
                 <input type="text" id="login-username-hint" name="username" autocomplete="username" style="display:none;" aria-hidden="true">
@@ -623,7 +636,7 @@ body {
             </div>
         </div>
 
-        <!-- Step 3: 选择用户 -->
+        <!-- ③ 选择用户 -->
         <div class="mb-3" id="user-section" style="display:none;">
             <label class="form-label small text-muted fw-bold">③ 选择用户登录</label>
             <div id="user-buttons" class="d-flex gap-2 flex-wrap"></div>
@@ -637,7 +650,6 @@ body {
         </div>
     </div>
 </div>
-
 <!-- ==================== 主应用界面 ==================== -->
 <div id="app-wrapper" class="d-none">
     <div class="sidebar">
@@ -1638,9 +1650,27 @@ function gasRequestUrl(options = {}) {
     if (GAS_TOKEN)        params.push(`token=${encodeURIComponent(GAS_TOKEN)}`);
     if (options.action)   params.push(`action=${encodeURIComponent(options.action)}`);
     if (options.file)     params.push(`file=${encodeURIComponent(options.file)}`);
-    if (options.fileName) params.push(`fileName=${encodeURIComponent(options.fileName)}`); // ← 补上
-    if (options.mimeType) params.push(`mimeType=${encodeURIComponent(options.mimeType)}`); // ← 补上
+    if (options.fileName) params.push(`fileName=${encodeURIComponent(options.fileName)}`);
+    if (options.mimeType) params.push(`mimeType=${encodeURIComponent(options.mimeType)}`);
+    const device = localStorage.getItem('APP_device_name') || 'unknown';
+    params.push(`device=${encodeURIComponent(device)}`);
     return params.length ? `${GAS_URL}?${params.join('&')}` : GAS_URL;
+}
+
+// ==================== 登录设置面板 ====================
+
+function toggleLoginSettings() {
+    const panel = $('login-settings-panel');
+    const isHidden = panel.style.display === 'none';
+    panel.style.display = isHidden ? 'block' : 'none';
+    $('login-settings-gear').className = isHidden ? 'bi bi-gear-fill text-primary' : 'bi bi-gear';
+    if (isHidden) initLoginSettingsUI();
+}
+
+function initLoginSettingsUI() {
+    initGasUrlUI();
+    initGasTokenUI();
+    initDeviceNameUI();
 }
 
 function initGasUrlUI() {
@@ -1671,7 +1701,7 @@ function saveGasUrl() {
     localStorage.setItem('APP_gas_url', val);
     GAS_URL = val;
     initGasUrlUI();
-    loadFromDrive();  // 保存后立即拉取
+    loadFromDrive();
 }
 
 function initGasTokenUI() {
@@ -1701,28 +1731,38 @@ function saveGasToken() {
     initGasTokenUI();
 }
 
+function initDeviceNameUI() {
+    const saved = localStorage.getItem('APP_device_name') || '';
+    const input = $('device-name-input');
+    const hint = $('device-name-hint');
+    if (input) input.value = saved;
+    if (hint) hint.textContent = saved ? `当前：${saved}` : '未设置，日志中显示为 unknown';
+}
+
+function saveDeviceName() {
+    const val = ($('device-name-input').value || '').trim();
+    localStorage.setItem('APP_device_name', val);
+    const hint = $('device-name-hint');
+    if (hint) hint.textContent = val ? `已保存：${val}` : '已清除，日志中显示为 unknown';
+    showToast(val ? `设备昵称已保存：${val}` : '设备昵称已清除', 'success', 2000);
+}
+
 // ==================== 离线模式管理 ====================
 
 function initOfflineModeUI() {
     const btn = $('offline-mode-btn');
     const offlineBar = $('offline-file-bar');
     const onlineBar = $('online-drive-bar');
-    const gasUrlSection = $('gas-url-section');
-    const gasTokenSection = $('gas-token-section');
     if (offlineMode) {
         btn.className = 'btn btn-sm btn-warning';
         btn.innerHTML = '<i class="bi bi-wifi-off"></i> 离线模式';
         offlineBar.style.display = '';
         onlineBar.style.display = 'none';
-        gasUrlSection.style.display = 'none';
-        gasTokenSection.style.display = 'none';
     } else {
         btn.className = 'btn btn-sm btn-outline-secondary';
         btn.innerHTML = '<i class="bi bi-wifi"></i> 在线模式';
         offlineBar.style.display = 'none';
         onlineBar.style.display = '';
-        gasUrlSection.style.display = '';
-        gasTokenSection.style.display = '';
     }
     // 更新应用内状态指示
     const statusEl = $('sync-mode-status');
@@ -1774,9 +1814,7 @@ function switchUser() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    initGasUrlUI();
-    initGasTokenUI();
-    initOfflineModeUI(); // 初始化离线/在线模式 UI
+    initOfflineModeUI();
 
     // 在线模式且有已保存的 URL 则自动从 Drive 同步
     if (!offlineMode && GAS_URL) {
@@ -2185,7 +2223,7 @@ async function archiveYear(year) {
         }
 
         filterUserData(); loadAllData(); renderAccounts(); renderAllTransactions(); renderArchiveManagementUI();
-        showToast(`${year} 年数据存档成功`, 'success');
+        showToast(`✅ ${year} 年数据存档成功`, 'success');
     } catch (err) {
         showToast(`存档失败：${err.message}`, 'error');
         console.error('[archiveYear]', err);
@@ -2231,7 +2269,7 @@ async function unarchiveYear(year) {
         await syncToDrive(true, true); // forcePush：解档后直接推送，不拉取合并
 
         filterUserData(); loadAllData(); renderAccounts(); renderAllTransactions(); renderArchiveManagementUI();
-        showToast(`${year} 年数据解档成功`, 'success');
+        showToast(`✅ ${year} 年数据解档成功`, 'success');
     } catch (err) {
         showToast(`解档失败：${err.message}`, 'error');
         console.error('[unarchiveYear]', err);
@@ -4064,24 +4102,25 @@ async function handleAttachmentSelected(input) {
             const fileName = `attach_${Date.now()}.jpg`;
 
             try {
-                const response = await fetch(gasRequestUrl({
-                    action: 'uploadFile',
-                    fileName: fileName,
-                    mimeType: 'image/jpeg'
-                }), {
+                const response = await fetch(gasRequestUrl(), {
                     method: 'POST',
-                    body: base64Data
+                    body: JSON.stringify({
+                        action: 'uploadAttachment',
+                        data: base64Data,
+                        mimeType: 'image/jpeg',
+                        filename: fileName
+                    })
                 });
                 const result = await response.json();
 
-                if (result.status === 'success') {
+                if (result.fileId) {
                     // 将新 ID 加入数组
                     currentIds.push(result.fileId);
                     $('edit-trans-attachment-id').value = currentIds.join(',');
                     // 重新渲染预览
                     renderAttachmentThumbs(currentIds);
                 } else {
-                    alert('上传失败: ' + result.message);
+                    alert('上传失败');
                 }
             } catch (err) {
                 console.error(err);
