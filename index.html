@@ -2192,7 +2192,7 @@ async function archiveYear(year) {
         }
 
         filterUserData(); loadAllData(); renderAccounts(); renderAllTransactions(); renderArchiveManagementUI();
-        showToast(`✅ ${year} 年数据存档成功`, 'success');
+        showToast(`${year} 年数据存档成功`, 'success');
     } catch (err) {
         showToast(`存档失败：${err.message}`, 'error');
         console.error('[archiveYear]', err);
@@ -2238,7 +2238,7 @@ async function unarchiveYear(year) {
         await syncToDrive(true, true); // forcePush：解档后直接推送，不拉取合并
 
         filterUserData(); loadAllData(); renderAccounts(); renderAllTransactions(); renderArchiveManagementUI();
-        showToast(`✅ ${year} 年数据解档成功`, 'success');
+        showToast(`${year} 年数据解档成功`, 'success');
     } catch (err) {
         showToast(`解档失败：${err.message}`, 'error');
         console.error('[unarchiveYear]', err);
@@ -5105,33 +5105,7 @@ function checkDataConsistency() {
     }
     return issues;
 }
-
-function repairDataConsistency() {
-    const issues = checkDataConsistency();
-    if (issues.length === 0) { alert('✅ 数据一致性检查通过，无需修复！'); return; }
-    const invalidTransCats = issues.filter(i => i.type === 'invalid_trans_category');
-    const invalidPlanCats = issues.filter(i => i.type === 'invalid_plan_category');
-    let confirmMsg = `发现 ${issues.length} 个数据一致性问题：\n\n`;
-    if (invalidTransCats.length > 0) confirmMsg += `📝 ${invalidTransCats.length} 条交易分类无效（将改为"未分类"）\n`;
-    if (invalidPlanCats.length > 0) confirmMsg += `📅 ${invalidPlanCats.length} 条计划交易分类无效（将改为"未分类"）\n`;
-    confirmMsg += '\n确定要自动修复这些问题吗？';
-    if (!confirm(confirmMsg)) return;
-    let fixed = 0;
-    invalidTransCats.forEach(issue => {
-        const trans = transactions.find(t => t.id === issue.transId);
-        if (trans) { trans.category = '未分类'; fixed++; }
-    });
-    invalidPlanCats.forEach(issue => {
-        const plan = plannedTransactions.find(p => p.id === issue.planId);
-        if (plan) { plan.category = '未分类'; fixed++; }
-    });
-    if (fixed > 0) {
-        saveUserData(); triggerAutoSave();
-        displayedTransactionCount = 100; renderAllTransactions(); renderStats();
-        alert(`✅ 已修复 ${fixed} 个数据一致性问题！`);
-    }
-}
-
+    
 // ==================== 初始化 ====================
 window.addEventListener('load', () => {
     updateTransferModeButton();
