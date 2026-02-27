@@ -5292,7 +5292,7 @@ window.addEventListener('load', () => {
 <script>
 (function() {
     let startY = 0, pulling = false, indicator = null;
-    const THRESHOLD = 70; // 下拉触发距离（px）
+    const THRESHOLD = 70;
 
     function getIndicator() {
         if (!indicator) {
@@ -5301,8 +5301,8 @@ window.addEventListener('load', () => {
             indicator.style.cssText = `
                 position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
                 height: 0; overflow: hidden; display: flex; align-items: center;
-                justify-content: center; background: rgba(var(--bs-primary-rgb), 0.1);
-                transition: height 0.1s; font-size: 0.85rem; color: var(--bs-primary);
+                justify-content: center; background: #e8f0fe;
+                transition: height 0.1s; font-size: 0.85rem; color: #1a73e8;
                 pointer-events: none;`;
             document.body.appendChild(indicator);
         }
@@ -5316,8 +5316,7 @@ window.addEventListener('load', () => {
 
     document.addEventListener('touchstart', e => {
         if (!isAtTop()) return;
-        // 只在登录后可用
-        if (!window.currentUser) return;
+        if (!currentUser) return;
         startY = e.touches[0].clientY;
         pulling = true;
     }, { passive: true });
@@ -5326,10 +5325,9 @@ window.addEventListener('load', () => {
         if (!pulling) return;
         const dy = e.touches[0].clientY - startY;
         if (dy <= 0) { pulling = false; getIndicator().style.height = '0'; return; }
-        // 阻止浏览器默认下拉刷新
         if (dy > 5) e.preventDefault();
-        const progress = Math.min(dy / THRESHOLD, 1);
         const h = Math.min(dy * 0.4, 50);
+        const progress = Math.min(dy / THRESHOLD, 1);
         const ind = getIndicator();
         ind.style.height = h + 'px';
         ind.textContent = progress >= 1 ? '↑ 松开同步' : '↓ 下拉同步';
@@ -5343,12 +5341,9 @@ window.addEventListener('load', () => {
         if (dy >= THRESHOLD) {
             ind.textContent = '同步中…';
             ind.style.height = '40px';
-            // 触发同步
-            if (typeof syncToDrive === 'function') {
-                syncToDrive(false).finally(() => {
-                    setTimeout(() => { ind.style.height = '0'; }, 800);
-                });
-            }
+            syncToDrive(false).finally(() => {
+                setTimeout(() => { ind.style.height = '0'; }, 1000);
+            });
         } else {
             ind.style.height = '0';
         }
