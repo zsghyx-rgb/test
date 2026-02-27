@@ -42,6 +42,7 @@
 
     <style>
 body {
+    height: 100vh;
     height: 100dvh;
     overflow: hidden;
     display: flex;
@@ -537,6 +538,25 @@ body {
 }
 
 </style>
+    <!-- 鸿蒙HarmonyOS 3.0 兼容补丁 -->
+    <script>
+    // canvas.toBlob polyfill (HarmonyOS 3.0 部分机型缺失)
+    if (typeof HTMLCanvasElement !== 'undefined' && !HTMLCanvasElement.prototype.toBlob) {
+        Object.defineProperty(HTMLCanvasElement.prototype, 'toBlob', {
+            value: function(callback, type, quality) {
+                const dataURL = this.toDataURL(type || 'image/jpeg', quality);
+                const binStr = atob(dataURL.split(',')[1]);
+                const arr = new Uint8Array(binStr.length);
+                for (let i = 0; i < binStr.length; i++) arr[i] = binStr.charCodeAt(i);
+                callback(new Blob([arr], { type: type || 'image/jpeg' }));
+            }
+        });
+    }
+    // HarmonyOS 3.0: input[type=file] 的 capture 属性兼容
+    // 鸿蒙浏览器对 accept="image/*" 的文件选择已可用，无需额外处理
+    // 检测是否为鸿蒙浏览器，记录供后续判断
+    window._isHarmony = /HarmonyOS/.test(navigator.userAgent);
+    </script>
 </head>
 <body>
 
@@ -550,7 +570,7 @@ body {
 
         <!-- 标题栏 + 齿轮 -->
         <div class="d-flex align-items-center justify-content-between mb-3">
-            <h4 class="mb-0 text-primary"><i class="bi bi-wallet2"></i> Test-app v1.0.4</h4>
+            <h4 class="mb-0 text-primary"><i class="bi bi-wallet2"></i> Test-app v1.0.5</h4>
             <button class="btn btn-sm btn-outline-secondary" onclick="toggleLoginSettings()" title="连接设置">
                 <i class="bi bi-gear" id="login-settings-gear"></i>
             </button>
@@ -772,8 +792,9 @@ body {
                         <tr>
                             <th style="width:110px;">日期</th>
                             <th style="width:60px;">类型</th>
-                            <th style="width:110px;">类别</th>
-                            <th style="width:120px;" class="text-end">金额</th>
+                            <th style="width:90px;">类别</th>
+                            <th style="width:120px;">账户/转出</th>
+                            <th style="width:110px;" class="text-end">金额</th>
                             <th style="width:130px;">转入账户</th>
                             <th style="width:110px;" class="text-end">转入金额</th>
                             <th style="min-width:140px;">备注</th>
@@ -819,10 +840,10 @@ body {
                                     <input type="text" class="form-control" id="trans-search-input" placeholder="搜索..." oninput="handleSearchInput()">
                                 </div>
                             </div>
-                            <div style="width: 120px;">
-                                <select class="form-select form-select-sm" id="trans-user-filter" onchange="applyTransactionFilter()">
-                                    <option value="all">所有用户</option>
-                                </select>
+                            <div>
+                                <button class="btn btn-sm btn-outline-secondary" id="trans-user-filter-btn" onclick="cycleUserFilter()" title="点击切换用户筛选">
+                                    <i class="bi bi-person"></i> <span id="trans-user-filter-text">所有用户</span>
+                                </button>
                             </div>
                             <div style="width: 120px;">
                                 <input type="date" class="form-control form-control-sm" id="filter-start-date" onchange="applyTransactionFilter()">
@@ -1435,7 +1456,7 @@ body {
                     </div>
 
 <div class="mb-2" id="attachment-section" style="display:none;">
-    <input type="file" id="attachment-file-input" accept="image/*" class="d-none" onchange="handleAttachmentSelected(this)">
+    <input type="file" id="attachment-file-input" accept="image/*,image/heic,image/heif" class="d-none" onchange="handleAttachmentSelected(this)">
     
     <div id="attachment-preview-container" class="d-flex flex-wrap gap-2 mt-2" style="display:none !important;">
         </div>
@@ -1590,6 +1611,7 @@ let searchDebounceTimer = null;
 let displayedTransactionCount = 100;
 let currentAssetAggregation = 'month';
 let transactionDisplayMode = 'all';
+let currentUserFilterValue = 'all';
 
 // ==================== 共用工具函数 ====================
 const $ = id => document.getElementById(id);
@@ -2886,14 +2908,14 @@ function importTransferCsv() {
             const toLabel = getAccountDisplayName(accTo);
             transactions.unshift({
                 id: uniqueId, date, type: 'expense', accountId: accFrom.id,
-                amount: -Math.abs(cleanAmtOut), category: '转账',
-                desc: `转给 ${toLabel}: ${note || ''}`, ownerName: fromOwner,
+                amount: -Math.abs(cleanAmtOut), category: '',
+                desc: note || '', ownerName: fromOwner,
                 isTransfer: true, relatedAccountId: accTo.id, transferPairId: uniqueId, updatedAt: Date.now()
             });
             transactions.unshift({
                 id: uniqueId + 0.1, date, type: 'income', accountId: accTo.id,
-                amount: Math.abs(cleanAmtIn), category: '转账',
-                desc: `来自 ${fromLabel}: ${note || ''}`, ownerName: toOwner,
+                amount: Math.abs(cleanAmtIn), category: '',
+                desc: note || '', ownerName: toOwner,
                 isTransfer: true, relatedAccountId: accFrom.id, transferPairId: uniqueId, updatedAt: Date.now()
             });
             successCount++;
@@ -3179,8 +3201,7 @@ function renderDetailContent(id) {
                 const fromName = fromAcc ? getAccountDisplayName(fromAcc) : '?';
                 const toName   = toAcc   ? getAccountDisplayName(toAcc)   : '?';
                 titleHtml = `<span style="font-size:0.83rem;font-weight:600;">${fromName}<span style="color:var(--bs-primary);margin:0 2px;">→</span>${toName}</span>`;
-                let cleanDesc = t.desc || '';
-                if (cleanDesc.includes(': ')) cleanDesc = cleanDesc.split(': ')[1];
+                const cleanDesc = tOut ? (tOut.desc || '') : (t.desc || '');
                 if (cleanDesc) subLine += ' · ' + cleanDesc;
             } else {
                 const tagsHtml = t.tags ? `<span style="font-size:0.72rem;color:var(--bs-secondary);margin-left:4px;">@${t.tags}</span>` : '';
@@ -3216,48 +3237,48 @@ function renderDetailContent(id) {
         desktopTbody.innerHTML = '';
         acctTrans.forEach(t => {
             const isTransfer = t.isTransfer;
-            const isTransferIn = isTransfer && t.type === 'income';
             let canEdit = t.ownerName === currentUserName && !t._isArchived;
-            let typeText, typeColorClass, amtColorClass;
 
+            // 统一用 tOut 视角渲染转账（两侧账户详情页显示完全一致）
+            let typeText, typeColorClass, amtColorClass;
+            let accountOutDisplay = '', displayAmt = '';
             let toAccDisplay = '', peerAmtDisplay = '';
+            let categoryDisplay = '', descDisplay = '';
 
             if (isTransfer) {
                 const { tOut, tIn } = resolveTransfer(t);
                 if (tOut) canEdit = (tOut.ownerName === currentUserName) && !t._isArchived;
 
-                if (isTransferIn) {
-                    // 转入：显示来源（转出方）账户
-                    typeText = '转入';
-                    typeColorClass = 'text-warning';
-                    amtColorClass = 'text-warning';
-                    if (tOut) {
-                        const accFrom = accounts.find(a => a.id == tOut.accountId);
-                        if (accFrom) {
-                            toAccDisplay = `<small>${getAccountDisplayName(accFrom)}</small>`;
-                            peerAmtDisplay = `<div class="text-end text-warning"><small>${CURRENCY_SYMBOLS[accFrom.currency]}${formatAmount(Math.abs(tOut.amount), accFrom.currency)}</small></div>`;
-                        }
-                    }
+                typeText = '转账';
+                typeColorClass = 'text-warning';
+                amtColorClass = 'text-warning';
+                categoryDisplay = '';
+
+                if (tOut) {
+                    const accOut = accounts.find(a => a.id == tOut.accountId);
+                    accountOutDisplay = accOut ? `<small>${getAccountDisplayName(accOut)}</small>` : '';
+                    displayAmt = `${CURRENCY_SYMBOLS[accOut ? accOut.currency : acc.currency]}${formatAmount(Math.abs(tOut.amount), accOut ? accOut.currency : acc.currency)}`;
+                    descDisplay = tOut.desc || '';
                 } else {
-                    // 转出：显示目标（转入方）账户
-                    typeText = '转账';
-                    typeColorClass = 'text-warning';
-                    amtColorClass = 'text-warning';
-                    if (tIn) {
-                        const accTo = accounts.find(a => a.id == tIn.accountId);
-                        if (accTo) {
-                            toAccDisplay = `<small>${getAccountDisplayName(accTo)}</small>`;
-                            peerAmtDisplay = `<div class="text-end fw-bold text-warning">${CURRENCY_SYMBOLS[accTo.currency]}${formatAmount(Math.abs(tIn.amount), accTo.currency)}</div>`;
-                        }
+                    displayAmt = `${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}`;
+                    descDisplay = t.desc || '';
+                }
+                if (tIn) {
+                    const accTo = accounts.find(a => a.id == tIn.accountId);
+                    if (accTo) {
+                        toAccDisplay = `<small>${getAccountDisplayName(accTo)}</small>`;
+                        peerAmtDisplay = `<div class="text-end fw-bold text-warning">${CURRENCY_SYMBOLS[accTo.currency]}${formatAmount(Math.abs(tIn.amount), accTo.currency)}</div>`;
                     }
                 }
             } else {
                 typeText = t.amount < 0 ? '支出' : '收入';
                 typeColorClass = t.amount < 0 ? 'text-danger' : 'text-success';
                 amtColorClass = t.amount < 0 ? 'text-danger' : 'text-success';
+                accountOutDisplay = `<small>${getAccountDisplayName(acc)}</small>`;
+                displayAmt = `${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}`;
+                categoryDisplay = t.category || '';
+                descDisplay = t.desc || '';
             }
-
-            const displayAmt = `${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}`;
 
             const editBtns = canEdit
                 ? (isTransfer
@@ -3265,16 +3286,20 @@ function renderDetailContent(id) {
                     : `<i class="bi bi-pencil text-primary me-2" style="cursor:pointer;" onclick="openedFromDetail=true;openEditTransaction(${t.id})"></i><i class="bi bi-trash text-danger" style="cursor:pointer;" onclick="deleteTransaction(${t.id})"></i>`)
                 : (t._isArchived ? '<span class="badge bg-secondary" style="font-size:0.6rem;">存档</span>' : '');
 
+            const trTagsDisplay = isTransfer
+                ? (() => { const { tOut } = resolveTransfer(t); return tOut ? (tOut.tags||'') : (t.tags||''); })()
+                : (t.tags||'');
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${t.date}</td>
                 <td><div class="${typeColorClass}">${typeText}</div></td>
-                <td>${t.category || ''}</td>
+                <td>${categoryDisplay}</td>
+                <td>${accountOutDisplay}</td>
                 <td><div class="fw-bold ${amtColorClass} text-end">${displayAmt}</div></td>
                 <td>${toAccDisplay}</td>
                 <td>${peerAmtDisplay}</td>
-                <td><div class="desc-content" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;" title="${(t.desc||'').replace(/"/g,'&quot;')}">${t.desc||''}</div></td>
-                <td>${t.tags||''}</td>
+                <td><div class="desc-content" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;" title="${descDisplay.replace(/"/g,'&quot;')}">${descDisplay}</div></td>
+                <td>${trTagsDisplay}</td>
                 <td><div class="text-center">${editBtns}</div></td>`;
             desktopTbody.appendChild(tr);
         });
@@ -3538,8 +3563,7 @@ function openEditTransfer(id) {
     $('edit-transfer-amount-in').value = Math.abs(tIn.amount);
 
     let desc = tOut.desc || '';
-    const match = desc.match(/^转给\s*[^:：]+[:：]\s*(.*)$/);
-    $('edit-transfer-desc').value = match ? match[1] : desc;
+    $('edit-transfer-desc').value = desc;
 
     new bootstrap.Modal($('editTransferModal')).show();
 }
@@ -3667,21 +3691,18 @@ $('edit-transfer-form').addEventListener('submit', (e) => {
     const accTo = accounts.find(a => a.id == newToId);
     if (!accFrom || !accTo) { alert('账户不存在'); return; }
 
-    const fromLabel = getAccountDisplayName(accFrom);
-    const toLabel = getAccountDisplayName(accTo);
-
     if (mode === 'add') {
         const uniqueId = Date.now() + Math.random();
         transactions.unshift({
             id: uniqueId, date: newDate, type: 'expense', accountId: newFromId,
-            amount: -Math.abs(newAmtOut), category: '转账',
-            desc: `转给 ${toLabel}: ${newDesc}`, ownerName: currentUserName,
+            amount: -Math.abs(newAmtOut), category: '',
+            desc: newDesc, ownerName: currentUserName,
             isTransfer: true, relatedAccountId: newToId, transferPairId: uniqueId, updatedAt: Date.now()
         });
         transactions.unshift({
             id: uniqueId + 0.1, date: newDate, type: 'income', accountId: newToId,
-            amount: Math.abs(newAmtIn), category: '转账',
-            desc: `来自 ${fromLabel}: ${newDesc}`, ownerName: accTo.ownerName,
+            amount: Math.abs(newAmtIn), category: '',
+            desc: newDesc, ownerName: accTo.ownerName,
             isTransfer: true, relatedAccountId: newFromId, transferPairId: uniqueId, updatedAt: Date.now()
         });
         saveUserData(); triggerAutoSave(); loadAllData(); filterUserData();
@@ -3707,10 +3728,10 @@ $('edit-transfer-form').addEventListener('submit', (e) => {
         if (!tIn) { alert('找不到配对的转账记录'); return; }
 
         tOut.date = newDate; tOut.accountId = newFromId; tOut.relatedAccountId = newToId;
-        tOut.amount = -Math.abs(newAmtOut); tOut.desc = `转给 ${toLabel}: ${newDesc}`;
+        tOut.amount = -Math.abs(newAmtOut); tOut.desc = newDesc;
         tOut.updatedAt = Date.now();
         tIn.date = newDate; tIn.accountId = newToId; tIn.relatedAccountId = newFromId;
-        tIn.amount = Math.abs(newAmtIn); tIn.desc = `来自 ${fromLabel}: ${newDesc}`;
+        tIn.amount = Math.abs(newAmtIn); tIn.desc = newDesc;
         tIn.ownerName = accTo.ownerName;
         tIn.updatedAt = Date.now();
 
@@ -3722,12 +3743,35 @@ $('edit-transfer-form').addEventListener('submit', (e) => {
     }
 });
 
+// ==================== 用户筛选循环切换 ====================
+function updateUserFilterBtn() {
+    const btn = $('trans-user-filter-btn');
+    const textEl = $('trans-user-filter-text');
+    if (!btn) return;
+    if (currentUserFilterValue === 'all') {
+        if (textEl) textEl.textContent = '所有用户';
+        btn.className = 'btn btn-outline-secondary btn-sm';
+    } else {
+        if (textEl) textEl.textContent = currentUserFilterValue;
+        btn.className = 'btn btn-primary btn-sm';
+    }
+}
+
+function cycleUserFilter() {
+    const options = ['all', ...dataUsers];
+    const idx = options.indexOf(currentUserFilterValue);
+    currentUserFilterValue = options[(idx + 1) % options.length];
+    updateUserFilterBtn();
+    applyTransactionFilter();
+}
+
 // ==================== 交易筛选功能 ====================
 function clearTransactionFilters() {
     $('trans-search-input').value = '';
     $('filter-start-date').value = '';
     $('filter-end-date').value = '';
-    $('trans-user-filter').value = 'all';
+    currentUserFilterValue = 'all';
+    updateUserFilterBtn();
     displayedTransactionCount = 100;
     applyTransactionFilter();
 }
@@ -3796,7 +3840,7 @@ function getFilteredTransactions() {
     const search = $('trans-search-input').value.toLowerCase();
     const startDate = $('filter-start-date').value;
     const endDate = $('filter-end-date').value;
-    const userFilter = $('trans-user-filter').value;
+    const userFilter = currentUserFilterValue;
     return transactions.filter(t => {
         if (t._isBaseline) return false; // 基准交易不在列表中显示
         if (transactionDisplayMode === 'transactions' && t.isTransfer) return false;
@@ -3863,7 +3907,7 @@ function renderAllTransactions() {
                     transactions.find(tx => tx.transferPairId === t.transferPairId && tx.type === 'income') :
                     transactions.find(tx => tx.isTransfer && tx.type === 'income' && tx.date === t.date && tx.relatedAccountId == t.accountId);
                 const amountIn = tIn ? Math.abs(tIn.amount) : Math.abs(t.amount);
-                amountInDisplay = `<div class="text-end fw-bold text-success">${CURRENCY_SYMBOLS[accTo.currency]}${formatAmount(amountIn, accTo.currency)}</div>`;
+                amountInDisplay = `<div class="text-end fw-bold text-warning">${CURRENCY_SYMBOLS[accTo.currency]}${formatAmount(amountIn, accTo.currency)}</div>`;
             }
         } else if (t.isTransfer && t.type === 'income') {
             return; // 跳过转入记录
@@ -3876,15 +3920,16 @@ function renderAllTransactions() {
             (t._isArchived ? '<span class="badge bg-secondary" style="font-size:0.6rem;">存档</span>' : '');
 
         const tr = document.createElement('tr');
+        const tDescDisplay = t.isTransfer ? (t.desc||'').replace(/^(?:转给|来自)\s*[^:：]+[:：]\s*/, '') : (t.desc||'');
         tr.innerHTML = `
             <td>${t.date}</td>
             <td><div class="text-start ps-2 ${typeColorClass}">${typeText}</div></td>
-            <td>${t.category || ''}</td>
+            <td>${t.isTransfer ? '' : (t.category || '')}</td>
             <td><small>${getAccountDisplayName(acc)}</small></td>
             <td><div class="text-end fw-bold ${t.isTransfer ? 'text-warning' : (t.amount < 0 ? 'text-danger' : 'text-success')}">${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}</div></td>
             <td>${toAccountDisplay}</td>
             <td>${amountInDisplay}</td>
-            <td><div class="desc-content" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:250px;" title="${(t.desc||'').replace(/"/g,'&quot;')}">${t.desc||''}${t.attachmentId ? ` <a href="${getDriveAttachmentUrl(t.attachmentId)}" target="_blank" title="查看附件" onclick="event.stopPropagation()"><i class="bi bi-paperclip text-muted"></i></a>` : ''}</div></td>
+            <td><div class="desc-content" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:250px;" title="${tDescDisplay.replace(/"/g,'&quot;')}">${tDescDisplay}${t.attachmentId ? ` <a href="${getDriveAttachmentUrl(t.attachmentId)}" target="_blank" title="查看附件" onclick="event.stopPropagation()"><i class="bi bi-paperclip text-muted"></i></a>` : ''}</div></td>
             <td>${t.tags||''}</td>
             <td><span class="badge bg-secondary">${t.ownerName}</span></td>
             <td><div class="text-center">${editBtns}</div></td>`;
@@ -3903,9 +3948,8 @@ function renderAllTransactions() {
 
             const accDisplayName = getAccountDisplayName(acc);
             const tagsDisplay = t.tags ? ` @${t.tags}` : '';
-            let descClean = t.desc || '';
-            if (descClean.includes(': ')) descClean = descClean.split(': ')[1];
-            const finalNote = descClean ? `#${descClean}` : (t.isTransfer ? '#转账' : '');
+            const descClean = t.desc || '';
+            const finalNote = descClean ? `#${descClean}` : '';
             const attachIcon = t.attachmentId ? ` <a href="${getDriveAttachmentUrl(t.attachmentId)}" target="_blank" onclick="event.stopPropagation()"><i class="bi bi-paperclip" style="color:var(--bs-secondary);font-size:0.75rem;"></i></a>` : '';
 
             if (t.isTransfer && t.type === 'expense') {
@@ -4065,6 +4109,11 @@ function resetAttachmentUI() {
 }
 
 async function compressImage(file, maxKB = 200) {
+    // 鸿蒙3.0 相机常输出 HEIC/HEIF 格式，WebView 无法通过 Canvas 解码，直接原样返回供上传
+    const isHEIC = /\.(heic|heif)$/i.test(file.name) || /^image\/(heic|heif)$/i.test(file.type);
+    if (isHEIC) return Promise.resolve(file);
+
+    // 鸿蒙可能传来 HEIC 格式，先通过 Image 解码再转 JPEG
     return new Promise((resolve) => {
         const reader = new FileReader();
         reader.onload = e => {
@@ -4085,19 +4134,33 @@ async function compressImage(file, maxKB = 200) {
                 ctx.drawImage(img, 0, 0, w, h);
 
                 const tryCompress = (q) => {
-                    canvas.toBlob(blob => {
-                        if (!blob) { resolve(file); return; }
-                        if (blob.size <= maxKB * 1024 || q < 0.2) {
-                            resolve(new File([blob], file.name, { type: 'image/jpeg' }));
-                        } else {
-                            tryCompress(Math.max(q - 0.1, 0.15));
-                        }
-                    }, 'image/jpeg', q);
+                    try {
+                        canvas.toBlob(blob => {
+                            if (!blob) { resolve(file); return; }
+                            if (blob.size <= maxKB * 1024 || q < 0.2) {
+                                resolve(new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' }));
+                            } else {
+                                tryCompress(Math.max(q - 0.1, 0.15));
+                            }
+                        }, 'image/jpeg', q);
+                    } catch(err) {
+                        // toBlob 失败时降级：用 toDataURL
+                        try {
+                            const dataURL = canvas.toDataURL('image/jpeg', q);
+                            const binStr = atob(dataURL.split(',')[1]);
+                            const arr = new Uint8Array(binStr.length);
+                            for (let i = 0; i < binStr.length; i++) arr[i] = binStr.charCodeAt(i);
+                            const blob = new Blob([arr], { type: 'image/jpeg' });
+                            resolve(new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' }));
+                        } catch(e2) { resolve(file); }
+                    }
                 };
                 tryCompress(quality);
             };
+            img.onerror = () => resolve(file); // 无法解码时原样返回
             img.src = e.target.result;
         };
+        reader.onerror = () => resolve(file);
         reader.readAsDataURL(file);
     });
 }
@@ -4136,13 +4199,24 @@ async function handleAttachmentSelected(input) {
     $('edit-trans-submit-btn').disabled = true; // 禁用保存按钮
 
     try {
-        // 压缩图片后再上传
+        // 压缩图片后再上传（HEIC/HEIF 由 compressImage 直接回退原文件）
         const compressedFile = await compressImage(file, 200);
+        // 判断最终上传的文件类型（HEIC 可能未被压缩处理）
+        const isHEIC = /\.(heic|heif)$/i.test(compressedFile.name) || /^image\/(heic|heif)$/i.test(compressedFile.type);
+        const uploadMime = isHEIC ? 'image/heic' : 'image/jpeg';
+        const uploadExt  = isHEIC ? '.heic' : '.jpg';
 
         const reader = new FileReader();
+        reader.onerror = () => {
+            isUploadingAttachment = false;
+            $('attachment-upload-status').style.display = 'none';
+            $('edit-trans-submit-btn').disabled = false;
+            input.value = '';
+            alert('文件读取失败，请重试');
+        };
         reader.onload = async function(e) {
             const base64Data = e.target.result.split(',')[1];
-            const fileName = `attach_${Date.now()}.jpg`;
+            const fileName = `attach_${Date.now()}${uploadExt}`;
 
             try {
                 const response = await fetch(gasRequestUrl(), {
@@ -4150,7 +4224,7 @@ async function handleAttachmentSelected(input) {
                     body: JSON.stringify({
                         action: 'uploadAttachment',
                         data: base64Data,
-                        mimeType: 'image/jpeg',
+                        mimeType: uploadMime,
                         filename: fileName
                     })
                 });
@@ -4224,12 +4298,13 @@ function removeSpecificAttachment(index) {
 // 6. 适配全屏预览 (稍微修改下之前的函数名/参数)
 function showFullImagePreviewFromSrc(src) {
     const overlay = document.createElement('div');
-    overlay.style = `position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); 
-                     z-index:9999; display:flex; align-items:center; justify-content:center; cursor:zoom-out;`;
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:zoom-out;-webkit-tap-highlight-color:transparent;touch-action:manipulation;';
     const fullImg = document.createElement('img');
     fullImg.src = src;
-    fullImg.style = "max-width:95%; max-height:95%; object-fit:contain;";
-    overlay.onclick = () => document.body.removeChild(overlay);
+    fullImg.style.cssText = 'max-width:95%;max-height:95%;object-fit:contain;pointer-events:none;';
+    const close = () => { if (document.body.contains(overlay)) document.body.removeChild(overlay); };
+    overlay.addEventListener('click', close);
+    overlay.addEventListener('touchend', function(e){ e.preventDefault(); close(); }, { passive: false });
     overlay.appendChild(fullImg);
     document.body.appendChild(overlay);
 }
@@ -4565,13 +4640,7 @@ function updateSelectOptions() {
     };
     accFill('edit-trans-account', false); accFill('planned-account', false);
 
-    const uf = $('trans-user-filter');
-    if (uf) {
-        const cv = uf.value;
-        uf.innerHTML = '<option value="all">所有用户</option>';
-        dataUsers.forEach(u => uf.add(new Option(u, u)));
-        uf.value = cv;
-    }
+    updateUserFilterBtn();
 }
 
 // ==================== 标签页切换 ====================
