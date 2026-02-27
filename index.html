@@ -570,7 +570,7 @@ body {
 
         <!-- 标题栏 + 齿轮 -->
         <div class="d-flex align-items-center justify-content-between mb-3">
-            <h4 class="mb-0 text-primary"><i class="bi bi-wallet2"></i> Test-app v1.0.7</h4>
+            <h4 class="mb-0 text-primary"><i class="bi bi-wallet2"></i> Test-app v1.0.8</h4>
             <button class="btn btn-sm btn-outline-secondary" onclick="toggleLoginSettings()" title="连接设置">
                 <i class="bi bi-gear" id="login-settings-gear"></i>
             </button>
@@ -5287,6 +5287,74 @@ window.addEventListener('load', () => {
     updateTransferModeButton();
 });
 
+</script>
+<!-- 下拉同步 -->
+<script>
+(function() {
+    let startY = 0, pulling = false, indicator = null;
+    const THRESHOLD = 70; // 下拉触发距离（px）
+
+    function getIndicator() {
+        if (!indicator) {
+            indicator = document.createElement('div');
+            indicator.id = 'pull-refresh-indicator';
+            indicator.style.cssText = `
+                position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+                height: 0; overflow: hidden; display: flex; align-items: center;
+                justify-content: center; background: rgba(var(--bs-primary-rgb), 0.1);
+                transition: height 0.1s; font-size: 0.85rem; color: var(--bs-primary);
+                pointer-events: none;`;
+            document.body.appendChild(indicator);
+        }
+        return indicator;
+    }
+
+    function isAtTop() {
+        const mc = document.querySelector('.main-content');
+        return mc ? mc.scrollTop <= 0 : window.scrollY <= 0;
+    }
+
+    document.addEventListener('touchstart', e => {
+        if (!isAtTop()) return;
+        // 只在登录后可用
+        if (!window.currentUser) return;
+        startY = e.touches[0].clientY;
+        pulling = true;
+    }, { passive: true });
+
+    document.addEventListener('touchmove', e => {
+        if (!pulling) return;
+        const dy = e.touches[0].clientY - startY;
+        if (dy <= 0) { pulling = false; getIndicator().style.height = '0'; return; }
+        // 阻止浏览器默认下拉刷新
+        if (dy > 5) e.preventDefault();
+        const progress = Math.min(dy / THRESHOLD, 1);
+        const h = Math.min(dy * 0.4, 50);
+        const ind = getIndicator();
+        ind.style.height = h + 'px';
+        ind.textContent = progress >= 1 ? '↑ 松开同步' : '↓ 下拉同步';
+    }, { passive: false });
+
+    document.addEventListener('touchend', e => {
+        if (!pulling) return;
+        pulling = false;
+        const dy = e.changedTouches[0].clientY - startY;
+        const ind = getIndicator();
+        if (dy >= THRESHOLD) {
+            ind.textContent = '同步中…';
+            ind.style.height = '40px';
+            // 触发同步
+            if (typeof syncToDrive === 'function') {
+                syncToDrive(false).finally(() => {
+                    setTimeout(() => { ind.style.height = '0'; }, 800);
+                });
+            }
+        } else {
+            ind.style.height = '0';
+        }
+        startY = 0;
+    }, { passive: true });
+})();
 </script>
 <!-- PWA Service Worker 注册 -->
 <script>
