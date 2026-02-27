@@ -570,7 +570,7 @@ body {
 
         <!-- 标题栏 + 齿轮 -->
         <div class="d-flex align-items-center justify-content-between mb-3">
-            <h4 class="mb-0 text-primary"><i class="bi bi-wallet2"></i> Test-app v1.0.5</h4>
+            <h4 class="mb-0 text-primary"><i class="bi bi-wallet2"></i> Test-app v1.0.7</h4>
             <button class="btn btn-sm btn-outline-secondary" onclick="toggleLoginSettings()" title="连接设置">
                 <i class="bi bi-gear" id="login-settings-gear"></i>
             </button>
@@ -639,13 +639,13 @@ body {
 
         <!-- ① 选择数据文件 -->
         <div class="mb-3">
-            <label class="form-label small text-muted fw-bold mb-2">① 选择数据文件</label>
+            <label class="form-label small text-muted fw-bold mb-2">选择数据文件</label>
             <div id="offline-file-bar">
                 <input type="file" class="form-control form-control-sm" id="data-import-file" accept=".enc,.json,.txt" onchange="onFileSelected()">
             </div>
             <div id="online-drive-bar" style="display:none;">
                 <div class="d-flex gap-2 align-items-center">
-                    <span class="small text-muted flex-fill">将自动从 Google Drive 加载</span>
+                    <span class="small text-muted flex-fill">将自动加载</span>
                     <button class="btn btn-outline-primary btn-sm text-nowrap" onclick="loadFromDrive()">
                         <i class="bi bi-cloud-arrow-down"></i> 重新加载
                     </button>
@@ -656,7 +656,7 @@ body {
 
         <!-- ② 输入密码 -->
         <div class="mb-3" id="password-section" style="display:none;">
-            <label class="form-label small text-muted fw-bold">② 输入密码</label>
+            <label class="form-label small text-muted fw-bold">输入密码</label>
             <div class="input-group input-group-sm">
                 <input type="text" id="login-username-hint" name="username" autocomplete="username" style="display:none;" aria-hidden="true">
                 <input type="password" class="form-control" id="login-password" name="password" placeholder="输入数据文件密码" autocomplete="current-password" onkeydown="if(event.key==='Enter') decryptAndLoadData()">
@@ -671,7 +671,7 @@ body {
 
         <!-- ③ 选择用户 -->
         <div class="mb-3" id="user-section" style="display:none;">
-            <label class="form-label small text-muted fw-bold">③ 选择用户登录</label>
+            <label class="form-label small text-muted fw-bold">选择用户</label>
             <div id="user-buttons" class="d-flex gap-2 flex-wrap"></div>
         </div>
     </div>
@@ -794,9 +794,9 @@ body {
                             <th style="width:60px;">类型</th>
                             <th style="width:90px;">类别</th>
                             <th style="width:120px;">账户/转出</th>
-                            <th style="width:110px;" class="text-end">金额</th>
+                            <th style="width:110px;">金额</th>
                             <th style="width:130px;">转入账户</th>
-                            <th style="width:110px;" class="text-end">转入金额</th>
+                            <th style="width:110px;">转入金额</th>
                             <th style="min-width:140px;">备注</th>
                             <th style="width:100px;">标签</th>
                             <th style="width:80px;" class="text-center">操作</th>
@@ -880,40 +880,40 @@ body {
                                     日期 <i class="bi bi-arrow-down-up sort-indicator"></i>
                                     <div class="column-resizer" onmousedown="startColumnResize(event, this)"></div>
                                 </th>
-                                <th data-column="type" style="width:60px" onclick="sortTransactions('type')">
-                                    类型 <i class="bi bi-arrow-down-up sort-indicator"></i>
+                                <th data-column="type" style="width:60px">
+                                    类型
                                     <div class="column-resizer" onmousedown="startColumnResize(event, this)"></div>
                                 </th>
-                                <th data-column="category" style="width:120px" onclick="sortTransactions('category')">
-                                    类别 <i class="bi bi-arrow-down-up sort-indicator"></i>
+                                <th data-column="category" style="width:120px">
+                                    类别
                                     <div class="column-resizer" onmousedown="startColumnResize(event, this)"></div>
                                 </th>
-                                <th data-column="account" style="width:150px" onclick="sortTransactions('account')">
-                                    账户/转出 <i class="bi bi-arrow-down-up sort-indicator"></i>
+                                <th data-column="account" style="width:150px">
+                                    账户/转出
                                     <div class="column-resizer" onmousedown="startColumnResize(event, this)"></div>
                                 </th>
-                                <th data-column="amount" style="width:120px" class="text-end" onclick="sortTransactions('amount')">
+                                <th data-column="amount" style="width:120px" onclick="sortTransactions('amount')">
                                     金额/转出 <i class="bi bi-arrow-down-up sort-indicator"></i>
                                     <div class="column-resizer" onmousedown="startColumnResize(event, this)"></div>
                                 </th>
-                                <th data-column="toAccount" style="width:150px" onclick="sortTransactions('toAccount')">
-                                    转入账户 <i class="bi bi-arrow-down-up sort-indicator"></i>
+                                <th data-column="toAccount" style="width:150px">
+                                    转入账户
                                     <div class="column-resizer" onmousedown="startColumnResize(event, this)"></div>
                                 </th>
-                                <th data-column="amountIn" style="width:120px" class="text-end" onclick="sortTransactions('amountIn')">
+                                <th data-column="amountIn" style="width:120px" onclick="sortTransactions('amountIn')">
                                     转入金额 <i class="bi bi-arrow-down-up sort-indicator"></i>
                                     <div class="column-resizer" onmousedown="startColumnResize(event, this)"></div>
                                 </th>
-                                <th data-column="desc" style="min-width:150px" onclick="sortTransactions('desc')">
-                                    备注 <i class="bi bi-arrow-down-up sort-indicator"></i>
+                                <th data-column="desc" style="min-width:150px">
+                                    备注
                                     <div class="column-resizer" onmousedown="startColumnResize(event, this)"></div>
                                 </th>
-                                <th data-column="tags" style="width:120px" onclick="sortTransactions('tags')">
-                                    标签 <i class="bi bi-arrow-down-up sort-indicator"></i>
+                                <th data-column="tags" style="width:120px">
+                                    标签
                                     <div class="column-resizer" onmousedown="startColumnResize(event, this)"></div>
                                 </th>
-                                <th data-column="user" style="width:80px" onclick="sortTransactions('user')">
-                                    用户 <i class="bi bi-arrow-down-up sort-indicator"></i>
+                                <th data-column="user" style="width:80px">
+                                    用户
                                     <div class="column-resizer" onmousedown="startColumnResize(event, this)"></div>
                                 </th>
                                 <th data-column="actions" style="width:80px" class="text-center">操作</th>
@@ -2251,7 +2251,7 @@ async function archiveYear(year) {
         }
 
         filterUserData(); loadAllData(); renderAccounts(); renderAllTransactions(); renderArchiveManagementUI();
-        showToast(`✅ ${year} 年数据存档成功`, 'success');
+        showToast(`${year} 年数据存档成功`, 'success');
     } catch (err) {
         showToast(`存档失败：${err.message}`, 'error');
         console.error('[archiveYear]', err);
@@ -2297,7 +2297,7 @@ async function unarchiveYear(year) {
         await syncToDrive(true, true); // forcePush：解档后直接推送，不拉取合并
 
         filterUserData(); loadAllData(); renderAccounts(); renderAllTransactions(); renderArchiveManagementUI();
-        showToast(`✅ ${year} 年数据解档成功`, 'success');
+        showToast(`${year} 年数据解档成功`, 'success');
     } catch (err) {
         showToast(`解档失败：${err.message}`, 'error');
         console.error('[unarchiveYear]', err);
@@ -2573,42 +2573,55 @@ async function syncToDrive(manual = false, forcePush = false) {
         let finalData = inMemoryLoadedData;
 
         if (!forcePush) {
-            // ── 步骤 1：拉取 Drive 最新版本 ──
-            let remoteData = null;
+            // ── 步骤 1：核对版本号 ──
+            const localVersion = localStorage.getItem('APP_drive_version') || '0';
+            let remoteVersion = '0';
             try {
-                const pullResp = await fetch(gasRequestUrl());
-                if (pullResp.ok) {
-                    const raw = (await pullResp.text()).trim();
-                    if (raw && raw !== 'UNAUTHORIZED') {
-                        try {
-                            remoteData = JSON.parse(raw);
-                        } catch (_) {
-                            if (userPassword) {
-                                try {
-                                    const bytes = CryptoJS.AES.decrypt(raw, userPassword);
-                                    remoteData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
-                                } catch (_) { }
+                const vResp = await fetch(gasRequestUrl({ action: 'version' }));
+                if (vResp.ok) remoteVersion = (await vResp.text()).trim();
+            } catch (_) { }
+
+            const hasNewVersion = remoteVersion !== '0' && remoteVersion !== localVersion;
+
+            if (hasNewVersion) {
+                // ── 步骤 2a：有新版本 → 拉取网盘数据 ──
+                let remoteData = null;
+                try {
+                    const pullResp = await fetch(gasRequestUrl());
+                    if (pullResp.ok) {
+                        const raw = (await pullResp.text()).trim();
+                        if (raw && raw !== 'UNAUTHORIZED') {
+                            try {
+                                remoteData = JSON.parse(raw);
+                            } catch (_) {
+                                if (userPassword) {
+                                    try {
+                                        const bytes = CryptoJS.AES.decrypt(raw, userPassword);
+                                        remoteData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+                                    } catch (_) { }
+                                }
                             }
                         }
                     }
-                }
-            } catch (_) { }
+                } catch (_) { }
 
-            // ── 步骤 2：合并 ──
-            if (remoteData) {
-                finalData = mergeData(inMemoryLoadedData, remoteData);
-                inMemoryLoadedData = finalData;
-                accounts = []; transactions = []; plannedTransactions = [];
-                Object.entries(finalData.allUserData || {}).forEach(([u, uData]) => {
-                    accounts.push(...(uData.accounts || []).map(a => ({...a, ownerName: u})));
-                    transactions.push(...(uData.transactions || []).map(t => ({...t, ownerName: u})));
-                    if (uData.plannedTransactions) {
-                        plannedTransactions.push(...uData.plannedTransactions.map(p => ({...p, ownerName: u})));
-                    }
-                });
-                filterUserData();
-                loadAllData();
+                // ── 步骤 2b：合并 ──
+                if (remoteData) {
+                    finalData = mergeData(inMemoryLoadedData, remoteData);
+                    inMemoryLoadedData = finalData;
+                    accounts = []; transactions = []; plannedTransactions = [];
+                    Object.entries(finalData.allUserData || {}).forEach(([u, uData]) => {
+                        accounts.push(...(uData.accounts || []).map(a => ({...a, ownerName: u})));
+                        transactions.push(...(uData.transactions || []).map(t => ({...t, ownerName: u})));
+                        if (uData.plannedTransactions) {
+                            plannedTransactions.push(...uData.plannedTransactions.map(p => ({...p, ownerName: u})));
+                        }
+                    });
+                    filterUserData();
+                    loadAllData();
+                }
             }
+            // 无新版本：跳过拉取与合并，直接上传本地数据
         }
 
         // ── 步骤 3：加密打包并推送 ──
@@ -2635,7 +2648,7 @@ async function syncToDrive(manual = false, forcePush = false) {
                     if (v !== '0') localStorage.setItem('APP_drive_version', v);
                 }
             } catch(_) {}
-            showToast('☁️ 已同步到 Drive', 'success');
+            showToast('已同步', 'success');
         } else {
             throw new Error('GAS 返回：' + text);
         }
@@ -2655,7 +2668,7 @@ async function loadFromDrive() {
         alert('请先在登录界面填写并保存 GAS URL。'); return;
     }
     const statusEl = $('file-status');
-    statusEl.innerHTML = '<span class="text-primary"><span class="spinner-border spinner-border-sm me-1"></span>正在从 Google Drive 同步数据…</span>';
+    statusEl.innerHTML = '<span class="text-primary"><span class="spinner-border spinner-border-sm me-1"></span>正在同步数据…</span>';
 
     try {
         // ── 先核对版本时间戳 ──
@@ -3267,7 +3280,7 @@ function renderDetailContent(id) {
                     const accTo = accounts.find(a => a.id == tIn.accountId);
                     if (accTo) {
                         toAccDisplay = `<small>${getAccountDisplayName(accTo)}</small>`;
-                        peerAmtDisplay = `<div class="text-end fw-bold text-warning">${CURRENCY_SYMBOLS[accTo.currency]}${formatAmount(Math.abs(tIn.amount), accTo.currency)}</div>`;
+                        peerAmtDisplay = `<div class="fw-bold text-warning">${CURRENCY_SYMBOLS[accTo.currency]}${formatAmount(Math.abs(tIn.amount), accTo.currency)}</div>`;
                     }
                 }
             } else {
@@ -3295,7 +3308,7 @@ function renderDetailContent(id) {
                 <td><div class="${typeColorClass}">${typeText}</div></td>
                 <td>${categoryDisplay}</td>
                 <td>${accountOutDisplay}</td>
-                <td><div class="fw-bold ${amtColorClass} text-end">${displayAmt}</div></td>
+                <td><div class="fw-bold ${amtColorClass}">${displayAmt}</div></td>
                 <td>${toAccDisplay}</td>
                 <td>${peerAmtDisplay}</td>
                 <td><div class="desc-content" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;" title="${descDisplay.replace(/"/g,'&quot;')}">${descDisplay}</div></td>
@@ -3655,7 +3668,7 @@ $('edit-transaction-form').addEventListener('submit', (e) => {
         const hintEl = $('edit-trans-desc-hint');
         if (hintEl) hintEl.style.display = 'none';
         resetAttachmentUI();
-        showToast('✅ 已添加', 'success', 1500);
+        showToast('已添加', 'success', 1500);
     } else {
         const id = parseFloat($('edit-trans-id').value);
         const t = transactions.find(x => x.id === id);
@@ -3713,7 +3726,7 @@ $('edit-transfer-form').addEventListener('submit', (e) => {
         $('edit-transfer-amount-out').value = '';
         $('edit-transfer-amount-in').value = '';
         $('edit-transfer-desc').value = '';
-        showToast('✅ 已添加', 'success', 1500);
+        showToast('已添加', 'success', 1500);
     } else {
         const id = parseFloat($('edit-transfer-id').value);
         const tOut = transactions.find(x => x.id === id);
@@ -3907,7 +3920,7 @@ function renderAllTransactions() {
                     transactions.find(tx => tx.transferPairId === t.transferPairId && tx.type === 'income') :
                     transactions.find(tx => tx.isTransfer && tx.type === 'income' && tx.date === t.date && tx.relatedAccountId == t.accountId);
                 const amountIn = tIn ? Math.abs(tIn.amount) : Math.abs(t.amount);
-                amountInDisplay = `<div class="text-end fw-bold text-warning">${CURRENCY_SYMBOLS[accTo.currency]}${formatAmount(amountIn, accTo.currency)}</div>`;
+                amountInDisplay = `<div class="fw-bold text-warning">${CURRENCY_SYMBOLS[accTo.currency]}${formatAmount(amountIn, accTo.currency)}</div>`;
             }
         } else if (t.isTransfer && t.type === 'income') {
             return; // 跳过转入记录
@@ -3920,13 +3933,13 @@ function renderAllTransactions() {
             (t._isArchived ? '<span class="badge bg-secondary" style="font-size:0.6rem;">存档</span>' : '');
 
         const tr = document.createElement('tr');
-        const tDescDisplay = t.isTransfer ? (t.desc||'').replace(/^(?:转给|来自)\s*[^:：]+[:：]\s*/, '') : (t.desc||'');
+        const tDescDisplay = t.desc||'';
         tr.innerHTML = `
             <td>${t.date}</td>
             <td><div class="text-start ps-2 ${typeColorClass}">${typeText}</div></td>
             <td>${t.isTransfer ? '' : (t.category || '')}</td>
             <td><small>${getAccountDisplayName(acc)}</small></td>
-            <td><div class="text-end fw-bold ${t.isTransfer ? 'text-warning' : (t.amount < 0 ? 'text-danger' : 'text-success')}">${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}</div></td>
+            <td><div class="fw-bold ${t.isTransfer ? 'text-warning' : (t.amount < 0 ? 'text-danger' : 'text-success')}">${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}</div></td>
             <td>${toAccountDisplay}</td>
             <td>${amountInDisplay}</td>
             <td><div class="desc-content" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:250px;" title="${tDescDisplay.replace(/"/g,'&quot;')}">${tDescDisplay}${t.attachmentId ? ` <a href="${getDriveAttachmentUrl(t.attachmentId)}" target="_blank" title="查看附件" onclick="event.stopPropagation()"><i class="bi bi-paperclip text-muted"></i></a>` : ''}</div></td>
@@ -3962,13 +3975,11 @@ function renderAllTransactions() {
                 const isCrossCurrency = acc.currency !== accTo.currency;
                 card.innerHTML = `
                     <div class="card-line-1">
-                        <span class="text-muted small me-2">${t.date}</span>
-                        <div class="flex-grow-1 me-2" style="min-width:0;"><div class="text-muted small scrolling-note">${finalNote}${tagsDisplay}${attachIcon}</div></div>
-                        <div class="amount-transfer fw-bold">${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}</div>
+                        <div class="fw-bold flex-grow-1" style="font-size:0.85rem;">${accDisplayName} <i class="bi bi-arrow-right-short text-primary"></i> ${getAccountDisplayName(accTo)}</div>
+                        <div class="amount-transfer fw-bold">${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}${isCrossCurrency ? ` <span class="small text-primary">→ ${CURRENCY_SYMBOLS[accTo.currency]}${formatAmount(amountIn, accTo.currency)}</span>` : ''}</div>
                     </div>
-                    <div class="card-line-2 d-flex justify-content-between align-items-center">
-                        <div class="fw-bold" style="font-size:0.85rem;">${accDisplayName} <i class="bi bi-arrow-right-short text-primary"></i> ${getAccountDisplayName(accTo)}</div>
-                        ${isCrossCurrency ? `<div class="small text-primary">→ ${CURRENCY_SYMBOLS[accTo.currency]}${formatAmount(amountIn, accTo.currency)}</div>` : ''}
+                    <div class="card-line-2">
+                        <span class="text-muted small">${t.date}${finalNote ? ` · ${descClean}` : ''}${tagsDisplay}${attachIcon}</span>
                     </div>`;
             } else {
                 const amountClass = t.amount < 0 ? 'amount-expense' : 'amount-income';
