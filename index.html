@@ -3973,14 +3973,15 @@ function renderAllTransactions() {
                     transactions.find(tx => tx.isTransfer && tx.type === 'income' && tx.date === t.date && tx.relatedAccountId == t.accountId);
                 const amountIn = tIn ? Math.abs(tIn.amount) : Math.abs(t.amount);
                 const isCrossCurrency = acc.currency !== accTo.currency;
-                card.innerHTML = `
-                    <div class="card-line-1">
-                        <div class="fw-bold flex-grow-1" style="font-size:0.85rem;">${accDisplayName} <i class="bi bi-arrow-right-short text-primary"></i> ${getAccountDisplayName(accTo)}</div>
-                        <div class="amount-transfer fw-bold">${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}${isCrossCurrency ? ` <span class="small text-primary">→ ${CURRENCY_SYMBOLS[accTo.currency]}${formatAmount(amountIn, accTo.currency)}</span>` : ''}</div>
-                    </div>
-                    <div class="card-line-2">
-                        <span class="text-muted small">${t.date}${finalNote ? ` · ${descClean}` : ''}${tagsDisplay}${attachIcon}</span>
-                    </div>`;
+ card.innerHTML = `
+    <div class="card-line-1">
+        <div class="fw-bold flex-grow-1" style="font-size:0.85rem;">${accDisplayName} <i class="bi bi-arrow-right-short text-primary"></i> ${getAccountDisplayName(accTo)}</div>
+        <div class="amount-transfer fw-bold">${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}</div>
+    </div>
+    <div class="card-line-2 d-flex justify-content-between align-items-center">
+        <span class="text-muted small">${t.date}${descClean ? ` · ${descClean}` : ''}${tagsDisplay}${attachIcon}</span>
+        ${isCrossCurrency ? `<span class="small text-primary fw-bold">→ ${CURRENCY_SYMBOLS[accTo.currency]}${formatAmount(amountIn, accTo.currency)}</span>` : ''}
+    </div>`;
             } else {
                 const amountClass = t.amount < 0 ? 'amount-expense' : 'amount-income';
                 const tagsHtml = t.tags ? `<span style="color:var(--bs-secondary);"> @${t.tags}</span>` : '';
