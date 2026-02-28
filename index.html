@@ -4541,7 +4541,7 @@ async function handleAttachmentSelected(input) {
             currentIds.push(result.fileId);
             $('edit-trans-attachment-id').value = currentIds.join(',');
             renderAttachmentThumbs(currentIds);
-            showToast(`✅ 已上传（${Math.round(compressedFile.size / 1024)}KB）`, 'success', 3000);
+            showToast(`已上传（${Math.round(compressedFile.size / 1024)}KB）`, 'success', 3000);
         } else {
             showToast('上传失败：' + (result.error || '未知错误'), 'error');
         }
