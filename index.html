@@ -4436,14 +4436,12 @@ function getDriveAttachmentUrl(fileId) {
 function resetAttachmentUI() {
     const inputFile = $('attachment-file-input');
     const container = $('attachment-preview-container');
-    const status = $('attachment-upload-status');
     const idField = $('edit-trans-attachment-id');
     if (inputFile) inputFile.value = '';
     if (container) {
         container.innerHTML = '';
         container.style.setProperty('display', 'none', 'important');
     }
-    if (status) { status.textContent = ''; status.style.display = 'none'; }
     if (idField) idField.value = '';
 }
 
@@ -4452,6 +4450,7 @@ async function compressImage(file, maxKB = 200) {
         const reader = new FileReader();
         reader.onload = e => {
             const img = new Image();
+            img.onerror = () => resolve(file); // 图片解码失败时降级用原文件
             img.onload = () => {
                 let quality = 0.85;
                 let w = img.width, h = img.height;
@@ -4513,64 +4512,45 @@ async function handleAttachmentSelected(input) {
         return;
     }
 
-    // 设置上传状态
     isUploadingAttachment = true;
-    $('attachment-upload-status').style.display = 'block';
-    $('attachment-upload-status').textContent = '压缩中…';
     $('edit-trans-submit-btn').disabled = true;
+    showToast('压缩中…', 'syncing', 0);
 
     try {
-        // 压缩图片后再上传
         const compressedFile = await compressImage(file, 200);
 
-        $('attachment-upload-status').textContent = '上传中…';
+        showToast('上传中…', 'syncing', 0);
 
-        const reader = new FileReader();
-        reader.onload = async function(e) {
-            const base64Data = e.target.result.split(',')[1];
-            const fileName = `attach_${Date.now()}.jpg`;
+        // 将 FileReader 包装成 Promise，确保时序完全可控
+        const base64Data = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = e => resolve(e.target.result.split(',')[1]);
+            reader.onerror = () => reject(new Error('文件读取失败'));
+            reader.readAsDataURL(compressedFile);
+        });
 
-            try {
-                const payload = JSON.stringify({
-                    action: 'uploadAttachment',
-                    filename: fileName,
-                    mimeType: 'image/jpeg',
-                    data: base64Data
-                });
-                const response = await fetch(`${GAS_URL}?token=${encodeURIComponent(GAS_TOKEN)}`, {
-                    method: 'POST',
-                    body: payload,
-                    headers: { 'Content-Type': 'text/plain' }
-                });
-                const result = await response.json();
+        const fileName = `attach_${Date.now()}.jpg`;
+        const response = await fetch(`${GAS_URL}?token=${encodeURIComponent(GAS_TOKEN)}`, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'uploadAttachment', filename: fileName, mimeType: 'image/jpeg', data: base64Data }),
+            headers: { 'Content-Type': 'text/plain' }
+        });
+        const result = await response.json();
 
-                if (result.fileId) {
-                    currentIds.push(result.fileId);
-                    $('edit-trans-attachment-id').value = currentIds.join(',');
-                    renderAttachmentThumbs(currentIds);
-                    // 显示压缩后的实际上传大小
-                    $('attachment-upload-status').textContent = `✅ 已上传（${Math.round(compressedFile.size / 1024)}KB）`;
-                } else {
-                    $('attachment-upload-status').textContent = '';
-                    alert('上传失败: ' + (result.error || '未知错误'));
-                }
-            } catch (err) {
-                console.error(err);
-                $('attachment-upload-status').textContent = '';
-                alert('网络错误，上传失败');
-            } finally {
-                isUploadingAttachment = false;
-                $('edit-trans-submit-btn').disabled = false;
-                input.value = '';
-            }
-        };
-        reader.readAsDataURL(compressedFile);
+        if (result.fileId) {
+            currentIds.push(result.fileId);
+            $('edit-trans-attachment-id').value = currentIds.join(',');
+            renderAttachmentThumbs(currentIds);
+            showToast(`✅ 已上传（${Math.round(compressedFile.size / 1024)}KB）`, 'success', 3000);
+        } else {
+            showToast('上传失败：' + (result.error || '未知错误'), 'error');
+        }
     } catch (err) {
         console.error(err);
-        alert('图片处理失败');
+        showToast('上传失败：' + err.message, 'error');
+    } finally {
+        // 统一在 finally 中恢复状态，保证一定执行
         isUploadingAttachment = false;
-        $('attachment-upload-status').textContent = '';
-        $('attachment-upload-status').style.display = 'none';
         $('edit-trans-submit-btn').disabled = false;
         input.value = '';
     }
