@@ -2488,13 +2488,6 @@ function filterUserData() {
 
 // ==================== 未保存更改标记 & Drive 同步 ====================
 
-const toastStyles = {
-    success: 'background:#d1e7dd;color:#0a3622;border:1px solid #a3cfbb;',
-    warning: 'background:#fff3cd;color:#664d03;border:1px solid #ffda6a;',
-    error:   'background:#f8d7da;color:#58151c;border:1px solid #f1aeb5;',
-    syncing: 'background:#cfe2ff;color:#084298;border:1px solid #9ec5fe;',
-    info:    'background:#cff4fc;color:#055160;border:1px solid #9eeaf9;',
-};
 const toastIcons = {
     success: '<i class="bi bi-check-circle-fill"></i>',
     warning: '<i class="bi bi-exclamation-triangle-fill"></i>',
@@ -4713,14 +4706,25 @@ function showToast(msg, type = 'success', duration = 3000) {
     applyToastStyle(el, type);
     el.innerHTML = `${toastIcons[type] || ''} ${msg}`;
     el.classList.add('show');
+
     if (duration > 0) {
-        _toastTimer = setTimeout(() => el.classList.remove('show'), duration);
+        _toastTimer = setTimeout(() => {
+            if (hasUnsavedChanges) {
+                showUnsavedToast();
+            } else {
+                el.classList.remove('show');
+            }
+        }, duration);
     }
 }
 
 function hideToast() {
     clearTimeout(_toastTimer);
-    $('app-toast')?.classList.remove('show');
+    if (hasUnsavedChanges) {
+        showUnsavedToast();
+    } else {
+        $('app-toast')?.classList.remove('show');
+    }
 }
 
 // ==================== 金额显示/隐藏切换 ====================
