@@ -570,7 +570,7 @@ body {
 
         <!-- 标题栏 + 齿轮 -->
         <div class="d-flex align-items-center justify-content-between mb-3">
-            <h4 class="mb-0 text-primary"><i class="bi bi-wallet2"></i> Test-app v1.0.9</h4>
+            <h4 class="mb-0 text-primary"><i class="bi bi-wallet2"></i> Test-app v1.0.10</h4>
             <button class="btn btn-sm btn-outline-secondary" onclick="toggleLoginSettings()" title="连接设置">
                 <i class="bi bi-gear" id="login-settings-gear"></i>
             </button>
@@ -1593,6 +1593,7 @@ let currentUserName = null;
 let hasUnsavedChanges = false;
 let driveAutoSaveTimer = null;   // 防抖计时器
 let _lastTransPrefs = {};        // 上次新增交易的选项（仅本次会话有效）
+let _toastTimer = null;          // toast 自动消失计时器
 let driveIsSyncing = false;      // 防并发
 let offlineMode = localStorage.getItem('APP_offline_mode') === 'true'; // 离线模式
 
@@ -4685,7 +4686,6 @@ function switchTab(t, el) {
 
 // ==================== 状态提示 ====================
 // ==================== 统一通知系统 ====================
-let _toastTimer = null;
 
 /**
  * 显示统一 toast 通知
