@@ -570,7 +570,7 @@ body {
 
         <!-- 标题栏 + 齿轮 -->
         <div class="d-flex align-items-center justify-content-between mb-3">
-            <h4 class="mb-0 text-primary"><i class="bi bi-wallet2"></i> Test-app v1.0.10</h4>
+            <h4 class="mb-0 text-primary"><i class="bi bi-wallet2"></i> Test-app v1.0.11</h4>
             <button class="btn btn-sm btn-outline-secondary" onclick="toggleLoginSettings()" title="连接设置">
                 <i class="bi bi-gear" id="login-settings-gear"></i>
             </button>
@@ -2084,11 +2084,49 @@ function loginWithUser(name) {
     const statusEl = $('sync-mode-status');
     if (statusEl) statusEl.textContent = offlineMode ? '离线模式' : '在线模式';
 
+    // 检查是否有本地未同步草稿，有则合并恢复
+    checkAndRestoreDraft(name);
+
     // 检查是否需要提示存档
     checkArchivePrompt();
 }
 
-// ==================== 存档管理 ====================
+// ==================== 本地草稿恢复 ====================
+/**
+ * 进入主界面后检查是否有未同步的本地草稿
+ * 若有，用 mergeData() 按 updatedAt 时间戳合并，不会覆盖任何一方的新数据
+ */
+function checkAndRestoreDraft(userName) {
+    const draftKey = `APP_local_draft_${userName}`;
+    const timeKey  = `APP_local_draft_time_${userName}`;
+    const draftStr  = localStorage.getItem(draftKey);
+    const draftTime = localStorage.getItem(timeKey);
+    if (!draftStr || !draftTime) return;
+
+    try {
+        const draft = JSON.parse(draftStr);
+        // 草稿作为 local，刚从网盘加载的数据作为 remote，按时间戳取最新
+        const merged = mergeData(draft, inMemoryLoadedData);
+        inMemoryLoadedData = merged;
+        // 重新加载合并后的数据到内存变量并刷新 UI
+        loadAllData();
+        filterUserData();
+        renderAccounts();
+        renderAllTransactions();
+
+        hasUnsavedChanges = true;
+        const timeStr = new Date(parseInt(draftTime))
+            .toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        showToast(`已恢复 ${timeStr} 的本地未同步记录`, 'warning', 6000);
+    } catch(e) {
+        // 草稿损坏，直接清除，不影响主流程
+        console.warn('[draft] 草稿解析失败，已清除', e);
+        localStorage.removeItem(draftKey);
+        localStorage.removeItem(timeKey);
+    }
+}
+
+
 
 function getArchivableYears() {
     const currentYear = new Date().getFullYear();
@@ -2373,7 +2411,7 @@ async function loadHistoryYear(year) {
         if (banner) { banner.classList.remove('d-none'); $('history-year-label').textContent = year; }
 
         renderAllTransactions(); renderAccounts(); renderStats();
-        showToast(`📂 已加载 ${year} 年存档（只读）`, 'success');
+        showToast(`已加载 ${year} 年存档（只读）`, 'success');
     } catch (err) {
         historyMode = false; historyYear = null;
         showToast(`加载失败：${err.message}`, 'error');
@@ -2512,6 +2550,15 @@ function applyToastStyle(el, type) {
 
 function triggerAutoSave() {
     hasUnsavedChanges = true;
+    // 每次有未保存变更时，同步写一份草稿到 localStorage
+    // 防止页面被系统杀死后未同步的记录丢失
+    if (currentUserName) {
+        try {
+            saveUserData(); // 先把内存变量同步进 inMemoryLoadedData
+            localStorage.setItem(`APP_local_draft_${currentUserName}`, JSON.stringify(inMemoryLoadedData));
+            localStorage.setItem(`APP_local_draft_time_${currentUserName}`, Date.now().toString());
+        } catch(e) { /* localStorage 容量不足时静默失败，不影响主流程 */ }
+    }
     showUnsavedToast();
 }
 
@@ -2526,6 +2573,11 @@ function showUnsavedToast() {
 
 function clearUnsavedFlag() {
     hasUnsavedChanges = false;
+    // 同步成功后清掉本地草稿
+    if (currentUserName) {
+        localStorage.removeItem(`APP_local_draft_${currentUserName}`);
+        localStorage.removeItem(`APP_local_draft_time_${currentUserName}`);
+    }
 }
 
 /**
@@ -2593,7 +2645,7 @@ async function syncToDrive(manual = false, forcePush = false) {
     if (driveIsSyncing) return;
     driveIsSyncing = true;
 
-    showToast('☁️ 同步中…', 'syncing', 0);
+    showToast('同步中…', 'syncing', 0);
     saveUserData();
 
     try {
@@ -2675,7 +2727,7 @@ async function syncToDrive(manual = false, forcePush = false) {
                     if (v !== '0') localStorage.setItem('APP_drive_version', v);
                 }
             } catch(_) {}
-            showToast('☁️ 已同步', 'success');
+            showToast('已同步', 'success');
         } else {
             throw new Error('GAS 返回：' + text);
         }
@@ -4108,325 +4160,6 @@ function updateDescHint(descId, hintId, typeId, catId, accId) {
         ` onclick="applyDescHint('${catId}','${result.category}')">应用</button>`;
 }
 
-// // ==================== 附件功能 ====================
-
-// function getDriveAttachmentUrl(fileId) {
-//     // 使用 Google Drive 直接预览链接
-//     return `https://drive.google.com/thumbnail?id=${fileId}&sz=w800`;
-// }
-
-// function resetAttachmentUI() {
-//     const inputFile = $('attachment-file-input');
-//     const container = $('attachment-preview-container');
-//     const status = $('attachment-upload-status');
-//     const idField = $('edit-trans-attachment-id');
-//     if (inputFile) inputFile.value = '';
-//     if (container) {
-//         container.innerHTML = '';
-//         container.style.setProperty('display', 'none', 'important');
-//     }
-//     if (status) { status.textContent = ''; status.style.display = 'none'; }
-//     if (idField) idField.value = '';
-// }
-
-// async function compressImage(file, maxKB = 200) {
-//     // 鸿蒙3.0 相机常输出 HEIC/HEIF 格式，WebView 无法通过 Canvas 解码，直接原样返回供上传
-//     const isHEIC = /\.(heic|heif)$/i.test(file.name) || /^image\/(heic|heif)$/i.test(file.type);
-//     if (isHEIC) return Promise.resolve(file);
-
-//     // 鸿蒙可能传来 HEIC 格式，先通过 Image 解码再转 JPEG
-//     return new Promise((resolve) => {
-//         const reader = new FileReader();
-//         reader.onload = e => {
-//             const img = new Image();
-//             img.onload = () => {
-//                 let quality = 0.85;
-//                 let w = img.width, h = img.height;
-//                 // 若尺寸超大先等比缩小
-//                 const maxPx = 1920;
-//                 if (w > maxPx || h > maxPx) {
-//                     const ratio = Math.min(maxPx / w, maxPx / h);
-//                     w = Math.round(w * ratio);
-//                     h = Math.round(h * ratio);
-//                 }
-//                 const canvas = document.createElement('canvas');
-//                 canvas.width = w; canvas.height = h;
-//                 const ctx = canvas.getContext('2d');
-//                 ctx.drawImage(img, 0, 0, w, h);
-
-//                 const tryCompress = (q) => {
-//                     try {
-//                         canvas.toBlob(blob => {
-//                             if (!blob) { resolve(file); return; }
-//                             if (blob.size <= maxKB * 1024 || q < 0.2) {
-//                                 resolve(new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' }));
-//                             } else {
-//                                 tryCompress(Math.max(q - 0.1, 0.15));
-//                             }
-//                         }, 'image/jpeg', q);
-//                     } catch(err) {
-//                         // toBlob 失败时降级：用 toDataURL
-//                         try {
-//                             const dataURL = canvas.toDataURL('image/jpeg', q);
-//                             const binStr = atob(dataURL.split(',')[1]);
-//                             const arr = new Uint8Array(binStr.length);
-//                             for (let i = 0; i < binStr.length; i++) arr[i] = binStr.charCodeAt(i);
-//                             const blob = new Blob([arr], { type: 'image/jpeg' });
-//                             resolve(new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' }));
-//                         } catch(e2) { resolve(file); }
-//                     }
-//                 };
-//                 tryCompress(quality);
-//             };
-//             img.onerror = () => resolve(file); // 无法解码时原样返回
-//             img.src = e.target.result;
-//         };
-//         reader.onerror = () => resolve(file);
-//         reader.readAsDataURL(file);
-//     });
-// }
-
-// // 1. 全局状态变量
-// let isUploadingAttachment = false;
-
-// // 2. 拦截模态框关闭（在 window load 中初始化）
-// window.addEventListener('load', () => {
-//     const editModalEl = document.getElementById('editTransactionModal');
-//     editModalEl.addEventListener('hide.bs.modal', function (event) {
-//         if (isUploadingAttachment) {
-//             event.preventDefault(); // 阻止关闭
-//             alert('图片正在同步至网盘，请稍候...');
-//         }
-//     });
-//     updateTransferModeButton();
-// });
-
-// // // 3. 处理文件选择与上传
-// // async function handleAttachmentSelected(input) {
-// //     const file = input.files[0];
-// //     if (!file) return;
-
-// //     // 获取当前已有的 ID 数组
-// //     let currentIds = $('edit-trans-attachment-id').value ? $('edit-trans-attachment-id').value.split(',').filter(id => id.trim()) : [];
-// //     if (currentIds.length >= 3) {
-// //         alert('最多只能上传 3 张照片');
-// //         input.value = '';
-// //         return;
-// //     }
-
-// //     // 设置上传状态
-// //     isUploadingAttachment = true;
-// //     $('attachment-upload-status').style.display = 'block';
-// //     $('edit-trans-submit-btn').disabled = true; // 禁用保存按钮
-
-// //     try {
-// //         // 压缩图片后再上传（HEIC/HEIF 由 compressImage 直接回退原文件）
-// //         const compressedFile = await compressImage(file, 200);
-// //         // 判断最终上传的文件类型（HEIC 可能未被压缩处理）
-// //         const isHEIC = /\.(heic|heif)$/i.test(compressedFile.name) || /^image\/(heic|heif)$/i.test(compressedFile.type);
-// //         const uploadMime = isHEIC ? 'image/heic' : 'image/jpeg';
-// //         const uploadExt  = isHEIC ? '.heic' : '.jpg';
-
-// //         const reader = new FileReader();
-// //         reader.onerror = () => {
-// //             isUploadingAttachment = false;
-// //             $('attachment-upload-status').style.display = 'none';
-// //             $('edit-trans-submit-btn').disabled = false;
-// //             input.value = '';
-// //             alert('文件读取失败，请重试');
-// //         };
-// //         reader.onload = async function(e) {
-// //             const base64Data = e.target.result.split(',')[1];
-// //             const fileName = `attach_${Date.now()}${uploadExt}`;
-
-// //             try {
-// //                 const response = await fetch(gasRequestUrl(), {
-// //                     method: 'POST',
-// //                     body: JSON.stringify({
-// //                         action: 'uploadAttachment',
-// //                         data: base64Data,
-// //                         mimeType: uploadMime,
-// //                         filename: fileName
-// //                     })
-// //                 });
-// //                 const result = await response.json();
-
-// //                 if (result.fileId) {
-// //                     // 将新 ID 加入数组
-// //                     currentIds.push(result.fileId);
-// //                     $('edit-trans-attachment-id').value = currentIds.join(',');
-// //                     // 重新渲染预览
-// //                     renderAttachmentThumbs(currentIds);
-// //                 } else {
-// //                     alert('上传失败');
-// //                 }
-// //             } catch (err) {
-// //                 console.error(err);
-// //                 alert('网络错误，上传失败');
-// //             } finally {
-// //                 isUploadingAttachment = false;
-// //                 $('attachment-upload-status').style.display = 'none';
-// //                 $('edit-trans-submit-btn').disabled = false;
-// //                 input.value = ''; // 清空 input 方便下次触发
-// //             }
-// //         };
-// //         reader.readAsDataURL(compressedFile);
-// //     } catch (err) {
-// //         console.error(err);
-// //         alert('图片处理失败');
-// //         isUploadingAttachment = false;
-// //         $('attachment-upload-status').style.display = 'none';
-// //         $('edit-trans-submit-btn').disabled = false;
-// //         input.value = '';
-// //     }
-// // }
-// async function handleAttachmentSelected(input) {
-//     const file = input.files[0];
-//     if (!file) return;
-
-//     let currentIds = $('edit-trans-attachment-id').value ? $('edit-trans-attachment-id').value.split(',').filter(id => id.trim()) : [];
-//     if (currentIds.length >= 3) {
-//         alert('最多只能上传 3 张照片');
-//         input.value = '';
-//         return;
-//     }
-
-//     // --- 修改点 1：立即显示 UI 状态 ---
-//     isUploadingAttachment = true;
-//     $('attachment-upload-status').style.display = 'block';
-//     $('edit-trans-submit-btn').disabled = true; 
-
-//     // --- 修改点 2：使用 setTimeout 包装耗时逻辑 ---
-//     // 给浏览器 50ms 的时间去渲染“上传中”的文字和禁用按钮的操作
-//     setTimeout(async () => {
-//         try {
-//             // 压缩图片（这是 CPU 密集型操作）
-//             const compressedFile = await compressImage(file, 200);
-            
-//             const isHEIC = /\.(heic|heif)$/i.test(compressedFile.name) || /^image\/(heic|heif)$/i.test(compressedFile.type);
-//             const uploadMime = isHEIC ? 'image/heic' : 'image/jpeg';
-//             const uploadExt  = isHEIC ? '.heic' : '.jpg';
-
-//             const reader = new FileReader();
-//             reader.onerror = () => {
-//                 resetUploadState(input);
-//                 alert('文件读取失败，请重试');
-//             };
-//             reader.onload = async function(e) {
-//                 const base64Data = e.target.result.split(',')[1];
-//                 const fileName = `attach_${Date.now()}${uploadExt}`;
-
-//                 try {
-//                     const response = await fetch(gasRequestUrl(), {
-//                         method: 'POST',
-//                         body: JSON.stringify({
-//                             action: 'uploadAttachment',
-//                             data: base64Data,
-//                             mimeType: uploadMime,
-//                             filename: fileName
-//                         })
-//                     });
-//                     const result = await response.json();
-
-//                     if (result.fileId) {
-//                         currentIds.push(result.fileId);
-//                         $('edit-trans-attachment-id').value = currentIds.join(',');
-//                         renderAttachmentThumbs(currentIds);
-//                     } else {
-//                         alert('上传失败');
-//                     }
-//                 } catch (err) {
-//                     console.error(err);
-//                     alert('网络错误，上传失败');
-//                 } finally {
-//                     resetUploadState(input);
-//                 }
-//             };
-//             reader.readAsDataURL(compressedFile);
-//         } catch (err) {
-//             console.error(err);
-//             alert('图片处理失败');
-//             resetUploadState(input);
-//         }
-//     }, 50); // 50ms 足够让大多数移动浏览器完成 UI 重绘
-// }
-
-// // 提取重置状态的辅助函数，减少重复代码
-// function resetUploadState(input) {
-//     isUploadingAttachment = false;
-//     $('attachment-upload-status').style.display = 'none';
-//     $('edit-trans-submit-btn').disabled = false;
-//     if(input) input.value = '';
-// }
-// // 4. 渲染多张缩略图
-// function renderAttachmentThumbs(ids) {
-//     const container = $('attachment-preview-container');
-//     container.innerHTML = '';
-    
-//     if (!ids || ids.length === 0) {
-//         container.style.setProperty('display', 'none', 'important');
-//         return;
-//     }
-
-//     container.style.setProperty('display', 'flex', 'important');
-//     ids.forEach((id, index) => {
-//         const wrapper = document.createElement('div');
-//         wrapper.className = 'thumb-wrapper';
-        
-//         // 使用你之前确认的 800px 接口
-//         const url = `https://drive.google.com/thumbnail?id=${id}&sz=w800`;
-        
-//         wrapper.innerHTML = `
-//             <img src="${url}" class="thumb-img" onclick="showFullImagePreviewFromSrc('${url}')">
-//             <button type="button" class="thumb-remove" onclick="removeSpecificAttachment(${index})">✕</button>
-//         `;
-//         container.appendChild(wrapper);
-//     });
-// }
-
-// // 5. 删除特定位置的图片
-// // function removeSpecificAttachment(index) {
-// //     const rawVal = $('edit-trans-attachment-id').value;
-// //     let ids = rawVal ? rawVal.split(',').filter(id => id.trim()) : [];
-// //     ids.splice(index, 1);
-// //    $('edit-trans-attachment-id').value = ids.join(',');
-// //     renderAttachmentThumbs(ids);
-// // }
-
-//     function removeSpecificAttachment(index) {
-//     // 使用原生 confirm，这对 iOS 和鸿蒙的兼容性最好
-//     const isConfirmed = window.confirm("确定要删除这张照片吗？"); 
-//     if (isConfirmed) {
-//         // 执行原有的删除逻辑
-//         let currentIds = document.getElementById('attachmentId').value.split(',');
-//         currentIds.splice(index, 1);
-//         document.getElementById('attachmentId').value = currentIds.join(',');
-//         // 重新渲染缩略图
-//         renderAttachmentThumbs();
-//     }
-// }
-
-// // 6. 适配全屏预览
-// function showFullImagePreviewFromSrc(src) {
-//     const overlay = document.createElement('div');
-//     overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:zoom-out;-webkit-tap-highlight-color:transparent;touch-action:manipulation;';
-//     const fullImg = document.createElement('img');
-//     fullImg.src = src;
-//     fullImg.style.cssText = 'max-width:95%;max-height:95%;object-fit:contain;pointer-events:none;';
-//     const close = () => { if (document.body.contains(overlay)) document.body.removeChild(overlay); };
-//     overlay.addEventListener('click', close);
-//     overlay.addEventListener('touchend', function(e){ e.preventDefault(); close(); }, { passive: false });
-//     overlay.appendChild(fullImg);
-//     document.body.appendChild(overlay);
-// }
-
-
-
-// function applyDescHint(catId, category) {
-//     const catEl = $(catId);
-//     if (catEl) catEl.value = category;
-// }
-// ==================== 附件功能 ====================
 
 function getDriveAttachmentUrl(fileId) {
     // 使用 Google Drive 直接预览链接
@@ -4504,7 +4237,6 @@ async function handleAttachmentSelected(input) {
     const file = input.files[0];
     if (!file) return;
 
-    // 获取当前已有的 ID 数组
     let currentIds = $('edit-trans-attachment-id').value ? $('edit-trans-attachment-id').value.split(',').filter(id => id.trim()) : [];
     if (currentIds.length >= 3) {
         alert('最多只能上传 3 张照片');
@@ -4514,12 +4246,12 @@ async function handleAttachmentSelected(input) {
 
     isUploadingAttachment = true;
     $('edit-trans-submit-btn').disabled = true;
-    showToast('附件压缩中…', 'syncing', 0);
+    showToast('压缩中…', 'syncing', 0);
 
     try {
         const compressedFile = await compressImage(file, 200);
 
-        showToast('附件上传中…', 'syncing', 0);
+        showToast('上传中…', 'syncing', 0);
 
         // 将 FileReader 包装成 Promise，确保时序完全可控
         const base64Data = await new Promise((resolve, reject) => {
@@ -4549,7 +4281,6 @@ async function handleAttachmentSelected(input) {
         console.error(err);
         showToast('上传失败：' + err.message, 'error');
     } finally {
-        // 统一在 finally 中恢复状态，保证一定执行
         isUploadingAttachment = false;
         $('edit-trans-submit-btn').disabled = false;
         input.value = '';
