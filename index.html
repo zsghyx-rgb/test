@@ -307,7 +307,7 @@ body {
     align-items: center;
     gap: 7px;
 }
-#app-toast.show { opacity: 1; }
+#app-toast.show { opacity: 1; pointer-events: auto; }
 
 .amount-hidden { filter: blur(8px); user-select: none; }
 
@@ -570,7 +570,7 @@ body {
 
         <!-- 标题栏 + 齿轮 -->
         <div class="d-flex align-items-center justify-content-between mb-3">
-            <h4 class="mb-0 text-primary"><i class="bi bi-wallet2"></i> Test-app v1.0.8</h4>
+            <h4 class="mb-0 text-primary"><i class="bi bi-wallet2"></i> Test-app v1.0.9</h4>
             <button class="btn btn-sm btn-outline-secondary" onclick="toggleLoginSettings()" title="连接设置">
                 <i class="bi bi-gear" id="login-settings-gear"></i>
             </button>
@@ -1592,6 +1592,7 @@ let currentUser = null;
 let currentUserName = null;
 let hasUnsavedChanges = false;
 let driveAutoSaveTimer = null;   // 防抖计时器
+let _lastTransPrefs = {};        // 上次新增交易的选项（仅本次会话有效）
 let driveIsSyncing = false;      // 防并发
 let offlineMode = localStorage.getItem('APP_offline_mode') === 'true'; // 离线模式
 
@@ -1820,8 +1821,7 @@ function toggleOfflineMode() {
 
 function switchUser() {
     if (hasUnsavedChanges) {
-        if (!confirm('有未保存的更改，切换用户前会尝试同步，是否继续？')) return;
-        if (!offlineMode) syncToDrive(false);
+        if (!confirm('有未保存的更改，确定切换用户？')) return;
     }
     // 重置当前用户状态，但保留内存中的数据和密码
     currentUser = null;
@@ -2489,11 +2489,16 @@ function filterUserData() {
 
 function triggerAutoSave() {
     hasUnsavedChanges = true;
-    showToast('有未保存的更改', 'warning', 0);
-    if (offlineMode) return; // 离线模式不自动同步
-    // 防抖：最后一次修改后 2 秒再同步，避免高频操作刷屏
-    clearTimeout(driveAutoSaveTimer);
-    driveAutoSaveTimer = setTimeout(() => syncToDrive(false), 10000);
+    showUnsavedToast();
+}
+
+function showUnsavedToast() {
+    const el = $('app-toast');
+    if (!el) return;
+    clearTimeout(_toastTimer);
+    el.style.cssText = (toastStyles.warning);
+    el.innerHTML = `${toastIcons.warning} 有未保存的修改 <button onclick="syncToDrive(true)" style="margin-left:8px;padding:1px 10px;font-size:0.78rem;border-radius:12px;border:1px solid #664d03;background:transparent;color:#664d03;cursor:pointer;font-weight:600;">立即同步</button>`;
+    el.classList.add('show');
 }
 
 function clearUnsavedFlag() {
@@ -2741,24 +2746,6 @@ async function loadFromDrive() {
         statusEl.innerHTML = `<span class="text-danger">❌ 加载失败：${err.message}</span>`;
     }
 }
-
-// ==================== 页面关闭时同步 ====================
-// ── 切后台时完整同步（可靠）──
-document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden' && hasUnsavedChanges && currentUser && !offlineMode && GAS_URL) {
-        syncToDrive(false);
-    }
-});
-
-// ── 强制关闭时 sendBeacon 兜底（不可靠，但聊胜于无）──
-window.addEventListener('beforeunload', () => {
-    if (!hasUnsavedChanges || !currentUser || !GAS_URL || offlineMode) return;
-    saveUserData();
-    const content = userPassword
-        ? CryptoJS.AES.encrypt(JSON.stringify(inMemoryLoadedData), userPassword).toString()
-        : JSON.stringify(inMemoryLoadedData);
-    navigator.sendBeacon(gasRequestUrl(), content);
-});
 
 // ==================== 数据导出功能 ====================
 
@@ -3347,7 +3334,7 @@ function deleteAccountFromDetail() {
 function openNewTransFromDetail() {
     openedFromDetail = true;
     const today = new Date().toISOString().split('T')[0];
-    const prefs = JSON.parse(localStorage.getItem('APP_last_trans_prefs') || '{}');
+    const prefs = _lastTransPrefs;
     $('edit-trans-id').value = '';
     $('edit-trans-mode').value = 'add';
     $('editTransactionModalTitle').textContent = '新增交易';
@@ -3389,7 +3376,7 @@ function openNewTransferFromDetail() {
 // ==================== 新增交易 / 转账入口 ====================
 function openNewTransaction() {
     const today = new Date().toISOString().split('T')[0];
-    const prefs = JSON.parse(localStorage.getItem('APP_last_trans_prefs') || '{}');
+    const prefs = _lastTransPrefs;
 
     $('edit-trans-id').value = '';
     $('edit-trans-mode').value = 'add';
@@ -3645,7 +3632,7 @@ $('edit-transaction-form').addEventListener('submit', (e) => {
 
     if (mode === 'add') {
         // 记住本次输入的日期/类型/账户/分类，供下次新增时预填
-        localStorage.setItem('APP_last_trans_prefs', JSON.stringify({ type, accountId, category }));
+        _lastTransPrefs = { type, accountId, category };
         transactions.unshift({
             id: Date.now() + Math.random(), date, type, accountId,
             amount: finalAmount, category, tags, desc,
@@ -4690,29 +4677,28 @@ let _toastTimer = null;
  * type: 'success' | 'warning' | 'error' | 'syncing'
  * duration: ms，0 = 不自动消失
  */
+const toastStyles = {
+    success: 'background:#d1e7dd;color:#0a3622;border:1px solid #a3cfbb;',
+    warning: 'background:#fff3cd;color:#664d03;border:1px solid #ffda6a;',
+    error:   'background:#f8d7da;color:#58151c;border:1px solid #f1aeb5;',
+    syncing: 'background:#cfe2ff;color:#084298;border:1px solid #9ec5fe;',
+    info:    'background:#cff4fc;color:#055160;border:1px solid #9eeaf9;',
+};
+const toastIcons = {
+    success: '<i class="bi bi-check-circle-fill"></i>',
+    warning: '<i class="bi bi-exclamation-triangle-fill"></i>',
+    error:   '<i class="bi bi-x-circle-fill"></i>',
+    syncing: '<span class="spinner-border spinner-border-sm"></span>',
+    info:    '<i class="bi bi-info-circle-fill"></i>',
+};
+
 function showToast(msg, type = 'success', duration = 3000) {
     const el = $('app-toast');
     if (!el) return;
     clearTimeout(_toastTimer);
-
-    const styles = {
-        success: 'background:#d1e7dd;color:#0a3622;border:1px solid #a3cfbb;',
-        warning: 'background:#fff3cd;color:#664d03;border:1px solid #ffda6a;',
-        error:   'background:#f8d7da;color:#58151c;border:1px solid #f1aeb5;',
-        syncing: 'background:#cfe2ff;color:#084298;border:1px solid #9ec5fe;',
-        info:    'background:#d3f8e2;color:#0a3622;border:1px solid #a3cfbb;',
-    };
-    const icons = {
-        success: '<i class="bi bi-check-circle-fill"></i>',
-        warning: '<i class="bi bi-exclamation-triangle-fill"></i>',
-        error:   '<i class="bi bi-x-circle-fill"></i>',
-        syncing: '<span class="spinner-border spinner-border-sm"></span>',
-        info:    '<i class="bi bi-info-circle-fill"></i>',
-    };
-    el.style.cssText = (styles[type] || styles.success);
-    el.innerHTML = `${icons[type] || ''} ${msg}`;
+    el.style.cssText = (toastStyles[type] || toastStyles.success);
+    el.innerHTML = `${toastIcons[type] || ''} ${msg}`;
     el.classList.add('show');
-
     if (duration > 0) {
         _toastTimer = setTimeout(() => el.classList.remove('show'), duration);
     }
@@ -5288,67 +5274,6 @@ window.addEventListener('load', () => {
     updateTransferModeButton();
 });
 
-</script>
-<!-- 下拉同步 -->
-<script>
-(function() {
-    let startY = 0, pulling = false, indicator = null;
-    const THRESHOLD = 1000;
-
-    function getIndicator() {
-        if (!indicator) {
-            indicator = document.createElement('div');
-            indicator.id = 'pull-refresh-indicator';
-            indicator.style.cssText = `
-                position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
-                height: 0; overflow: hidden; display: flex; align-items: center;
-                justify-content: center; background: #e8f0fe;
-                transition: height 0.1s; font-size: 0.85rem; color: #1a73e8;
-                pointer-events: none;`;
-            document.body.appendChild(indicator);
-        }
-        return indicator;
-    }
-
-    function isAtTop() {
-        const mc = document.querySelector('.main-content');
-        return mc ? mc.scrollTop <= 0 : window.scrollY <= 0;
-    }
-
-    document.addEventListener('touchstart', e => {
-        if (!currentUser) return;
-        if (!isAtTop()) return;
-        startY = e.touches[0].clientY;
-        pulling = true;
-    }, { passive: true });
-
-    document.addEventListener('touchmove', e => {
-        if (!pulling) return;
-        const dy = e.touches[0].clientY - startY;
-        if (dy <= 0) { pulling = false; getIndicator().style.height = '0'; return; }
-        if (dy > 5) e.preventDefault();
-        const h = Math.min(dy * 0.4, 50);
-        const progress = Math.min(dy / THRESHOLD, 1);
-        const ind = getIndicator();
-        ind.style.height = h + 'px';
-        ind.textContent = progress >= 1 ? '↑ 松开同步' : '↓ 下拉同步';
-    }, { passive: false });
-
-    document.addEventListener('touchend', e => {
-        if (!pulling) return;
-        pulling = false;
-        const dy = e.changedTouches[0].clientY - startY;
-        getIndicator().style.height = '0';
-        if (dy >= THRESHOLD) {
-            if (!hasUnsavedChanges) {
-                showToast('没有修改，无需同步', 'info', 2000);
-            } else {
-                syncToDrive(false);
-            }
-        }
-        startY = 0;
-    }, { passive: true });
-})();
 </script>
 <!-- PWA Service Worker 注册 -->
 <script>
