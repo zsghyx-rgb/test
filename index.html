@@ -5293,8 +5293,7 @@ window.addEventListener('load', () => {
 <script>
 (function() {
     let startY = 0, pulling = false, indicator = null;
-    let startScrollTop = 0;
-    const THRESHOLD = 70;
+    const THRESHOLD = 200;
 
     function getIndicator() {
         if (!indicator) {
@@ -5311,32 +5310,20 @@ window.addEventListener('load', () => {
         return indicator;
     }
 
-    function getScrollContainer() {
-        return document.querySelector('.main-content');
-    }
-
-    function getScrollTop() {
-        const mc = getScrollContainer();
-        return mc ? mc.scrollTop : window.scrollY;
+    function isAtTop() {
+        const mc = document.querySelector('.main-content');
+        return mc ? mc.scrollTop <= 0 : window.scrollY <= 0;
     }
 
     document.addEventListener('touchstart', e => {
         if (!currentUser) return;
-        const st = getScrollTop();
-        if (st > 0) return; // 不在顶部，不激活
-        startScrollTop = st;
+        if (!isAtTop()) return;
         startY = e.touches[0].clientY;
         pulling = true;
     }, { passive: true });
 
     document.addEventListener('touchmove', e => {
         if (!pulling) return;
-        // 如果容器 scrollTop 增加了，说明是从中间滑上来的惯性动作，取消
-        if (getScrollTop() > startScrollTop + 2) {
-            pulling = false;
-            getIndicator().style.height = '0';
-            return;
-        }
         const dy = e.touches[0].clientY - startY;
         if (dy <= 0) { pulling = false; getIndicator().style.height = '0'; return; }
         if (dy > 5) e.preventDefault();
