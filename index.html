@@ -2093,36 +2093,62 @@ function loginWithUser(name) {
 
 // ==================== 本地草稿恢复 ====================
 /**
- * 进入主界面后检查是否有未同步的本地草稿
- * 若有，用 mergeData() 按 updatedAt 时间戳合并，不会覆盖任何一方的新数据
+ * 进入主界面后检查所有用户的本地草稿
+ * 当前用户的草稿：合并 + 刷新 UI + toast 提示
+ * 其他用户的草稿：静默合并数据 + toast 提示（不影响当前用户视图）
  */
 function checkAndRestoreDraft(userName) {
-    const draftKey = `APP_local_draft_${userName}`;
-    const timeKey  = `APP_local_draft_time_${userName}`;
-    const draftStr  = localStorage.getItem(draftKey);
-    const draftTime = localStorage.getItem(timeKey);
-    if (!draftStr || !draftTime) return;
+    // 扫描 localStorage 找出所有用户的草稿 key
+    const allDraftUsers = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('APP_local_draft_') && !key.includes('_time_')) {
+            const draftUser = key.replace('APP_local_draft_', '');
+            allDraftUsers.push(draftUser);
+        }
+    }
 
-    try {
-        const draft = JSON.parse(draftStr);
-        // 草稿作为 local，刚从网盘加载的数据作为 remote，按时间戳取最新
-        const merged = mergeData(draft, inMemoryLoadedData);
-        inMemoryLoadedData = merged;
-        // 重新加载合并后的数据到内存变量并刷新 UI
+    if (allDraftUsers.length === 0) return;
+
+    let needsUIRefresh = false;
+
+    allDraftUsers.forEach(draftUser => {
+        const draftKey = `APP_local_draft_${draftUser}`;
+        const timeKey  = `APP_local_draft_time_${draftUser}`;
+        const draftStr  = localStorage.getItem(draftKey);
+        const draftTime = localStorage.getItem(timeKey);
+        if (!draftStr || !draftTime) return;
+
+        try {
+            const draft = JSON.parse(draftStr);
+            // 草稿作为 local，当前内存数据作为 remote，按 updatedAt 取最新
+            inMemoryLoadedData = mergeData(draft, inMemoryLoadedData);
+            hasUnsavedChanges = true;
+
+            const timeStr = new Date(parseInt(draftTime))
+                .toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+            if (draftUser === userName) {
+                // 当前用户：需要刷新 UI
+                needsUIRefresh = true;
+                showToast(`已恢复 ${timeStr} 的本地未同步记录`, 'warning', 6000);
+            } else {
+                // 其他用户：数据已合并，仅提示
+                showToast(`已恢复 [${draftUser}] ${timeStr} 的本地未同步记录`, 'warning', 6000);
+            }
+        } catch(e) {
+            // 草稿损坏，直接清除，不影响主流程
+            console.warn(`[draft] 用户 ${draftUser} 草稿解析失败，已清除`, e);
+            localStorage.removeItem(draftKey);
+            localStorage.removeItem(timeKey);
+        }
+    });
+
+    if (needsUIRefresh) {
         loadAllData();
         filterUserData();
         renderAccounts();
         renderAllTransactions();
-
-        hasUnsavedChanges = true;
-        const timeStr = new Date(parseInt(draftTime))
-            .toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-        showToast(`已恢复 ${timeStr} 的本地未同步记录`, 'warning', 6000);
-    } catch(e) {
-        // 草稿损坏，直接清除，不影响主流程
-        console.warn('[draft] 草稿解析失败，已清除', e);
-        localStorage.removeItem(draftKey);
-        localStorage.removeItem(timeKey);
     }
 }
 
