@@ -639,17 +639,14 @@ body {
 
         <!-- ① 选择数据文件 -->
         <div class="mb-3">
-            <label class="form-label small text-muted fw-bold mb-2">选择数据文件</label>
+            <label class="form-label small text-muted fw-bold mb-2" id="select-file-label">选择数据文件</label>
             <div id="offline-file-bar">
                 <input type="file" class="form-control form-control-sm" id="data-import-file" accept=".enc,.json,.txt" onchange="onFileSelected()">
             </div>
             <div id="online-drive-bar" style="display:none;">
-                <div class="d-flex gap-2 align-items-center">
-                    <span class="small text-muted flex-fill">将自动加载</span>
-                    <button class="btn btn-outline-primary btn-sm text-nowrap" onclick="loadFromDrive()">
-                        <i class="bi bi-cloud-arrow-down"></i> 重新加载
-                    </button>
-                </div>
+                <button class="btn btn-outline-primary btn-sm" onclick="loadFromDrive()">
+                    <i class="bi bi-cloud-arrow-down"></i> 重新加载
+                </button>
             </div>
             <div id="file-status" class="form-text mt-1" style="display:none;"></div>
         </div>
@@ -1788,11 +1785,15 @@ function initOfflineModeUI() {
         btn.innerHTML = '<i class="bi bi-wifi-off"></i> 离线模式';
         offlineBar.style.display = '';
         onlineBar.style.display = 'none';
+        const lbl = $('select-file-label');
+        if (lbl) lbl.style.display = '';
     } else {
         btn.className = 'btn btn-sm btn-outline-secondary';
         btn.innerHTML = '<i class="bi bi-wifi"></i> 在线模式';
         offlineBar.style.display = 'none';
         onlineBar.style.display = '';
+        const lbl = $('select-file-label');
+        if (lbl) lbl.style.display = 'none';
     }
     // 更新应用内状态指示
     const statusEl = $('sync-mode-status');
