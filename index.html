@@ -2719,7 +2719,7 @@ async function syncToDrive(manual = false, forcePush = false) {
         const text = (await resp.text()).trim();
         if (text === 'OK') {
             clearUnsavedFlag();
-            // 上传成功后拉取最新时间戳，更新本地缓存版本（同步中状态保持）
+            // 更新本地缓存：版本号 + 加密原文（供下次离线/快速启动使用）
             try {
                 const vResp = await fetch(gasRequestUrl({ action: 'version' }));
                 if (vResp.ok) {
@@ -2727,6 +2727,8 @@ async function syncToDrive(manual = false, forcePush = false) {
                     if (v !== '0') localStorage.setItem('APP_drive_version', v);
                 }
             } catch(_) {}
+            window._driveRawContent = content;
+            try { localStorage.setItem('APP_raw_cache', content); } catch(_) {}
             showToast('已同步', 'success');
         } else {
             throw new Error('GAS 返回：' + text);
@@ -2758,12 +2760,13 @@ async function loadFromDrive() {
             if (vResp.ok) remoteVersion = (await vResp.text()).trim();
         } catch (_) {}
 
-        // 版本一致且本地有缓存 → 直接用缓存
-        if (remoteVersion !== '0' && remoteVersion === localVersion && window._driveRawContent) {
+        // 版本一致且 localStorage 有缓存 → 直接用，不请求 Drive
+        const localRawCache = localStorage.getItem('APP_raw_cache');
+        if (remoteVersion !== '0' && remoteVersion === localVersion && localRawCache) {
+            window._driveRawContent = localRawCache;
             statusEl.innerHTML = '<span class="text-success">✓ 数据已是最新，使用本地缓存</span>';
-            // 重新走解密流程
             try {
-                const parsed = JSON.parse(window._driveRawContent);
+                const parsed = JSON.parse(localRawCache);
                 userPassword = '';
                 inMemoryLoadedData = parsed;
                 categories = parsed.categories || DEFAULT_CATEGORIES;
@@ -2771,6 +2774,8 @@ async function loadFromDrive() {
                 $('password-section').style.display = 'none';
                 onDataLoaded();
             } catch(_) {
+                // 加密文件，显示密码框
+                window._driveMode = true;
                 $('password-section').style.display = 'block';
                 $('login-password').focus();
             }
@@ -2786,15 +2791,15 @@ async function loadFromDrive() {
             return;
         }
 
-        // Token 校验失败
         if (raw === 'UNAUTHORIZED') {
             statusEl.innerHTML = '<span class="text-danger">❌ Token 错误或未填写，请检查登录界面的 GAS Token</span>';
             return;
         }
 
-        // 下载成功，保存版本号和缓存
+        // 下载成功，同时更新版本号、内存缓存、localStorage 缓存
         if (remoteVersion !== '0') localStorage.setItem('APP_drive_version', remoteVersion);
         window._driveRawContent = raw;
+        try { localStorage.setItem('APP_raw_cache', raw); } catch(_) { /* 超出容量限制时静默跳过 */ }
 
         // 尝试明文 JSON
         try {
@@ -2818,7 +2823,27 @@ async function loadFromDrive() {
         $('password-section').style.display = 'block';
         $('login-password').focus();
     } catch (err) {
-        statusEl.innerHTML = `<span class="text-danger">❌ 加载失败：${err.message}</span>`;
+        // 网络异常时，尝试用 localStorage 缓存兜底
+        const localRawCache = localStorage.getItem('APP_raw_cache');
+        if (localRawCache) {
+            window._driveRawContent = localRawCache;
+            statusEl.innerHTML = '<span class="text-warning">⚠️ 网络异常，已加载本地缓存数据</span>';
+            try {
+                const parsed = JSON.parse(localRawCache);
+                userPassword = '';
+                inMemoryLoadedData = parsed;
+                categories = parsed.categories || DEFAULT_CATEGORIES;
+                exchangeRates = parsed.exchangeRates || DEFAULT_RATES;
+                $('password-section').style.display = 'none';
+                onDataLoaded();
+            } catch(_) {
+                window._driveMode = true;
+                $('password-section').style.display = 'block';
+                $('login-password').focus();
+            }
+        } else {
+            statusEl.innerHTML = `<span class="text-danger">❌ 加载失败：${err.message}</span>`;
+        }
     }
 }
 
@@ -4160,7 +4185,7 @@ function updateDescHint(descId, hintId, typeId, catId, accId) {
         ` onclick="applyDescHint('${catId}','${result.category}')">应用</button>`;
 }
 
-// ==================== 附件管理 ====================
+
 function getDriveAttachmentUrl(fileId) {
     // 使用 Google Drive 直接预览链接
     return `https://drive.google.com/thumbnail?id=${fileId}&sz=w800`;
@@ -4246,12 +4271,12 @@ async function handleAttachmentSelected(input) {
 
     isUploadingAttachment = true;
     $('edit-trans-submit-btn').disabled = true;
-    showToast('附件压缩中…', 'syncing', 0);
+    showToast('压缩中…', 'syncing', 0);
 
     try {
         const compressedFile = await compressImage(file, 200);
 
-        showToast('附件上传中…', 'syncing', 0);
+        showToast('上传中…', 'syncing', 0);
 
         // 将 FileReader 包装成 Promise，确保时序完全可控
         const base64Data = await new Promise((resolve, reject) => {
@@ -4273,13 +4298,13 @@ async function handleAttachmentSelected(input) {
             currentIds.push(result.fileId);
             $('edit-trans-attachment-id').value = currentIds.join(',');
             renderAttachmentThumbs(currentIds);
-            showToast(`附件已上传（${Math.round(compressedFile.size / 1024)}KB）`, 'success', 3000);
+            showToast(`已上传（${Math.round(compressedFile.size / 1024)}KB）`, 'success', 3000);
         } else {
-            showToast('附件上传失败：' + (result.error || '未知错误'), 'error');
+            showToast('上传失败：' + (result.error || '未知错误'), 'error');
         }
     } catch (err) {
         console.error(err);
-        showToast('附件上传失败：' + err.message, 'error');
+        showToast('上传失败：' + err.message, 'error');
     } finally {
         isUploadingAttachment = false;
         $('edit-trans-submit-btn').disabled = false;
