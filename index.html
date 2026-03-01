@@ -4160,7 +4160,7 @@ function updateDescHint(descId, hintId, typeId, catId, accId) {
         ` onclick="applyDescHint('${catId}','${result.category}')">应用</button>`;
 }
 
-
+// ==================== 附件管理 ====================
 function getDriveAttachmentUrl(fileId) {
     // 使用 Google Drive 直接预览链接
     return `https://drive.google.com/thumbnail?id=${fileId}&sz=w800`;
@@ -4246,12 +4246,12 @@ async function handleAttachmentSelected(input) {
 
     isUploadingAttachment = true;
     $('edit-trans-submit-btn').disabled = true;
-    showToast('压缩中…', 'syncing', 0);
+    showToast('附件压缩中…', 'syncing', 0);
 
     try {
         const compressedFile = await compressImage(file, 200);
 
-        showToast('上传中…', 'syncing', 0);
+        showToast('附件上传中…', 'syncing', 0);
 
         // 将 FileReader 包装成 Promise，确保时序完全可控
         const base64Data = await new Promise((resolve, reject) => {
@@ -4273,13 +4273,13 @@ async function handleAttachmentSelected(input) {
             currentIds.push(result.fileId);
             $('edit-trans-attachment-id').value = currentIds.join(',');
             renderAttachmentThumbs(currentIds);
-            showToast(`已上传（${Math.round(compressedFile.size / 1024)}KB）`, 'success', 3000);
+            showToast(`附件已上传（${Math.round(compressedFile.size / 1024)}KB）`, 'success', 3000);
         } else {
-            showToast('上传失败：' + (result.error || '未知错误'), 'error');
+            showToast('附件上传失败：' + (result.error || '未知错误'), 'error');
         }
     } catch (err) {
         console.error(err);
-        showToast('上传失败：' + err.message, 'error');
+        showToast('附件上传失败：' + err.message, 'error');
     } finally {
         isUploadingAttachment = false;
         $('edit-trans-submit-btn').disabled = false;
