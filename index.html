@@ -307,7 +307,7 @@ body {
     align-items: center;
     gap: 7px;
 }
-#app-toast.show { opacity: 0.85; pointer-events: auto; }
+#app-toast.show { opacity: 1; pointer-events: auto; }
 
 .amount-hidden { filter: blur(8px); user-select: none; }
 
@@ -651,7 +651,7 @@ body {
                     </button>
                 </div>
             </div>
-            <div id="file-status" class="form-text mt-1"><span class="text-warning">⚠️ 离线模式：请手动选择本地文件</span></div>
+            <div id="file-status" class="form-text mt-1" style="display:none;"></div>
         </div>
 
         <!-- ② 输入密码 -->
@@ -1813,8 +1813,7 @@ function toggleOfflineMode() {
         userAccounts = []; userTransactions = []; userPlannedTransactions = [];
         $('user-section').style.display = 'none';
         $('password-section').style.display = 'none';
-        $('file-status').innerHTML =
-            '<span class="text-warning">⚠️ 离线模式：已清空在线数据，请手动选择本地文件</span>';
+        showToast('离线模式：已清空在线数据，请手动选择本地文件', 'warning', 0);
     }
 }
 
@@ -1837,8 +1836,7 @@ function switchUser() {
     // 数据已在内存，直接跳到用户选择步骤
     if (inMemoryLoadedData) {
         onDataLoaded();
-        $('file-status').innerHTML =
-            '<span class="text-success">✓ 数据已就绪，请选择用户</span>';
+        showToast('数据已就绪，请选择用户', 'success', 3000);
     }
 }
 
@@ -1860,7 +1858,7 @@ function onFileSelected() {
     const file = $('data-import-file').files[0];
     if (!file) return;
 
-    $('file-status').textContent = `已选择: ${file.name}`;
+    showToast(`已选择：${file.name}`, 'info', 2000);
     const usernameHint = $('login-username-hint');
     if (usernameHint) usernameHint.value = file.name;
     $('password-error').classList.add('d-none');
@@ -1882,7 +1880,7 @@ function onFileSelected() {
             } catch(err) {
                 // 可能是加密后的json，显示密码框
                 $('password-section').style.display = 'block';
-                $('file-status').textContent = `文件读取失败，请输入密码解密`;
+                showToast('文件读取失败，请输入密码解密', 'warning', 0);
             }
         };
         reader.readAsText(file);
@@ -1921,7 +1919,7 @@ function decryptAndLoadData() {
             categories = data.categories || DEFAULT_CATEGORIES;
             exchangeRates = data.exchangeRates || DEFAULT_RATES;
             $('password-error').classList.add('d-none');
-            $('file-status').innerHTML = '<span class="text-success">✓ Drive 数据解密成功！请选择用户。</span>';
+            showToast('Drive 数据解密成功，请选择用户', 'success', 3000);
             window._driveMode = false;
             window._driveRawContent = null;
             onDataLoaded();
@@ -1997,7 +1995,7 @@ function onDataLoaded() {
         }
     });
 
-    $('file-status').innerHTML = '<span class="text-success">✓ 数据加载成功！请选择用户。</span>';
+    showToast('数据加载成功，请选择用户', 'success', 3000);
     $('user-section').style.display = 'block';
 
     // 渲染用户按钮
@@ -2048,7 +2046,7 @@ function createNewDataFile() {
     userPassword = pwd;
     dataUsers = users;
 
-    $('file-status').innerHTML = '<span class="text-success">✓ 新数据文件已创建，请选择用户登录。</span>';
+    showToast('新数据文件已创建，请选择用户登录', 'success', 3000);
     $('password-section').style.display = 'none';
     onDataLoaded();
 }
@@ -2774,11 +2772,9 @@ async function loadFromDrive() {
     if (!GAS_URL) {
         alert('请先在登录界面填写并保存 GAS URL。'); return;
     }
-    const statusEl = $('file-status');
-    statusEl.innerHTML = '<span class="text-primary"><span class="spinner-border spinner-border-sm me-1"></span>正在同步数据…</span>';
+    showToast('正在同步数据…', 'syncing', 0);
 
     try {
-        // ── 先核对版本时间戳 ──
         const localVersion = localStorage.getItem('APP_drive_version') || '0';
         let remoteVersion = '0';
         try {
@@ -2786,11 +2782,9 @@ async function loadFromDrive() {
             if (vResp.ok) remoteVersion = (await vResp.text()).trim();
         } catch (_) {}
 
-        // 版本一致且 localStorage 有缓存 → 直接用，不请求 Drive
         const localRawCache = localStorage.getItem('APP_raw_cache');
         if (remoteVersion !== '0' && remoteVersion === localVersion && localRawCache) {
             window._driveRawContent = localRawCache;
-            statusEl.innerHTML = '<span class="text-success">✓ 数据已是最新，使用本地缓存</span>';
             try {
                 const parsed = JSON.parse(localRawCache);
                 userPassword = '';
@@ -2798,10 +2792,11 @@ async function loadFromDrive() {
                 categories = parsed.categories || DEFAULT_CATEGORIES;
                 exchangeRates = parsed.exchangeRates || DEFAULT_RATES;
                 $('password-section').style.display = 'none';
+                showToast('数据已是最新，使用本地缓存', 'success', 3000);
                 onDataLoaded();
             } catch(_) {
-                // 加密文件，显示密码框
                 window._driveMode = true;
+                showToast('已从本地缓存获取加密文件，请输入密码', 'info', 0);
                 $('password-section').style.display = 'block';
                 $('login-password').focus();
             }
@@ -2813,47 +2808,42 @@ async function loadFromDrive() {
         const raw = (await resp.text()).trim();
 
         if (!raw) {
-            statusEl.innerHTML = '<span class="text-warning">⚠️ Drive 上暂无数据文件，请选择本地文件</span>';
+            showToast('Drive 上暂无数据文件，请选择本地文件', 'warning', 0);
             return;
         }
 
         if (raw === 'UNAUTHORIZED') {
-            statusEl.innerHTML = '<span class="text-danger">❌ Token 错误或未填写，请检查登录界面的 GAS Token</span>';
+            showToast('Token 错误或未填写，请检查登录界面的 GAS Token', 'error', 0);
             return;
         }
 
-        // 下载成功，同时更新版本号、内存缓存、localStorage 缓存
         if (remoteVersion !== '0') localStorage.setItem('APP_drive_version', remoteVersion);
         window._driveRawContent = raw;
-        try { localStorage.setItem('APP_raw_cache', raw); } catch(_) { /* 超出容量限制时静默跳过 */ }
+        try { localStorage.setItem('APP_raw_cache', raw); } catch(_) {}
 
-        // 尝试明文 JSON
         try {
             const parsed = JSON.parse(raw);
             userPassword = '';
             inMemoryLoadedData = parsed;
             categories = parsed.categories || DEFAULT_CATEGORIES;
             exchangeRates = parsed.exchangeRates || DEFAULT_RATES;
-            statusEl.innerHTML = '<span class="text-success">✓ 已从 Drive 加载（明文）</span>';
             $('password-section').style.display = 'none';
+            showToast('已从 Drive 加载，请选择用户', 'success', 3000);
             onDataLoaded();
             return;
         } catch(_) {}
 
-        // 加密文件 → 显示密码框
         window._driveMode = true;
-        statusEl.innerHTML = '<span class="text-success">✓ 已从 Drive 获取加密文件，请输入密码</span>';
+        showToast('已从 Drive 获取加密文件，请输入密码', 'info', 0);
         $('user-section').style.display = 'none';
         $('user-buttons').innerHTML = '';
         $('password-error').classList.add('d-none');
         $('password-section').style.display = 'block';
         $('login-password').focus();
     } catch (err) {
-        // 网络异常时，尝试用 localStorage 缓存兜底
         const localRawCache = localStorage.getItem('APP_raw_cache');
         if (localRawCache) {
             window._driveRawContent = localRawCache;
-            statusEl.innerHTML = '<span class="text-warning">⚠️ 网络异常，已加载本地缓存数据</span>';
             try {
                 const parsed = JSON.parse(localRawCache);
                 userPassword = '';
@@ -2861,14 +2851,16 @@ async function loadFromDrive() {
                 categories = parsed.categories || DEFAULT_CATEGORIES;
                 exchangeRates = parsed.exchangeRates || DEFAULT_RATES;
                 $('password-section').style.display = 'none';
+                showToast('网络异常，已加载本地缓存数据', 'warning', 0);
                 onDataLoaded();
             } catch(_) {
                 window._driveMode = true;
+                showToast('网络异常，已从本地缓存获取加密文件，请输入密码', 'warning', 0);
                 $('password-section').style.display = 'block';
                 $('login-password').focus();
             }
         } else {
-            statusEl.innerHTML = `<span class="text-danger">❌ 加载失败：${err.message}</span>`;
+            showToast(`加载失败：${err.message}`, 'error', 0);
         }
     }
 }
