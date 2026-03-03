@@ -1762,15 +1762,46 @@ function initDeviceNameUI() {
     const input = $('device-name-input');
     const hint = $('device-name-hint');
     if (input) input.value = saved;
-    if (hint) hint.textContent = saved ? `当前：${saved}` : '未设置，日志中显示为 unknown';
+    if (hint) {
+        // 修改这里的提示文字
+        hint.textContent = saved ? `当前：${saved}` : '若不输入直接保存，将自动生成标识';
+    }
 }
 
+
 function saveDeviceName() {
-    const val = ($('device-name-input').value || '').trim();
+    let val = ($('device-name-input').value || '').trim();
+    
+    // 如果用户没有输入，则自动生成设备信息
+    if (!val) {
+        const ua = navigator.userAgent;
+        let deviceType = "未知设备";
+        
+        // 简单的设备识别逻辑
+        if (/iPhone|iPad|iPod/.test(ua)) {
+            deviceType = "iOS设备";
+        } else if (/Android/.test(ua)) {
+            deviceType = "Android设备";
+        } else if (/Windows NT/.test(ua)) {
+            deviceType = "Windows电脑";
+        } else if (/Macintosh/.test(ua)) {
+            deviceType = "Mac电脑";
+        }
+        
+        // 生成 自动:设备类型_随机4位字符 (避免同类设备混淆)
+        const randomId = Math.random().toString(36).substring(2, 6).toUpperCase();
+        val = `自动:${deviceType}_${randomId}`;
+        
+        // 将生成的名称填入输入框，让用户知道系统生成了什么
+        $('device-name-input').value = val;
+    }
+
     localStorage.setItem('APP_device_name', val);
     const hint = $('device-name-hint');
-    if (hint) hint.textContent = val ? `已保存：${val}` : '已清除，日志中显示为 unknown';
-    showToast(val ? `设备昵称已保存：${val}` : '设备昵称已清除', 'success', 2000);
+    if (hint) {
+        hint.textContent = `已保存：${val}`;
+    }
+    showToast(`设备昵称已保存：${val}`, 'success', 2000);
 }
 
 // ==================== 离线模式管理 ====================
