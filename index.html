@@ -2934,7 +2934,7 @@ async function backgroundSyncAfterLogin() {
         } else {
             // 用户没在填表单：合并后刷新列表
             inMemoryLoadedData = merged;
-            saveUserData();
+            loadAllData();
             filterUserData();
             renderAllTransactions();
             renderAccounts();
@@ -4375,6 +4375,7 @@ window.addEventListener('load', () => {
         // 后台同步有新数据待刷新时，在表单关闭后执行
         if (window._pendingUIRefresh) {
             window._pendingUIRefresh = false;
+            loadAllData();
             filterUserData();
             renderAllTransactions();
             renderAccounts();
