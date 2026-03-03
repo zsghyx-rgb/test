@@ -1453,7 +1453,7 @@ body {
                     </div>
 
 <div class="mb-2" id="attachment-section" style="display:none;">
-    <input type="file" id="attachment-file-input" accept="image/*,image/heic,image/heif" class="d-none" onchange="handleAttachmentSelected(this)">
+    <input type="file" id="attachment-file-input" accept="image/*,image/heic,image/heif,.pdf,application/pdf" class="d-none" onchange="handleAttachmentSelected(this)">
     
     <div id="attachment-preview-container" class="d-flex flex-wrap gap-2 mt-2" style="display:none !important;">
         </div>
@@ -2773,95 +2773,126 @@ async function loadFromDrive() {
     if (!GAS_URL) {
         alert('请先在登录界面填写并保存 GAS URL。'); return;
     }
-    showToast('正在同步数据…', 'syncing', 0);
 
+    const localRawCache = localStorage.getItem('APP_raw_cache');
+    const localVersion = localStorage.getItem('APP_drive_version') || '0';
+    let bootedFromCache = false;
+
+    // 1. 优先尝试从本地缓存“秒进”
+    if (localRawCache) {
+        window._driveRawContent = localRawCache;
+        try {
+            const parsed = JSON.parse(localRawCache);
+            userPassword = '';
+            inMemoryLoadedData = parsed;
+            categories = parsed.categories || DEFAULT_CATEGORIES;
+            exchangeRates = parsed.exchangeRates || DEFAULT_RATES;
+            $('password-section').style.display = 'none';
+            showToast('⚡ 数据已从本地缓存极速加载，后台同步中...', 'info', 2000);
+            onDataLoaded();
+            bootedFromCache = true;
+        } catch(_) {
+            // 本地缓存是加密的，需要用户输密码
+            window._driveMode = true;
+            showToast('已读取本地缓存，请输入密码', 'info', 0);
+            $('password-section').style.display = 'block';
+            $('login-password').focus();
+            bootedFromCache = true;
+        }
+    } else {
+        // 完全没有缓存（第一次用），只能显示 Loading 阻塞等待
+        showToast('正在从云端同步数据…', 'syncing', 0);
+    }
+
+    // 2. 后台开始静默请求 GAS，核对版本
     try {
-        const localVersion = localStorage.getItem('APP_drive_version') || '0';
         let remoteVersion = '0';
         try {
             const vResp = await fetch(gasRequestUrl({ action: 'version' }));
             if (vResp.ok) remoteVersion = (await vResp.text()).trim();
         } catch (_) {}
 
-        const localRawCache = localStorage.getItem('APP_raw_cache');
-        if (remoteVersion !== '0' && remoteVersion === localVersion && localRawCache) {
-            window._driveRawContent = localRawCache;
-            try {
-                const parsed = JSON.parse(localRawCache);
-                userPassword = '';
-                inMemoryLoadedData = parsed;
-                categories = parsed.categories || DEFAULT_CATEGORIES;
-                exchangeRates = parsed.exchangeRates || DEFAULT_RATES;
-                $('password-section').style.display = 'none';
-                showToast('数据已是最新，使用本地缓存', 'success', 3000);
-                onDataLoaded();
-            } catch(_) {
-                window._driveMode = true;
-                showToast('已从本地缓存获取加密文件，请输入密码', 'info', 0);
-                $('password-section').style.display = 'block';
-                $('login-password').focus();
-            }
+        // 如果版本一致且已经从缓存启动了，皆大欢喜，什么都不用做
+        if (remoteVersion !== '0' && remoteVersion === localVersion && bootedFromCache) {
             return;
         }
 
+        // 3. 发现远端有新版本（或者没有本地缓存），拉取远端数据
         const resp = await fetch(gasRequestUrl());
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
         const raw = (await resp.text()).trim();
 
-        if (!raw) {
-            showToast('Drive 上暂无数据文件，请选择本地文件', 'warning', 0);
+        if (!raw || raw === 'UNAUTHORIZED') {
+            if (!bootedFromCache) showToast('Token 错误或网盘无数据', 'warning', 0);
             return;
         }
 
-        if (raw === 'UNAUTHORIZED') {
-            showToast('Token 错误或未填写，请检查登录界面的 GAS Token', 'error', 0);
-            return;
-        }
-
+        // 更新本地存储和版本号
         if (remoteVersion !== '0') localStorage.setItem('APP_drive_version', remoteVersion);
         window._driveRawContent = raw;
         try { localStorage.setItem('APP_raw_cache', raw); } catch(_) {}
 
-        try {
-            const parsed = JSON.parse(raw);
-            userPassword = '';
-            inMemoryLoadedData = parsed;
-            categories = parsed.categories || DEFAULT_CATEGORIES;
-            exchangeRates = parsed.exchangeRates || DEFAULT_RATES;
-            $('password-section').style.display = 'none';
-            showToast('已从 Drive 加载，请选择用户', 'success', 3000);
-            onDataLoaded();
-            return;
-        } catch(_) {}
-
-        window._driveMode = true;
-        showToast('已从 Drive 获取加密文件，请输入密码', 'info', 0);
-        $('user-section').style.display = 'none';
-        $('user-buttons').innerHTML = '';
-        $('password-error').classList.add('d-none');
-        $('password-section').style.display = 'block';
-        $('login-password').focus();
-    } catch (err) {
-        const localRawCache = localStorage.getItem('APP_raw_cache');
-        if (localRawCache) {
-            window._driveRawContent = localRawCache;
-            try {
-                const parsed = JSON.parse(localRawCache);
-                userPassword = '';
-                inMemoryLoadedData = parsed;
-                categories = parsed.categories || DEFAULT_CATEGORIES;
-                exchangeRates = parsed.exchangeRates || DEFAULT_RATES;
-                $('password-section').style.display = 'none';
-                showToast('网络异常，已加载本地缓存数据', 'warning', 0);
-                onDataLoaded();
-            } catch(_) {
-                window._driveMode = true;
-                showToast('网络异常，已从本地缓存获取加密文件，请输入密码', 'warning', 0);
-                $('password-section').style.display = 'block';
-                $('login-password').focus();
+        // 尝试解析远端数据
+        let remoteData = null;
+        try { 
+            remoteData = JSON.parse(raw); 
+        } catch(_) {
+            // 解析失败说明是加密的
+            if (userPassword) { // 如果内存里有用户的密码，直接尝试后台解密
+                try {
+                    const bytes = CryptoJS.AES.decrypt(raw, userPassword);
+                    remoteData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+                } catch(_) {}
             }
+        }
+
+        // 4. 根据当前状态决定如何刷新 UI
+        if (remoteData) {
+            if (bootedFromCache && currentUser) {
+                // 【方案 A 核心】：用户已经在里面操作了，后台合并数据
+                inMemoryLoadedData = mergeData(inMemoryLoadedData, remoteData);
+                categories = inMemoryLoadedData.categories || DEFAULT_CATEGORIES;
+                exchangeRates = inMemoryLoadedData.exchangeRates || DEFAULT_RATES;
+                
+                loadAllData();
+                filterUserData();
+
+                // 检查用户是否正在填表单（界面上是否有 Bootstrap Modal 打开）
+                if (document.body.classList.contains('modal-open')) {
+                    // 用户正在弹窗里，不要强行刷新把人家输入的内容顶掉
+                    showToast('☁️ 后台已同步最新数据，关闭窗口后可见', 'success', 5000);
+                } else {
+                    // 用户在主界面，丝滑刷新列表
+                    renderAccounts();
+                    renderAllTransactions();
+                    if ($('view-stats').classList.contains('active-view')) renderStats();
+                    showToast('☁️ 数据已与云端同步更新', 'success', 3000);
+                }
+            } else if (!bootedFromCache) {
+                // 首次加载，远端是明文
+                userPassword = '';
+                inMemoryLoadedData = remoteData;
+                categories = remoteData.categories || DEFAULT_CATEGORIES;
+                exchangeRates = remoteData.exchangeRates || DEFAULT_RATES;
+                $('password-section').style.display = 'none';
+                showToast('已从云端加载，请选择用户', 'success', 3000);
+                onDataLoaded();
+            }
+        } else if (!bootedFromCache) {
+            // 没有缓存且远端是密文，等待用户输入密码
+            window._driveMode = true;
+            showToast('已获取云端加密文件，请输入密码', 'info', 0);
+            $('user-section').style.display = 'none';
+            $('user-buttons').innerHTML = '';
+            $('password-error').classList.add('d-none');
+            $('password-section').style.display = 'block';
+            $('login-password').focus();
+        }
+    } catch (err) {
+        if (!bootedFromCache) {
+            showToast(`网络加载失败：${err.message}`, 'error', 0);
         } else {
-            showToast(`加载失败：${err.message}`, 'error', 0);
+            console.warn('后台同步失败，继续使用本地缓存', err);
         }
     }
 }
@@ -4206,8 +4237,8 @@ function updateDescHint(descId, hintId, typeId, catId, accId) {
 
 
 function getDriveAttachmentUrl(fileId) {
-    // 使用 Google Drive 直接预览链接
-    return `https://drive.google.com/thumbnail?id=${fileId}&sz=w800`;
+    // 改为使用 Google Drive 的原生查看/下载页面
+    return `https://drive.google.com/file/d/${fileId}/view`;
 }
 
 function resetAttachmentUI() {
@@ -4283,32 +4314,57 @@ async function handleAttachmentSelected(input) {
 
     let currentIds = $('edit-trans-attachment-id').value ? $('edit-trans-attachment-id').value.split(',').filter(id => id.trim()) : [];
     if (currentIds.length >= 3) {
-        alert('最多只能上传 3 张照片');
+        alert('最多只能上传 3 个附件');
+        input.value = '';
+        return;
+    }
+
+    // 限制单文件最大 5MB
+    if (file.size > 5 * 1024 * 1024) {
+        alert('文件过大，请选择 5MB 以下的文件');
         input.value = '';
         return;
     }
 
     isUploadingAttachment = true;
     $('edit-trans-submit-btn').disabled = true;
-    showToast('压缩中…', 'syncing', 0);
+    showToast('处理中…', 'syncing', 0);
 
     try {
-        const compressedFile = await compressImage(file, 200);
+        let base64Data;
+        let mimeType = file.type;
+        let fileName = file.name;
 
-        showToast('上传中…', 'syncing', 0);
+        // 如果是图片，执行压缩
+        if (file.type.startsWith('image/')) {
+            const compressedFile = await compressImage(file, 200);
+            showToast('上传图片中…', 'syncing', 0);
+            base64Data = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result.split(',')[1]);
+                reader.onerror = () => reject(new Error('读取失败'));
+                reader.readAsDataURL(compressedFile);
+            });
+            mimeType = 'image/jpeg';
+            fileName = `attach_${Date.now()}.jpg`;
+        } 
+        // 如果是 PDF，直接读取原文件
+        else if (file.type === 'application/pdf') {
+            showToast('上传 PDF 中…', 'syncing', 0);
+            base64Data = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result.split(',')[1]);
+                reader.onerror = () => reject(new Error('读取失败'));
+                reader.readAsDataURL(file);
+            });
+            fileName = `attach_${Date.now()}.pdf`;
+        } else {
+            throw new Error('暂不支持该文件格式');
+        }
 
-        // 将 FileReader 包装成 Promise，确保时序完全可控
-        const base64Data = await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = e => resolve(e.target.result.split(',')[1]);
-            reader.onerror = () => reject(new Error('文件读取失败'));
-            reader.readAsDataURL(compressedFile);
-        });
-
-        const fileName = `attach_${Date.now()}.jpg`;
         const response = await fetch(`${GAS_URL}?token=${encodeURIComponent(GAS_TOKEN)}`, {
             method: 'POST',
-            body: JSON.stringify({ action: 'uploadAttachment', filename: fileName, mimeType: 'image/jpeg', data: base64Data }),
+            body: JSON.stringify({ action: 'uploadAttachment', filename: fileName, mimeType: mimeType, data: base64Data }),
             headers: { 'Content-Type': 'text/plain' }
         });
         const result = await response.json();
@@ -4317,7 +4373,7 @@ async function handleAttachmentSelected(input) {
             currentIds.push(result.fileId);
             $('edit-trans-attachment-id').value = currentIds.join(',');
             renderAttachmentThumbs(currentIds);
-            showToast(`已上传（${Math.round(compressedFile.size / 1024)}KB）`, 'success', 3000);
+            showToast('上传成功！', 'success', 3000);
         } else {
             showToast('上传失败：' + (result.error || '未知错误'), 'error');
         }
@@ -4346,10 +4402,14 @@ function renderAttachmentThumbs(ids) {
         const wrapper = document.createElement('div');
         wrapper.className = 'thumb-wrapper';
 
-        const url = `https://drive.google.com/thumbnail?id=${id}&sz=w800`;
+        // 缩略图仍然用 thumbnail 接口（Google会自动为PDF生成图标或第一页预览）
+        const thumbUrl = `https://drive.google.com/thumbnail?id=${id}&sz=w800`;
+        // 点击后跳转的大图/PDF地址
+        const viewUrl = `https://drive.google.com/file/d/${id}/view`;
 
+        // 注意 onclick 直接用了 window.open 新标签页打开
         wrapper.innerHTML = `
-            <img src="${url}" class="thumb-img" onclick="showFullImagePreviewFromSrc('${url}')">
+            <img src="${thumbUrl}" class="thumb-img" onclick="window.open('${viewUrl}', '_blank')" title="点击全屏查看或下载">
             <button type="button" class="thumb-remove" onclick="removeSpecificAttachment(${index})">✕</button>
         `;
         container.appendChild(wrapper);
@@ -4365,21 +4425,6 @@ if (!confirm('确定删除这张附件吗？')) return;
     $('edit-trans-attachment-id').value = ids.join(',');
     renderAttachmentThumbs(ids);
 }
-
-// 6. 全屏预览
-function showFullImagePreviewFromSrc(src) {
-    const overlay = document.createElement('div');
-    overlay.style = `position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); 
-                     z-index:9999; display:flex; align-items:center; justify-content:center; cursor:zoom-out;`;
-    const fullImg = document.createElement('img');
-    fullImg.src = src;
-    fullImg.style = "max-width:95%; max-height:95%; object-fit:contain;";
-    overlay.onclick = () => document.body.removeChild(overlay);
-    overlay.appendChild(fullImg);
-    document.body.appendChild(overlay);
-}
-
-
 
 function applyDescHint(catId, category) {
     const catEl = $(catId);
