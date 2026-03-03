@@ -2843,12 +2843,12 @@ async function loadFromDrive() {
             categories = parsed.categories || DEFAULT_CATEGORIES;
             exchangeRates = parsed.exchangeRates || DEFAULT_RATES;
             $('password-section').style.display = 'none';
-            showToast('已加载本地缓存，后台同步中…', 'info', 3000);
+            showToast('已加载本地缓存', 'info', 3000);
             onDataLoaded();
         } catch(_) {
             // 加密缓存：立即让用户输密码，完全不等网络
             window._driveMode = true;
-            showToast('请输入密码（后台同步中）', 'info', 0);
+            showToast('请输入密码', 'info', 0);
             $('user-section').style.display = 'none';
             $('user-buttons').innerHTML = '';
             $('password-error').classList.add('d-none');
