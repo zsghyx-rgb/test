@@ -570,7 +570,7 @@ body {
 
         <!-- 标题栏 + 齿轮 -->
         <div class="d-flex align-items-center justify-content-between mb-3">
-            <h4 class="mb-0 text-primary"><i class="bi bi-wallet2"></i> Test-app v1.0.11</h4>
+            <h4 class="mb-0 text-primary"><i class="bi bi-wallet2"></i> Test-app v1.1</h4>
             <button class="btn btn-sm btn-outline-secondary" onclick="toggleLoginSettings()" title="连接设置">
                 <i class="bi bi-gear" id="login-settings-gear"></i>
             </button>
@@ -1097,7 +1097,7 @@ body {
                             <i class="bi bi-archive"></i> 数据存档管理
                         </div>
                         <div class="card-body">
-                            <p class="text-muted small mb-2">将历史年份数据存档，减少主文件大小，提升同步速度。存档数据只读，可解档恢复。</p>
+                            <p class="text-muted small mb-2">归档历史年份数据，归档数据只读，可解档恢复。</p>
                             <div id="archive-management-ui" class="mb-2"></div>
                             <button class="btn btn-outline-secondary btn-sm w-100" onclick="showHistoryYearSelector()">
                                 <i class="bi bi-clock-history"></i> 查看历史存档
@@ -1111,7 +1111,6 @@ body {
                         <div class="card-header bg-transparent fw-bold">汇率配置 (对人民币)</div>
                         <div class="card-body">
                             <div id="exchange-rate-inputs"></div>
-                            <p class="text-muted small mt-2">当前: <span id="current-exchange-rate"></span></p>
                         </div>
                     </div>
                 </div>
@@ -2807,12 +2806,12 @@ async function loadFromDrive() {
             categories = parsed.categories || DEFAULT_CATEGORIES;
             exchangeRates = parsed.exchangeRates || DEFAULT_RATES;
             $('password-section').style.display = 'none';
-            showToast('已加载本地缓存，后台同步中…', 'info', 3000);
+            showToast('已加载本地缓存', 'info', 3000);
             onDataLoaded();
         } catch(_) {
             // 加密缓存：立即让用户输密码，完全不等网络
             window._driveMode = true;
-            showToast('请输入密码（后台同步中）', 'info', 0);
+            showToast('请输入密码', 'info', 0);
             $('user-section').style.display = 'none';
             $('user-buttons').innerHTML = '';
             $('password-error').classList.add('d-none');
