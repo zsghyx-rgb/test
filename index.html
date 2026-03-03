@@ -1,7 +1,7 @@
 <!DOCTYPE html><html lang="zh-CN" data-bs-theme="dark"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Test-app</title>
+    <title>APP</title>
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0d6efd">
@@ -307,7 +307,7 @@ body {
     align-items: center;
     gap: 7px;
 }
-#app-toast.show { opacity: 1; pointer-events: auto; }
+#app-toast.show { opacity: 0.7; pointer-events: auto; }
 
 .amount-hidden { filter: blur(8px); user-select: none; }
 
@@ -570,7 +570,7 @@ body {
 
         <!-- 标题栏 + 齿轮 -->
         <div class="d-flex align-items-center justify-content-between mb-3">
-            <h4 class="mb-0 text-primary"><i class="bi bi-wallet2"></i> Test-app v1.1</h4>
+            <h4 class="mb-0 text-primary"><i class="bi bi-wallet2"></i> APP v1.1</h4>
             <button class="btn btn-sm btn-outline-secondary" onclick="toggleLoginSettings()" title="连接设置">
                 <i class="bi bi-gear" id="login-settings-gear"></i>
             </button>
@@ -678,7 +678,7 @@ body {
     <div class="sidebar">
         <div class="brand-title">
             <i class="bi bi-wallet2"></i>
-            <span style="font-size: 0.7rem;">Test-app</span>
+            <span style="font-size: 0.7rem;">APP</span>
         </div>
         <ul class="nav nav-pills flex-md-column mb-auto">
             <li class="nav-item">
@@ -1097,7 +1097,7 @@ body {
                             <i class="bi bi-archive"></i> 数据存档管理
                         </div>
                         <div class="card-body">
-                            <p class="text-muted small mb-2">归档历史年份数据，归档数据只读，可解档恢复。</p>
+                            <p class="text-muted small mb-2">将历史年份数据存档，减少主文件大小，提升同步速度。存档数据只读，可解档恢复。</p>
                             <div id="archive-management-ui" class="mb-2"></div>
                             <button class="btn btn-outline-secondary btn-sm w-100" onclick="showHistoryYearSelector()">
                                 <i class="bi bi-clock-history"></i> 查看历史存档
@@ -1111,6 +1111,7 @@ body {
                         <div class="card-header bg-transparent fw-bold">汇率配置 (对人民币)</div>
                         <div class="card-body">
                             <div id="exchange-rate-inputs"></div>
+                            <p class="text-muted small mt-2">当前: <span id="current-exchange-rate"></span></p>
                         </div>
                     </div>
                 </div>
@@ -1678,7 +1679,7 @@ function gasRequestUrl(options = {}) {
     if (options.file)     params.push(`file=${encodeURIComponent(options.file)}`);
     if (options.fileName) params.push(`fileName=${encodeURIComponent(options.fileName)}`);
     if (options.mimeType) params.push(`mimeType=${encodeURIComponent(options.mimeType)}`);
-    const device = localStorage.getItem('APP_device_name') || 'unknown';
+    const device = localStorage.getItem('APP_device_name') || guessDeviceName();
     params.push(`device=${encodeURIComponent(device)}`);
     return params.length ? `${GAS_URL}?${params.join('&')}` : GAS_URL;
 }
@@ -1757,50 +1758,55 @@ function saveGasToken() {
     initGasTokenUI();
 }
 
+function guessDeviceName() {
+    const ua = navigator.userAgent;
+
+    if (/iPhone/.test(ua)) {
+        const v = ua.match(/OS (\d+)_/);
+        return v ? `iPhone (iOS ${v[1]})` : 'iPhone';
+    }
+    if (/iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) {
+        const v = ua.match(/OS (\d+)_/);
+        return v ? `iPad (iOS ${v[1]})` : 'iPad';
+    }
+    const android = ua.match(/Android[^;]*;\s*([^)]+)\)/);
+    if (android) {
+        const model = android[1].replace(/\s*Build\/\S+/, '').trim();
+        return model || 'Android 设备';
+    }
+    if (/Macintosh/.test(ua)) return 'Mac';
+    const win = ua.match(/Windows NT ([\d.]+)/);
+    if (win) {
+        const m = { '10.0': 'Windows 10/11', '6.3': 'Windows 8.1', '6.1': 'Windows 7' };
+        return m[win[1]] || 'Windows PC';
+    }
+    if (/Linux/.test(ua)) return 'Linux';
+    return '未知设备';
+}
+
 function initDeviceNameUI() {
     const saved = localStorage.getItem('APP_device_name') || '';
     const input = $('device-name-input');
     const hint = $('device-name-hint');
-    if (input) input.value = saved;
-    if (hint) {
-        // 修改这里的提示文字
-        hint.textContent = saved ? `当前：${saved}` : '若不输入直接保存，将自动生成标识';
+    if (!input) return;
+    if (saved) {
+        input.value = saved;
+        if (hint) hint.textContent = `当前：${saved}`;
+    } else {
+        const guessed = guessDeviceName();
+        input.value = guessed;
+        if (hint) hint.textContent = '自动识别，可修改后保存';
     }
 }
 
-
 function saveDeviceName() {
     let val = ($('device-name-input').value || '').trim();
-    
-    // 如果用户没有输入，则自动生成设备信息
-    if (!val) {
-        const ua = navigator.userAgent;
-        let deviceType = "未知设备";
-        
-        // 简单的设备识别逻辑
-        if (/iPhone|iPad|iPod/.test(ua)) {
-            deviceType = "iOS设备";
-        } else if (/Android/.test(ua)) {
-            deviceType = "Android设备";
-        } else if (/Windows NT/.test(ua)) {
-            deviceType = "Windows电脑";
-        } else if (/Macintosh/.test(ua)) {
-            deviceType = "Mac电脑";
-        }
-        
-        // 生成 自动:设备类型_随机4位字符 (避免同类设备混淆)
-        const randomId = Math.random().toString(36).substring(2, 6).toUpperCase();
-        val = `自动:${deviceType}_${randomId}`;
-        
-        // 将生成的名称填入输入框，让用户知道系统生成了什么
-        $('device-name-input').value = val;
-    }
-
+    // 用户清空时，回退到自动生成的昵称
+    if (!val) val = guessDeviceName();
     localStorage.setItem('APP_device_name', val);
+    $('device-name-input').value = val;
     const hint = $('device-name-hint');
-    if (hint) {
-        hint.textContent = `已保存：${val}`;
-    }
+    if (hint) hint.textContent = `已保存：${val}`;
     showToast(`设备昵称已保存：${val}`, 'success', 2000);
 }
 
@@ -2837,12 +2843,12 @@ async function loadFromDrive() {
             categories = parsed.categories || DEFAULT_CATEGORIES;
             exchangeRates = parsed.exchangeRates || DEFAULT_RATES;
             $('password-section').style.display = 'none';
-            showToast('已加载本地缓存', 'info', 3000);
+            showToast('已加载本地缓存，后台同步中…', 'info', 3000);
             onDataLoaded();
         } catch(_) {
             // 加密缓存：立即让用户输密码，完全不等网络
             window._driveMode = true;
-            showToast('请输入密码', 'info', 0);
+            showToast('请输入密码（后台同步中）', 'info', 0);
             $('user-section').style.display = 'none';
             $('user-buttons').innerHTML = '';
             $('password-error').classList.add('d-none');
