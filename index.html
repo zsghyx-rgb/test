@@ -307,7 +307,7 @@ body {
     align-items: center;
     gap: 7px;
 }
-#app-toast.show { opacity: 0.75; pointer-events: auto; }
+#app-toast.show { opacity: 0.7; pointer-events: auto; }
 
 .amount-hidden { filter: blur(8px); user-select: none; }
 
@@ -582,15 +582,12 @@ body {
 
             <!-- GAS URL -->
             <div class="mb-2">
-                <div id="gas-url-input-bar" style="display:none;">
-                    <label class="form-label small mb-1">GAS Web App URL</label>
-
-
                 <div id="gas-url-saved-bar" class="d-flex align-items-center justify-content-between">
+                    <span class="small text-success"><i class="bi bi-cloud-check"></i> Drive 已连接</span>
                     <button class="btn btn-link btn-sm p-0 text-muted" onclick="showGasUrlInput()">修改</button>
                 </div>
-
-
+                <div id="gas-url-input-bar" style="display:none;">
+                    <label class="form-label small mb-1">GAS Web App URL</label>
                     <div class="input-group input-group-sm">
                         <input type="text" class="form-control" id="gas-url-input" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off" spellcheck="false">
                         <button class="btn btn-outline-success" type="button" onclick="saveGasUrl()"><i class="bi bi-check-lg"></i></button>
@@ -600,12 +597,12 @@ body {
 
             <!-- GAS Token -->
             <div class="mb-2">
-
-                <div id="gas-token-input-bar" style="display:none;">
-                    <label class="form-label small mb-1">GAS Token</label>
                 <div id="gas-token-saved-bar" class="d-flex align-items-center justify-content-between">
+                    <span class="small text-success"><i class="bi bi-shield-check"></i> Token 已保存</span>
                     <button class="btn btn-link btn-sm p-0 text-muted" onclick="showGasTokenInput()">修改</button>
                 </div>
+                <div id="gas-token-input-bar" style="display:none;">
+                    <label class="form-label small mb-1">GAS Token</label>
                     <div class="input-group input-group-sm">
                         <input type="password" class="form-control" id="gas-token-input" placeholder="在 GAS 脚本中设置的 token" autocomplete="off" spellcheck="false">
                         <button class="btn btn-outline-success" type="button" onclick="saveGasToken()"><i class="bi bi-check-lg"></i></button>
@@ -637,6 +634,10 @@ body {
                 <button class="btn btn-outline-success btn-sm" onclick="createNewDataFile()">
                     <i class="bi bi-file-earmark-plus"></i> 新建数据文件
                 </button>
+            </div>
+
+            <div class="text-end mt-2" style="opacity:0.4;">
+                <span class="small">v1.1.1</span>
             </div>
         </div>
 
@@ -1261,8 +1262,6 @@ body {
                 </div>
             </div>
         </div>
-        <!-- 版本号 -->
-        <div class="text-center text-muted small mt-3 pb-2" style="opacity:0.5;">v1.1.1</div>
     </div>
 </div>
 
@@ -3223,7 +3222,7 @@ function renderAccounts() {
                     <div class="d-flex justify-content-between align-items-center">
                         <div style="flex:1">
                             <div class="fw-bold text-truncate">${acc.name}</div>
-                            <div class="small text-muted">${acc.currency}${acc.note ? `<span class="ms-1" style="font-size:0.75em;">${acc.note}</span>` : ''}</div>
+                            <div class="small text-muted">${acc.currency}${acc.note ? ` · ${acc.note}` : ''}</div>
                         </div>
                         <div class="text-end">
                             <h5 class="mb-0 ${balClass}">${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(bal, acc.currency)}</h5>
@@ -5566,41 +5565,38 @@ window.addEventListener('online', () => {
         <div id="calc-result-preview" style="font-size:1.5rem;font-weight:700;color:var(--bs-body-color);text-align:right;min-width:80px;"></div>
     </div>
     <!-- 按键区 -->
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:6px 10px 10px;">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:5px 10px 8px;">
         <!-- row1 -->
         <button class="calc-btn calc-btn-func" onclick="calcInput('C')">C</button>
-        <button class="calc-btn calc-btn-func" onclick="calcInput('(')">(</button>
-        <button class="calc-btn calc-btn-func" onclick="calcInput(')')">)</button>
+        <button class="calc-btn calc-btn-op"   onclick="calcInput('÷')">÷</button>
+        <button class="calc-btn calc-btn-op"   onclick="calcInput('×')">×</button>
         <button class="calc-btn calc-btn-op"   onclick="calcInput('⌫')"><i class="bi bi-backspace"></i></button>
         <!-- row2 -->
         <button class="calc-btn" onclick="calcInput('7')">7</button>
         <button class="calc-btn" onclick="calcInput('8')">8</button>
         <button class="calc-btn" onclick="calcInput('9')">9</button>
-        <button class="calc-btn calc-btn-op"   onclick="calcInput('÷')">÷</button>
+        <button class="calc-btn calc-btn-op"   onclick="calcInput('-')">−</button>
         <!-- row3 -->
         <button class="calc-btn" onclick="calcInput('4')">4</button>
         <button class="calc-btn" onclick="calcInput('5')">5</button>
         <button class="calc-btn" onclick="calcInput('6')">6</button>
-        <button class="calc-btn calc-btn-op"   onclick="calcInput('×')">×</button>
+        <button class="calc-btn calc-btn-op"   onclick="calcInput('+')">+</button>
         <!-- row4 -->
         <button class="calc-btn" onclick="calcInput('1')">1</button>
         <button class="calc-btn" onclick="calcInput('2')">2</button>
         <button class="calc-btn" onclick="calcInput('3')">3</button>
-        <button class="calc-btn calc-btn-op"   onclick="calcInput('-')">−</button>
+        <button class="calc-btn calc-btn-eq"   onclick="calcInput('=')" style="grid-row:span 2;">=</button>
         <!-- row5 -->
-        <button class="calc-btn" onclick="calcInput('0')">0</button>
-        <button class="calc-btn" onclick="calcInput('00')">00</button>
+        <button class="calc-btn" style="grid-column:span 2;" onclick="calcInput('0')">0</button>
         <button class="calc-btn" onclick="calcInput('.')">.</button>
-        <button class="calc-btn calc-btn-op"   onclick="calcInput('+')">+</button>
-        <!-- row6: = 和 确认 -->
-        <button class="calc-btn calc-btn-eq" onclick="calcInput('=')" style="grid-column:span 2;">=</button>
-        <button class="calc-btn calc-btn-confirm" onclick="calcConfirm()" style="grid-column:span 2;">确认</button>
+        <!-- confirm row -->
+        <button class="calc-btn calc-btn-confirm" onclick="calcConfirm()" style="grid-column:span 4;height:44px;font-size:1rem;">确认</button>
     </div>
 </div>
 
 <style>
 .calc-btn {
-    height: 52px;
+    height: 46px;
     border-radius: 10px;
     border: none;
     font-size: 1.2rem;
@@ -5694,12 +5690,9 @@ function calcInput(key) {
         if (v !== null) _calcExpr = parseFloat(v.toFixed(10)).toString();
     } else if (key === '.') {
         // 只在当前数字段末尾没有小数点时添加
-        const parts = _calcExpr.split(/[\+\-×÷\(\)]/);
+        const parts = _calcExpr.split(/[\+\-×÷]/);
         const last = parts[parts.length - 1];
         if (!last.includes('.')) _calcExpr += '.';
-    } else if (key === '00') {
-        if (_calcExpr !== '' && _calcExpr !== '0') _calcExpr += '00';
-        else if (_calcExpr === '') _calcExpr = '0';
     } else {
         _calcExpr += key;
     }
