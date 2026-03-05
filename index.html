@@ -618,7 +618,7 @@ body {
 
         <!-- 标题栏 + 齿轮 -->
         <div class="d-flex align-items-center justify-content-between mb-3">
-            <h4 class="mb-0 text-primary"><i class="bi bi-wallet2"></i>记一笔</h4>
+            <h4 class="mb-0 text-primary"><i class="bi bi-wallet2"></i> 记一笔</h4>
             <button class="btn btn-sm btn-outline-secondary" onclick="toggleLoginSettings()" title="连接设置">
                 <i class="bi bi-gear" id="login-settings-gear"></i>
             </button>
@@ -683,10 +683,6 @@ body {
                     <i class="bi bi-file-earmark-plus"></i> 新建数据文件
                 </button>
             </div>
-        <!-- 版本号 -->
-        <div class="text-center mt-1 mb-2">
-            <span class="small text-muted">v1.1.1</span>
-        </div>
         </div>
 
         <!-- ① 选择数据文件 -->
@@ -701,6 +697,11 @@ body {
                 </button>
             </div>
             <div id="file-status" class="form-text mt-1" style="display:none;"></div>
+        </div>
+
+        <!-- 版本号 -->
+        <div class="text-center mt-1 mb-2">
+            <span class="small text-muted">v1.1.1</span>
         </div>
 
         <!-- ② 输入密码 -->
@@ -1507,22 +1508,6 @@ body {
                         </div>
                         <div id="edit-trans-desc-hint" style="display:none;align-items:center;gap:6px;margin-top:3px;padding:3px 8px;border-radius:5px;background:rgba(var(--bs-primary-rgb),0.08);border:1px solid rgba(var(--bs-primary-rgb),0.2);font-size:0.78rem;"></div>
                     </div>
-
-
-<!-- 子项拆分（仅支出可用） -->
-<div id="sub-items-section" style="display:none;" class="mb-2">
-    <div class="d-flex align-items-center justify-content-between mb-1">
-        <label class="compact-form-label mb-0">子项明细</label>
-        <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2" onclick="addSubItem()" id="add-sub-item-btn" style="font-size:0.75rem;">
-            <i class="bi bi-plus"></i> 添加子项
-        </button>
-    </div>
-    <div id="sub-items-container"></div>
-    <div class="d-flex justify-content-between align-items-center mt-1 small text-muted" id="sub-items-total-row" style="display:none !important;">
-        <span>子项合计</span>
-        <span id="sub-items-total" class="fw-bold text-danger">¥0.00</span>
-    </div>
-</div>
 
 <div class="mb-2" id="attachment-section" style="display:none;">
     <input type="file" id="attachment-file-input" accept="image/*,image/heic,image/heif,application/pdf" class="d-none" onchange="handleAttachmentSelected(this)">
@@ -3058,9 +3043,6 @@ async function backgroundSyncAfterLogin() {
 
 // ==================== 计算器键盘 ====================
 
-let _calcExpr = '';       // 当前表达式字符串
-let _calcTarget = null;   // 当前绑定的 input 元素
-
 const CALC_AMOUNT_IDS = [
     'edit-trans-amount',
     'edit-transfer-amount-out',
@@ -3068,6 +3050,9 @@ const CALC_AMOUNT_IDS = [
     'planned-amount',
     'acc-balance'
 ];
+
+let _calcExpr = '';
+let _calcTarget = null;
 
 function openCalc(inputEl) {
     _calcTarget = inputEl;
@@ -3084,8 +3069,7 @@ function closeCalc() {
 }
 
 function _calcUpdateDisplay() {
-    const el = $('calc-display');
-    el.textContent = _calcExpr || '0';
+    $('calc-display').textContent = _calcExpr || '0';
 }
 
 function calcInput(key) {
@@ -3096,34 +3080,24 @@ function calcInput(key) {
         _calcExpr = _calcExpr.slice(0, -1);
     } else if (key === '=') {
         try {
-            // 安全求值：只允许数字和运算符
-            if (/^[0-9+\-*/.%() ]+$/.test(_calcExpr)) {
+            if (/^[0-9+\-*/.() ]+$/.test(_calcExpr)) {
                 let result = Function('"use strict"; return (' + _calcExpr + ')')();
                 result = Math.round(result * 100) / 100;
                 _calcExpr = isFinite(result) ? String(result) : '0';
             }
         } catch(_) { _calcExpr = '0'; }
-    } else if (key === '%') {
-        // 把末尾数字转为百分比
-        try {
-            if (/^[0-9+\-*/.%() ]+$/.test(_calcExpr)) {
-                let result = Function('"use strict"; return (' + _calcExpr + ')')();
-                result = Math.round(result) / 100 * 100;
-                _calcExpr = isFinite(result) ? String(Math.round(result * 100) / 100) : '0';
-            }
-        } catch(_) {}
     } else if (ops.includes(key)) {
-        // 避免连续运算符
         if (_calcExpr && !ops.includes(_calcExpr.slice(-1))) {
             _calcExpr += key;
         } else if (_calcExpr && ops.includes(_calcExpr.slice(-1))) {
             _calcExpr = _calcExpr.slice(0, -1) + key;
         }
     } else if (key === '.') {
-        // 避免重复小数点（在当前数字段内）
         const parts = _calcExpr.split(/[+\-*/]/);
         const last = parts[parts.length - 1];
         if (!last.includes('.')) _calcExpr += '.';
+    } else if (key === '00') {
+        if (_calcExpr && _calcExpr !== '0') _calcExpr += '00';
     } else {
         _calcExpr += key;
     }
@@ -3131,22 +3105,15 @@ function calcInput(key) {
 }
 
 function calcConfirm() {
-    // 先自动求值
-    try {
-        if (_calcExpr && /[+\-*/]/.test(_calcExpr)) {
-            calcInput('=');
-        }
-    } catch(_) {}
+    if (_calcExpr && /[+\-*/]/.test(_calcExpr)) calcInput('=');
     const val = parseFloat(_calcExpr);
     if (_calcTarget && !isNaN(val) && val >= 0) {
         _calcTarget.value = val;
-        // 触发 input 事件让其他联动逻辑响应（如转账同步）
         _calcTarget.dispatchEvent(new Event('input', { bubbles: true }));
     }
     closeCalc();
 }
 
-// 绑定计算器到所有金额输入框
 function bindCalcToAmountInputs() {
     CALC_AMOUNT_IDS.forEach(id => {
         const el = $(id);
@@ -3157,137 +3124,14 @@ function bindCalcToAmountInputs() {
     });
 }
 
-// 点击计算器外部关闭
 document.addEventListener('click', (e) => {
     const kb = $('calc-keyboard');
     if (kb && kb.style.display !== 'none') {
-        // 如果点击的不是计算器本身也不是金额输入框
         if (!kb.contains(e.target) && !CALC_AMOUNT_IDS.includes(e.target.id)) {
             closeCalc();
         }
     }
 });
-
-
-// ==================== 子项拆分 ====================
-
-const MAX_SUB_ITEMS = 5;
-let _subItems = []; // [{ category, amount, desc }]
-
-function initSubItems(existingItems) {
-    _subItems = existingItems ? JSON.parse(JSON.stringify(existingItems)) : [];
-    renderSubItems();
-    updateSubItemsVisibility();
-}
-
-function updateSubItemsVisibility() {
-    const type = $('edit-trans-type') ? $('edit-trans-type').value : 'expense';
-    const section = $('sub-items-section');
-    if (!section) return;
-    // 只在支出时显示
-    section.style.display = type === 'expense' ? '' : 'none';
-    if (type !== 'expense') return;
-    updateSubItemsAmountAndLock();
-}
-
-function updateSubItemsAmountAndLock() {
-    const amountInput = $('edit-trans-amount');
-    const categorySelect = $('edit-trans-category');
-    const totalRow = $('sub-items-total-row');
-
-    if (_subItems.length > 0) {
-        // 有子项：锁定主金额和主分类
-        const total = _subItems.reduce((s, i) => s + (parseFloat(i.amount) || 0), 0);
-        if (amountInput) {
-            amountInput.value = total.toFixed(2);
-            amountInput.readOnly = true;
-            amountInput.style.background = 'var(--bs-secondary-bg)';
-            amountInput.style.color = 'var(--bs-secondary-color)';
-            // 移出计算器绑定（子项有自己的计算器）
-            amountInput.removeEventListener('focus', amountInput._calcFocusHandler);
-            amountInput.removeEventListener('click', amountInput._calcClickHandler);
-        }
-        if (categorySelect) {
-            categorySelect.disabled = true;
-            categorySelect.style.opacity = '0.5';
-        }
-        if (totalRow) {
-            totalRow.style.setProperty('display', 'flex', 'important');
-            $('sub-items-total').textContent = `¥${total.toFixed(2)}`;
-        }
-        $('add-sub-item-btn').style.display = _subItems.length >= MAX_SUB_ITEMS ? 'none' : '';
-    } else {
-        // 无子项：解锁
-        if (amountInput) {
-            amountInput.readOnly = false;
-            amountInput.style.background = '';
-            amountInput.style.color = '';
-            // 重新绑定计算器
-            const focusH = () => openCalc(amountInput);
-            amountInput._calcFocusHandler = focusH;
-            amountInput._calcClickHandler = focusH;
-            amountInput.addEventListener('focus', focusH);
-            amountInput.addEventListener('click', focusH);
-        }
-        if (categorySelect) {
-            categorySelect.disabled = false;
-            categorySelect.style.opacity = '';
-        }
-        if (totalRow) totalRow.style.setProperty('display', 'none', 'important');
-        $('add-sub-item-btn').style.display = '';
-    }
-}
-
-function addSubItem() {
-    if (_subItems.length >= MAX_SUB_ITEMS) return;
-    const defaultCat = (categories.expense && categories.expense[0]) || '餐饮';
-    _subItems.push({ category: defaultCat, amount: '', desc: '' });
-    renderSubItems();
-    updateSubItemsAmountAndLock();
-}
-
-function removeSubItem(index) {
-    _subItems.splice(index, 1);
-    renderSubItems();
-    updateSubItemsAmountAndLock();
-}
-
-function onSubItemChange(index, field, value) {
-    _subItems[index][field] = value;
-    if (field === 'amount') updateSubItemsAmountAndLock();
-}
-
-function renderSubItems() {
-    const container = $('sub-items-container');
-    if (!container) return;
-    container.innerHTML = '';
-
-    _subItems.forEach((item, index) => {
-        const catOptions = (categories.expense || []).map(c =>
-            `<option value="${c}" ${c === item.category ? 'selected' : ''}>${c}</option>`
-        ).join('');
-
-        const div = document.createElement('div');
-        div.className = 'd-flex gap-1 align-items-center mb-1';
-        div.innerHTML = `
-            <select class="form-select compact-form-control" style="flex:2;" onchange="onSubItemChange(${index},'category',this.value)">${catOptions}</select>
-            <input type="text" inputmode="decimal" class="form-control compact-form-control" style="flex:1.5;"
-                   placeholder="金额" value="${item.amount}"
-                   id="sub-item-amount-${index}"
-                   oninput="onSubItemChange(${index},'amount',this.value)"
-                   onfocus="openCalc(this)" onclick="openCalc(this)">
-            <input type="text" class="form-control compact-form-control" style="flex:2;"
-                   placeholder="备注" value="${item.desc || ''}"
-                   oninput="onSubItemChange(${index},'desc',this.value)">
-            <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" onclick="removeSubItem(${index})">✕</button>
-        `;
-        container.appendChild(div);
-    });
-}
-
-function getValidSubItems() {
-    return _subItems.filter(i => i.category && parseFloat(i.amount) > 0);
-}
 
 // ==================== 数据导出功能 ====================
 
@@ -3521,7 +3365,7 @@ function renderAccounts() {
                     <div class="d-flex justify-content-between align-items-center">
                         <div style="flex:1">
                             <div class="fw-bold text-truncate">${acc.name}</div>
-                            <div class="small text-muted">${acc.currency}${acc.note ? ` · ${acc.note}` : ''}</div>
+                            <div class="small text-muted">${acc.currency}${acc.note ? \` · ${acc.note}\` : ''}</div>
                         </div>
                         <div class="text-end">
                             <h5 class="mb-0 ${balClass}">${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(bal, acc.currency)}</h5>
@@ -3662,9 +3506,9 @@ $('account-form').addEventListener('submit', (e) => {
                     type: diff > 0 ? 'income' : 'expense',
                     accountId: id, amount: diff,
                     category: (() => {
-                        const type = diff > 0 ? 'income' : 'expense';
-                        const cats = (categories && categories[type]) || [];
-                        return cats.length > 0 ? cats[cats.length - 1] : '其他';
+                        const _type = diff > 0 ? 'income' : 'expense';
+                        const _cats = (categories && categories[_type]) || [];
+                        return _cats.length > 0 ? _cats[_cats.length - 1] : '其他';
                     })(),
                     desc: `余额调整 (${oldBalance.toFixed(2)} → ${balance.toFixed(2)})`,
                     ownerName: currentUserName, isTransfer: false, tags: '', updatedAt: Date.now()
@@ -3773,7 +3617,7 @@ function renderDetailContent(id) {
                 <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
                     <i class="bi ${iconClass}" style="font-size:0.95rem;color:${amtColor};flex-shrink:0;"></i>
                     <div style="min-width:0;overflow:hidden;">
-                        <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${titleHtml}${t.attachmentId ? ` <i class="bi bi-paperclip" style="font-size:0.7rem;color:var(--bs-secondary);"></i>` : ''}${t.subItems && t.subItems.length > 0 ? ` <i class="bi bi-diagram-3" style="font-size:0.7rem;color:var(--bs-primary);" title="含${t.subItems.length}个子项"></i>` : ''}</div>
+                        <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${titleHtml}${t.attachmentId ? ` <i class="bi bi-paperclip" style="font-size:0.7rem;color:var(--bs-secondary);"></i>` : ''}</div>
                         <div style="font-size:0.72rem;color:var(--bs-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${subLine}</div>
                     </div>
                 </div>
@@ -3904,7 +3748,6 @@ function openNewTransFromDetail() {
     $('edit-trans-amount').value = '';
     $('edit-trans-tags').value = '';
     $('edit-trans-desc').value = '';
-    initSubItems([]);
     new bootstrap.Modal($('editTransactionModal')).show();
 }
 
@@ -3962,7 +3805,6 @@ function openNewTransaction() {
     $('edit-trans-amount').value = '';
     $('edit-trans-tags').value = '';
     $('edit-trans-desc').value = '';
-    initSubItems([]);
     new bootstrap.Modal($('editTransactionModal')).show();
 }
 
@@ -4204,12 +4046,10 @@ $('edit-transaction-form').addEventListener('submit', (e) => {
     if (mode === 'add') {
         // 记住本次输入的日期/类型/账户/分类，供下次新增时预填
         _lastTransPrefs = { type, accountId, category };
-        const validSubItems = type === 'expense' ? getValidSubItems() : [];
         transactions.unshift({
             id: Date.now() + Math.random(), date, type, accountId,
             amount: finalAmount, category, tags, desc,
             ...(attachmentId ? { attachmentId } : {}),
-            ...(validSubItems.length > 0 ? { subItems: validSubItems } : {}),
             ownerName: currentUserName, isTransfer: false, updatedAt: Date.now()
         });
         saveUserData(); triggerAutoSave(); loadAllData(); filterUserData();
@@ -4236,9 +4076,6 @@ $('edit-transaction-form').addEventListener('submit', (e) => {
             t.category = category; t.amount = finalAmount; t.tags = tags; t.desc = desc;
             if (attachmentId) t.attachmentId = attachmentId;
             else delete t.attachmentId;
-            const validSubItemsEdit = type === 'expense' ? getValidSubItems() : [];
-            if (validSubItemsEdit.length > 0) t.subItems = validSubItemsEdit;
-            else delete t.subItems;
             t.updatedAt = Date.now();
             saveUserData(); triggerAutoSave(); filterUserData();
             displayedTransactionCount = 100;
@@ -5015,13 +4852,8 @@ function renderStats() {
     renderTotalExpenseTrendChart(filtered);
     const sel = $('category-trend-select');
     if (sel.options.length === 0) {
-        // 合并固定分类 + 子项中出现过的分类
-        const allCats = new Set(categories.expense || []);
-        transactions.filter(t => t.subItems).forEach(t =>
-            t.subItems.forEach(si => { if (si.category) allCats.add(si.category); })
-        );
-        allCats.forEach(c => sel.add(new Option(c, c)));
-        if (allCats.size > 0) renderCategoryTrendChart(filtered);
+        categories.expense.forEach(c => sel.add(new Option(c, c)));
+        if (categories.expense[0]) renderCategoryTrendChart(filtered);
     }
 }
 
@@ -5032,17 +4864,9 @@ function renderExpenseChart(data) {
     const cats = {};
     data.filter(t => t.amount < 0 && !t.isTransfer).forEach(t => {
         const acc = accounts.find(a => a.id == t.accountId);
-        if (t.subItems && t.subItems.length > 0) {
-            // 有子项：按子项分类统计
-            t.subItems.forEach(si => {
-                const siAmt = convertAmt(Math.abs(parseFloat(si.amount) || 0), acc.currency);
-                if (siAmt > 0) cats[si.category] = (cats[si.category] || 0) + siAmt;
-            });
-        } else {
-            let amt = Math.abs(t.amount);
-            amt = convertAmt(amt, acc.currency);
-            cats[t.category] = (cats[t.category] || 0) + amt;
-        }
+        let amt = Math.abs(t.amount);
+        amt = convertAmt(amt, acc.currency);
+        cats[t.category] = (cats[t.category] || 0) + amt;
     });
     const sorted = Object.entries(cats).sort((a, b) => b[1] - a[1]);
     chartInstances.expense = new Chart(ctx, {
@@ -5163,18 +4987,11 @@ function renderCategoryTrendChart(data) {
     if (chartInstances.cattrend) { chartInstances.cattrend.destroy(); chartInstances.cattrend = null; }
     if (!cat) return;
     const months = {};
-    (data || []).filter(t => t.amount < 0 && !t.isTransfer).forEach(t => {
+    (data || []).filter(t => t.category === cat && t.amount < 0 && !t.isTransfer).forEach(t => {
         const m = t.date.substring(0, 7);
         const acc = accounts.find(a => a.id == t.accountId);
-        if (t.subItems && t.subItems.length > 0) {
-            t.subItems.filter(si => si.category === cat).forEach(si => {
-                const amt = convertAmt(Math.abs(parseFloat(si.amount) || 0), acc.currency);
-                months[m] = (months[m] || 0) + amt;
-            });
-        } else if (t.category === cat) {
-            const amt = convertAmt(Math.abs(t.amount), acc.currency);
-            months[m] = (months[m] || 0) + amt;
-        }
+        let amt = convertAmt(Math.abs(t.amount), acc.currency);
+        months[m] = (months[m] || 0) + amt;
     });
     const labels = Object.keys(months).sort();
     const canvas = $('categoryTrendChart');
@@ -5892,7 +5709,7 @@ window.addEventListener('online', () => {
     <div class="calc-grid">
         <button class="calc-btn op" onclick="calcInput('C')">C</button>
         <button class="calc-btn del" onclick="calcInput('DEL')">⌫</button>
-        <button class="calc-btn op" onclick="calcInput('%')">%</button>
+        <button class="calc-btn op" onclick="calcInput('00')">00</button>
         <button class="calc-btn op" onclick="calcInput('/')">÷</button>
 
         <button class="calc-btn" onclick="calcInput('7')">7</button>
