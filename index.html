@@ -537,54 +537,6 @@ body {
     }
 }
 
-
-/* ===== 计算器键盘 ===== */
-#calc-keyboard {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    z-index: 99999;
-    background: var(--bs-tertiary-bg);
-    border-top: 1px solid var(--bs-border-color);
-    padding: 6px 8px 10px;
-    box-shadow: 0 -4px 16px rgba(0,0,0,0.15);
-    touch-action: none;
-}
-#calc-display {
-    background: var(--bs-body-bg);
-    border: 1px solid var(--bs-border-color);
-    border-radius: 6px;
-    padding: 4px 10px;
-    font-size: 1.1rem;
-    text-align: right;
-    min-height: 34px;
-    margin-bottom: 6px;
-    color: var(--bs-body-color);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-.calc-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 5px;
-}
-.calc-btn {
-    padding: 10px 4px;
-    font-size: 1rem;
-    border-radius: 8px;
-    border: 1px solid var(--bs-border-color);
-    background: var(--bs-body-bg);
-    color: var(--bs-body-color);
-    cursor: pointer;
-    text-align: center;
-    user-select: none;
-    -webkit-user-select: none;
-}
-.calc-btn:active { opacity: 0.6; }
-.calc-btn.op  { background: var(--bs-secondary-bg); font-weight: bold; }
-.calc-btn.ok  { background: var(--bs-primary); color: #fff; font-weight: bold; }
-.calc-btn.del { background: var(--bs-secondary-bg); }
-.calc-btn.eq  { background: var(--bs-success); color: #fff; }
 </style>
     <!-- 鸿蒙HarmonyOS 3.0 兼容补丁 -->
     <script>
@@ -618,7 +570,7 @@ body {
 
         <!-- 标题栏 + 齿轮 -->
         <div class="d-flex align-items-center justify-content-between mb-3">
-            <h4 class="mb-0 text-primary"><i class="bi bi-wallet2"></i> 记一笔</h4>
+            <h4 class="mb-0 text-primary"><i class="bi bi-wallet2"></i>记一笔</h4>
             <button class="btn btn-sm btn-outline-secondary" onclick="toggleLoginSettings()" title="连接设置">
                 <i class="bi bi-gear" id="login-settings-gear"></i>
             </button>
@@ -630,12 +582,15 @@ body {
 
             <!-- GAS URL -->
             <div class="mb-2">
-                <div id="gas-url-saved-bar" class="d-flex align-items-center justify-content-between">
-                    <span class="small text-success"><i class="bi bi-cloud-check"></i> Drive 已连接</span>
-                    <button class="btn btn-link btn-sm p-0 text-muted" onclick="showGasUrlInput()">修改</button>
-                </div>
                 <div id="gas-url-input-bar" style="display:none;">
                     <label class="form-label small mb-1">GAS Web App URL</label>
+
+
+                <div id="gas-url-saved-bar" class="d-flex align-items-center justify-content-between">
+                    <button class="btn btn-link btn-sm p-0 text-muted" onclick="showGasUrlInput()">修改</button>
+                </div>
+
+
                     <div class="input-group input-group-sm">
                         <input type="text" class="form-control" id="gas-url-input" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off" spellcheck="false">
                         <button class="btn btn-outline-success" type="button" onclick="saveGasUrl()"><i class="bi bi-check-lg"></i></button>
@@ -645,12 +600,12 @@ body {
 
             <!-- GAS Token -->
             <div class="mb-2">
-                <div id="gas-token-saved-bar" class="d-flex align-items-center justify-content-between">
-                    <span class="small text-success"><i class="bi bi-shield-check"></i> Token 已保存</span>
-                    <button class="btn btn-link btn-sm p-0 text-muted" onclick="showGasTokenInput()">修改</button>
-                </div>
+
                 <div id="gas-token-input-bar" style="display:none;">
                     <label class="form-label small mb-1">GAS Token</label>
+                <div id="gas-token-saved-bar" class="d-flex align-items-center justify-content-between">
+                    <button class="btn btn-link btn-sm p-0 text-muted" onclick="showGasTokenInput()">修改</button>
+                </div>
                     <div class="input-group input-group-sm">
                         <input type="password" class="form-control" id="gas-token-input" placeholder="在 GAS 脚本中设置的 token" autocomplete="off" spellcheck="false">
                         <button class="btn btn-outline-success" type="button" onclick="saveGasToken()"><i class="bi bi-check-lg"></i></button>
@@ -697,11 +652,6 @@ body {
                 </button>
             </div>
             <div id="file-status" class="form-text mt-1" style="display:none;"></div>
-        </div>
-
-        <!-- 版本号 -->
-        <div class="text-center mt-1 mb-2">
-            <span class="small text-muted">v1.1.1</span>
         </div>
 
         <!-- ② 输入密码 -->
@@ -1311,6 +1261,8 @@ body {
                 </div>
             </div>
         </div>
+        <!-- 版本号 -->
+        <div class="text-center text-muted small mt-3 pb-2" style="opacity:0.5;">v1.1.1</div>
     </div>
 </div>
 
@@ -1433,12 +1385,12 @@ body {
                     </div>
                     <div class="mb-2">
                         <label class="compact-form-label" id="acc-balance-label">初始余额</label>
-                        <input type="number" step="0.01" class="form-control compact-form-control" id="acc-balance" value="0" required="">
+                        <input type="text" inputmode="none" class="form-control compact-form-control" id="acc-balance" value="0" data-calc="true" autocomplete="off" readonly required="">
                         <div class="form-text d-none" id="acc-balance-hint">修改余额将自动生成一笔调整记录</div>
                     </div>
                     <div class="mb-2">
-                        <label class="compact-form-label">备注</label>
-                        <input type="text" class="form-control compact-form-control" id="acc-note" placeholder="可选" maxlength="50">
+                        <label class="compact-form-label">备注 <span class="text-muted">(可选)</span></label>
+                        <input type="text" class="form-control compact-form-control" id="acc-note" placeholder="添加账户备注...">
                     </div>
                     <button type="submit" class="btn btn-primary btn-sm w-100 mt-2" id="acc-submit-btn">保存</button>
                 </form>
@@ -1488,7 +1440,7 @@ body {
                     <div class="row g-2 mb-2">
                         <div class="col-6">
                             <label class="compact-form-label">金额</label>
-                            <input type="number" step="0.01" class="form-control compact-form-control" id="edit-trans-amount" required="">
+                            <input type="text" inputmode="none" class="form-control compact-form-control" id="edit-trans-amount" data-calc="true" required="" autocomplete="off" readonly>
                         </div>
                         <div class="col-6">
                             <label class="compact-form-label">标签</label>
@@ -1553,7 +1505,7 @@ body {
                         </div>
                         <div class="col-6">
                             <label class="compact-form-label">转出金额</label>
-                            <input type="number" step="0.01" class="form-control compact-form-control" id="edit-transfer-amount-out" oninput="handleEditTransferAmountChange('out')" required="">
+                            <input type="text" inputmode="none" class="form-control compact-form-control" id="edit-transfer-amount-out" data-calc="true" autocomplete="off" readonly required="">
                         </div>
                     </div>
                     <div class="row g-2 mb-2">
@@ -1563,7 +1515,7 @@ body {
                         </div>
                         <div class="col-6">
                             <label class="compact-form-label">转入金额</label>
-                            <input type="number" step="0.01" class="form-control compact-form-control" id="edit-transfer-amount-in" oninput="handleEditTransferAmountChange('in')" required="">
+                            <input type="text" inputmode="none" class="form-control compact-form-control" id="edit-transfer-amount-in" data-calc="true" autocomplete="off" readonly required="">
                         </div>
                     </div>
                     <div class="mb-2">
@@ -1936,7 +1888,6 @@ function switchUser() {
 
 document.addEventListener('DOMContentLoaded', () => {
     initOfflineModeUI();
-    bindCalcToAmountInputs();
 
     // 在线模式且有已保存的 URL 则自动从 Drive 同步
     if (!offlineMode && GAS_URL) {
@@ -3040,99 +2991,6 @@ async function backgroundSyncAfterLogin() {
     }
 }
 
-
-// ==================== 计算器键盘 ====================
-
-const CALC_AMOUNT_IDS = [
-    'edit-trans-amount',
-    'edit-transfer-amount-out',
-    'edit-transfer-amount-in',
-    'planned-amount',
-    'acc-balance'
-];
-
-let _calcExpr = '';
-let _calcTarget = null;
-
-function openCalc(inputEl) {
-    _calcTarget = inputEl;
-    const cur = inputEl.value;
-    _calcExpr = (cur && !isNaN(parseFloat(cur))) ? String(parseFloat(cur)) : '';
-    _calcUpdateDisplay();
-    $('calc-keyboard').style.display = 'block';
-}
-
-function closeCalc() {
-    $('calc-keyboard').style.display = 'none';
-    _calcTarget = null;
-    _calcExpr = '';
-}
-
-function _calcUpdateDisplay() {
-    $('calc-display').textContent = _calcExpr || '0';
-}
-
-function calcInput(key) {
-    const ops = ['+', '-', '*', '/'];
-    if (key === 'C') {
-        _calcExpr = '';
-    } else if (key === 'DEL') {
-        _calcExpr = _calcExpr.slice(0, -1);
-    } else if (key === '=') {
-        try {
-            if (/^[0-9+\-*/.() ]+$/.test(_calcExpr)) {
-                let result = Function('"use strict"; return (' + _calcExpr + ')')();
-                result = Math.round(result * 100) / 100;
-                _calcExpr = isFinite(result) ? String(result) : '0';
-            }
-        } catch(_) { _calcExpr = '0'; }
-    } else if (ops.includes(key)) {
-        if (_calcExpr && !ops.includes(_calcExpr.slice(-1))) {
-            _calcExpr += key;
-        } else if (_calcExpr && ops.includes(_calcExpr.slice(-1))) {
-            _calcExpr = _calcExpr.slice(0, -1) + key;
-        }
-    } else if (key === '.') {
-        const parts = _calcExpr.split(/[+\-*/]/);
-        const last = parts[parts.length - 1];
-        if (!last.includes('.')) _calcExpr += '.';
-    } else if (key === '00') {
-        if (_calcExpr && _calcExpr !== '0') _calcExpr += '00';
-    } else {
-        _calcExpr += key;
-    }
-    _calcUpdateDisplay();
-}
-
-function calcConfirm() {
-    if (_calcExpr && /[+\-*/]/.test(_calcExpr)) calcInput('=');
-    const val = parseFloat(_calcExpr);
-    if (_calcTarget && !isNaN(val) && val >= 0) {
-        _calcTarget.value = val;
-        _calcTarget.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-    closeCalc();
-}
-
-function bindCalcToAmountInputs() {
-    CALC_AMOUNT_IDS.forEach(id => {
-        const el = $(id);
-        if (!el) return;
-        el.setAttribute('readonly', 'readonly');
-        el.addEventListener('focus', () => openCalc(el));
-        el.addEventListener('click', () => openCalc(el));
-    });
-}
-
-document.addEventListener('click', (e) => {
-    const kb = $('calc-keyboard');
-    if (kb && kb.style.display !== 'none') {
-        if (!kb.contains(e.target) && !CALC_AMOUNT_IDS.includes(e.target.id)) {
-            closeCalc();
-        }
-    }
-});
-
 // ==================== 数据导出功能 ====================
 
 /**
@@ -3365,7 +3223,7 @@ function renderAccounts() {
                     <div class="d-flex justify-content-between align-items-center">
                         <div style="flex:1">
                             <div class="fw-bold text-truncate">${acc.name}</div>
-                            <div class="small text-muted">${acc.currency}${acc.note ? \` · ${acc.note}\` : ''}</div>
+                            <div class="small text-muted">${acc.currency}${acc.note ? `<span class="ms-1" style="font-size:0.75em;">${acc.note}</span>` : ''}</div>
                         </div>
                         <div class="text-end">
                             <h5 class="mb-0 ${balClass}">${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(bal, acc.currency)}</h5>
@@ -3446,6 +3304,7 @@ function openNewAccount() {
     $('acc-type').value = 'Asset';
     $('acc-currency').value = 'RMB';
     $('acc-balance').value = '0';
+    $('acc-note').value = '';
     $('acc-add-only-fields').style.display = '';
     $('acc-balance-label').textContent = '初始余额';
     $('acc-balance-hint').classList.add('d-none');
@@ -3461,10 +3320,10 @@ function openEditAccount(id) {
     $('acc-submit-btn').textContent = '保存修改';
     $('acc-name').value = acc.name;
     $('acc-balance').value = calculateBalance(id).toFixed(2);
+    $('acc-note').value = acc.note || '';
     $('acc-add-only-fields').style.display = 'none';
     $('acc-balance-label').textContent = '账户余额';
     $('acc-balance-hint').classList.remove('d-none');
-    $('acc-note').value = acc.note || '';
     new bootstrap.Modal($('accountModal')).show();
 }
 
@@ -3478,17 +3337,16 @@ $('account-form').addEventListener('submit', (e) => {
         accounts.push({
             id: Date.now(),
             name,
-            note: $('acc-note').value.trim(),
             accountType: $('acc-type').value,
             currency: $('acc-currency').value,
             initialBalance: balance,
+            note: $('acc-note').value.trim(),
             ownerName: currentUserName,
             updatedAt: Date.now()
         });
         saveUserData(); triggerAutoSave(); loadAllData(); filterUserData(); renderAccounts();
         bootstrap.Modal.getInstance($('accountModal')).hide();
         e.target.reset();
-        $('acc-note').value = '';
         showToast('账户已添加', 'success');
     } else {
         const id = parseInt($('acc-id').value);
@@ -3500,16 +3358,13 @@ $('account-form').addEventListener('submit', (e) => {
             acc.note = $('acc-note').value.trim();
             acc.updatedAt = Date.now();
             if (Math.abs(diff) > 0.01) {
+                const adjCats = categories[diff > 0 ? 'income' : 'expense'];
+                const adjCat = (adjCats && adjCats.length > 0) ? adjCats[adjCats.length - 1] : '其他';
                 transactions.unshift({
                     id: Date.now() + Math.random(),
                     date: new Date().toISOString().split('T')[0],
                     type: diff > 0 ? 'income' : 'expense',
-                    accountId: id, amount: diff,
-                    category: (() => {
-                        const _type = diff > 0 ? 'income' : 'expense';
-                        const _cats = (categories && categories[_type]) || [];
-                        return _cats.length > 0 ? _cats[_cats.length - 1] : '其他';
-                    })(),
+                    accountId: id, amount: diff, category: adjCat,
                     desc: `余额调整 (${oldBalance.toFixed(2)} → ${balance.toFixed(2)})`,
                     ownerName: currentUserName, isTransfer: false, tags: '', updatedAt: Date.now()
                 });
@@ -5702,36 +5557,186 @@ window.addEventListener('online', () => {
 </script>
 
 
-
-<!-- 计算器键盘 -->
-<div id="calc-keyboard" style="display:none;">
-    <div id="calc-display">0</div>
-    <div class="calc-grid">
-        <button class="calc-btn op" onclick="calcInput('C')">C</button>
-        <button class="calc-btn del" onclick="calcInput('DEL')">⌫</button>
-        <button class="calc-btn op" onclick="calcInput('00')">00</button>
-        <button class="calc-btn op" onclick="calcInput('/')">÷</button>
-
+<!-- ==================== 底部计算器 ==================== -->
+<div id="calc-overlay" style="display:none;position:fixed;inset:0;z-index:9000;background:transparent;" onclick="calcOverlayClick(event)"></div>
+<div id="calc-panel" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9001;background:var(--bs-body-bg);border-top:2px solid var(--bs-primary);border-radius:16px 16px 0 0;box-shadow:0 -4px 24px rgba(0,0,0,0.18);padding:0 0 env(safe-area-inset-bottom,0px) 0;user-select:none;">
+    <!-- 表达式显示区 -->
+    <div style="padding:10px 16px 4px;display:flex;align-items:flex-end;justify-content:flex-end;gap:8px;">
+        <div id="calc-expr" style="flex:1;font-size:0.9rem;color:var(--bs-secondary);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-height:1.2em;"></div>
+        <div id="calc-result-preview" style="font-size:1.5rem;font-weight:700;color:var(--bs-body-color);text-align:right;min-width:80px;"></div>
+    </div>
+    <!-- 按键区 -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:6px 10px 10px;">
+        <!-- row1 -->
+        <button class="calc-btn calc-btn-func" onclick="calcInput('C')">C</button>
+        <button class="calc-btn calc-btn-func" onclick="calcInput('(')">(</button>
+        <button class="calc-btn calc-btn-func" onclick="calcInput(')')">)</button>
+        <button class="calc-btn calc-btn-op"   onclick="calcInput('⌫')"><i class="bi bi-backspace"></i></button>
+        <!-- row2 -->
         <button class="calc-btn" onclick="calcInput('7')">7</button>
         <button class="calc-btn" onclick="calcInput('8')">8</button>
         <button class="calc-btn" onclick="calcInput('9')">9</button>
-        <button class="calc-btn op" onclick="calcInput('*')">×</button>
-
+        <button class="calc-btn calc-btn-op"   onclick="calcInput('÷')">÷</button>
+        <!-- row3 -->
         <button class="calc-btn" onclick="calcInput('4')">4</button>
         <button class="calc-btn" onclick="calcInput('5')">5</button>
         <button class="calc-btn" onclick="calcInput('6')">6</button>
-        <button class="calc-btn op" onclick="calcInput('-')">−</button>
-
+        <button class="calc-btn calc-btn-op"   onclick="calcInput('×')">×</button>
+        <!-- row4 -->
         <button class="calc-btn" onclick="calcInput('1')">1</button>
         <button class="calc-btn" onclick="calcInput('2')">2</button>
         <button class="calc-btn" onclick="calcInput('3')">3</button>
-        <button class="calc-btn op" onclick="calcInput('+')">+</button>
-
-        <button class="calc-btn" onclick="calcInput('0')" style="grid-column:span 2;">0</button>
+        <button class="calc-btn calc-btn-op"   onclick="calcInput('-')">−</button>
+        <!-- row5 -->
+        <button class="calc-btn" onclick="calcInput('0')">0</button>
+        <button class="calc-btn" onclick="calcInput('00')">00</button>
         <button class="calc-btn" onclick="calcInput('.')">.</button>
-        <button class="calc-btn eq" onclick="calcInput('=')">=</button>
-
-        <button class="calc-btn ok" onclick="calcConfirm()" style="grid-column:span 4;">确认</button>
+        <button class="calc-btn calc-btn-op"   onclick="calcInput('+')">+</button>
+        <!-- row6: = 和 确认 -->
+        <button class="calc-btn calc-btn-eq" onclick="calcInput('=')" style="grid-column:span 2;">=</button>
+        <button class="calc-btn calc-btn-confirm" onclick="calcConfirm()" style="grid-column:span 2;">确认</button>
     </div>
 </div>
+
+<style>
+.calc-btn {
+    height: 52px;
+    border-radius: 10px;
+    border: none;
+    font-size: 1.2rem;
+    font-weight: 600;
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-body-color);
+    cursor: pointer;
+    transition: opacity 0.1s, transform 0.08s;
+    -webkit-tap-highlight-color: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.calc-btn:active { opacity: 0.6; transform: scale(0.94); }
+.calc-btn-func { background: rgba(var(--bs-secondary-rgb), 0.2); }
+.calc-btn-op   { background: rgba(var(--bs-primary-rgb), 0.15); color: var(--bs-primary); }
+.calc-btn-eq   { background: rgba(var(--bs-primary-rgb), 0.25); color: var(--bs-primary); font-size: 1.4rem; }
+.calc-btn-confirm { background: var(--bs-primary); color: #fff; font-size: 1rem; }
+</style>
+
+<script>
+// ==================== 底部计算器 ====================
+let _calcTarget = null;   // 当前绑定的 input 元素
+let _calcExpr   = '';     // 当前表达式字符串
+let _calcOnConfirm = null; // 确认后的回调（用于触发转账金额联动）
+
+function _calcOpen(inputEl, onConfirmCb) {
+    _calcTarget    = inputEl;
+    _calcOnConfirm = onConfirmCb || null;
+    // 读取当前值作为初始表达式
+    const v = inputEl.value.trim();
+    _calcExpr = (v && !isNaN(parseFloat(v))) ? v : '';
+    _calcRender();
+    $('calc-overlay').style.display = 'block';
+    $('calc-panel').style.display   = 'block';
+    // 让 panel 滑入动画
+    const p = $('calc-panel');
+    p.style.transform = 'translateY(100%)';
+    p.style.transition = 'transform 0.22s cubic-bezier(.32,1.1,.58,1)';
+    requestAnimationFrame(() => requestAnimationFrame(() => { p.style.transform = 'translateY(0)'; }));
+}
+
+function _calcClose() {
+    const p = $('calc-panel');
+    p.style.transform = 'translateY(100%)';
+    setTimeout(() => {
+        $('calc-overlay').style.display = 'none';
+        $('calc-panel').style.display   = 'none';
+        p.style.transform = '';
+        _calcTarget = null;
+    }, 200);
+}
+
+function calcOverlayClick(e) {
+    if (e.target === $('calc-overlay')) _calcClose();
+}
+
+function _calcEval(expr) {
+    try {
+        // 将 ÷ × − 替换为 JS 运算符，且不允许危险字符
+        const safe = expr.replace(/÷/g,'/').replace(/×/g,'*').replace(/−/g,'-');
+        if (!/^[\d\s\+\-\*\/\.\(\)]+$/.test(safe)) return null;
+        // eslint-disable-next-line no-new-func
+        const r = Function('"use strict"; return (' + safe + ')')();
+        if (!isFinite(r)) return null;
+        return r;
+    } catch(_) { return null; }
+}
+
+function _calcRender() {
+    $('calc-expr').textContent = _calcExpr || '';
+    if (_calcExpr === '') {
+        $('calc-result-preview').textContent = '0';
+        return;
+    }
+    const v = _calcEval(_calcExpr);
+    if (v !== null) {
+        $('calc-result-preview').textContent = parseFloat(v.toFixed(10)).toString();
+    } else {
+        $('calc-result-preview').textContent = _calcExpr;
+    }
+}
+
+function calcInput(key) {
+    if (key === 'C') {
+        _calcExpr = '';
+    } else if (key === '⌫') {
+        _calcExpr = _calcExpr.slice(0, -1);
+    } else if (key === '=') {
+        const v = _calcEval(_calcExpr);
+        if (v !== null) _calcExpr = parseFloat(v.toFixed(10)).toString();
+    } else if (key === '.') {
+        // 只在当前数字段末尾没有小数点时添加
+        const parts = _calcExpr.split(/[\+\-×÷\(\)]/);
+        const last = parts[parts.length - 1];
+        if (!last.includes('.')) _calcExpr += '.';
+    } else if (key === '00') {
+        if (_calcExpr !== '' && _calcExpr !== '0') _calcExpr += '00';
+        else if (_calcExpr === '') _calcExpr = '0';
+    } else {
+        _calcExpr += key;
+    }
+    _calcRender();
+}
+
+function calcConfirm() {
+    const v = _calcEval(_calcExpr);
+    const finalVal = v !== null ? parseFloat(v.toFixed(10)) : parseFloat(_calcExpr);
+    if (!isNaN(finalVal) && finalVal >= 0) {
+        if (_calcTarget) {
+            _calcTarget.value = finalVal.toString();
+            // 触发 input 事件（让转账联动生效）
+            _calcTarget.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        if (_calcOnConfirm) _calcOnConfirm(finalVal);
+    }
+    _calcClose();
+}
+
+// 初始化：给所有 data-calc 输入框绑定点击事件（含动态生成的模态框）
+document.addEventListener('click', (e) => {
+    const el = e.target.closest('[data-calc="true"]');
+    if (!el) return;
+    e.preventDefault();
+    // 判断是转账金额，绑定对应的联动回调
+    let cb = null;
+    if (el.id === 'edit-transfer-amount-out') cb = () => handleEditTransferAmountChange('out');
+    if (el.id === 'edit-transfer-amount-in')  cb = () => handleEditTransferAmountChange('in');
+    _calcOpen(el, cb);
+}, true);
+
+// 阻止 data-calc 输入框的默认 focus 行为（防止系统键盘弹出）
+document.addEventListener('focus', (e) => {
+    if (e.target && e.target.getAttribute && e.target.getAttribute('data-calc') === 'true') {
+        e.target.blur();
+    }
+}, true);
+</script>
 </body></html>
