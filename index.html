@@ -5561,46 +5561,37 @@ window.addEventListener('online', () => {
 <div id="calc-panel" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9001;background:var(--bs-body-bg);border-top:1px solid var(--bs-border-color);border-radius:18px 18px 0 0;box-shadow:0 -6px 30px rgba(0,0,0,0.15);padding-bottom:env(safe-area-inset-bottom,0px);user-select:none;">
 
     <!-- 显示区 -->
-    <div style="padding:12px 18px 8px;border-bottom:1px solid var(--bs-border-color);">
-        <div id="calc-expr" style="font-size:0.82rem;color:var(--bs-secondary);text-align:right;min-height:1.1em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
-        <div id="calc-result-preview" style="font-size:2rem;font-weight:700;color:var(--bs-body-color);text-align:right;line-height:1.15;"></div>
+    <div style="padding:10px 18px 6px;border-bottom:1px solid var(--bs-border-color);">
+        <div id="calc-expr" style="font-size:0.8rem;color:var(--bs-secondary);text-align:right;min-height:1em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+        <div id="calc-result-preview" style="font-size:1.75rem;font-weight:700;color:var(--bs-body-color);text-align:right;line-height:1.2;"></div>
     </div>
 
     <!-- 按键区：左3列数字 + 右1列运算符 -->
-    <div style="display:grid;grid-template-columns:repeat(3,1fr) 1fr;grid-template-rows:repeat(4,52px) 52px;gap:1px;background:var(--bs-border-color);">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr) 1fr;grid-template-rows:repeat(4,46px) 46px;gap:1px;background:var(--bs-border-color);">
 
-        <!-- 数字区 row1 -->
         <button class="calc-btn" onclick="calcInput('7')">7</button>
         <button class="calc-btn" onclick="calcInput('8')">8</button>
         <button class="calc-btn" onclick="calcInput('9')">9</button>
-        <!-- 运算符 col4 row1 -->
         <button class="calc-btn calc-btn-op" onclick="calcInput('÷')">÷</button>
 
-        <!-- 数字区 row2 -->
         <button class="calc-btn" onclick="calcInput('4')">4</button>
         <button class="calc-btn" onclick="calcInput('5')">5</button>
         <button class="calc-btn" onclick="calcInput('6')">6</button>
-        <!-- 运算符 col4 row2 -->
         <button class="calc-btn calc-btn-op" onclick="calcInput('×')">×</button>
 
-        <!-- 数字区 row3 -->
         <button class="calc-btn" onclick="calcInput('1')">1</button>
         <button class="calc-btn" onclick="calcInput('2')">2</button>
         <button class="calc-btn" onclick="calcInput('3')">3</button>
-        <!-- 运算符 col4 row3 -->
         <button class="calc-btn calc-btn-op" onclick="calcInput('-')">−</button>
 
-        <!-- 数字区 row4：0 宽 × 2，. 和 ⌫ -->
         <button class="calc-btn" style="grid-column:span 2;" onclick="calcInput('0')">0</button>
         <button class="calc-btn" onclick="calcInput('.')">.</button>
-        <!-- 运算符 col4 row4 -->
         <button class="calc-btn calc-btn-op" onclick="calcInput('+')">+</button>
 
-        <!-- 底部完整行：C  =  确认 -->
+        <!-- 底部行：C  ⌫  = -->
         <button class="calc-btn calc-btn-func" onclick="calcInput('C')">C</button>
-        <button class="calc-btn calc-btn-func" onclick="calcInput('⌫')"><i class="bi bi-backspace" style="font-size:1.1rem;"></i></button>
-        <button class="calc-btn calc-btn-eq" onclick="calcInput('=')">=</button>
-        <button class="calc-btn calc-btn-confirm" onclick="calcConfirm()">确认</button>
+        <button class="calc-btn calc-btn-func" onclick="calcInput('⌫')"><i class="bi bi-backspace" style="font-size:1rem;"></i></button>
+        <button class="calc-btn calc-btn-eq" style="grid-column:span 2;" onclick="calcInput('=')">=</button>
     </div>
 </div>
 
@@ -5609,7 +5600,7 @@ window.addEventListener('online', () => {
     height: 100%;
     width: 100%;
     border: none;
-    font-size: 1.25rem;
+    font-size: 1.2rem;
     font-weight: 500;
     background: var(--bs-body-bg);
     color: var(--bs-body-color);
@@ -5621,36 +5612,57 @@ window.addEventListener('online', () => {
     justify-content: center;
 }
 .calc-btn:active { background: var(--bs-tertiary-bg) !important; }
-.calc-btn-func { background: var(--bs-tertiary-bg); color: var(--bs-secondary); font-size:1rem; }
-.calc-btn-op   { background: var(--bs-tertiary-bg); color: var(--bs-primary); font-size:1.35rem; font-weight:600; }
-.calc-btn-eq   { background: var(--bs-tertiary-bg); color: var(--bs-primary); font-size:1.5rem; font-weight:600; }
-.calc-btn-confirm { background: var(--bs-primary); color: #fff; font-size: 1rem; font-weight:600; }
-.calc-btn-confirm:active { background: var(--bs-primary) !important; opacity: 0.85; }
+.calc-btn-func { background: var(--bs-tertiary-bg); color: var(--bs-secondary); font-size: 0.95rem; }
+.calc-btn-op   { background: var(--bs-tertiary-bg); color: var(--bs-primary); font-size: 1.3rem; font-weight: 600; }
+.calc-btn-eq   { background: var(--bs-primary); color: #fff; font-size: 1.4rem; font-weight: 600; }
+.calc-btn-eq:active { background: var(--bs-primary) !important; opacity: 0.82; }
 </style>
 
 <script>
 // ==================== 底部计算器 ====================
-let _calcTarget = null;   // 当前绑定的 input 元素
-let _calcExpr   = '';     // 当前表达式字符串
-let _calcOnConfirm = null; // 确认后的回调（用于触发转账金额联动）
+let _calcTarget    = null;  // 当前绑定的 input 元素
+let _calcExpr      = '';    // 当前表达式字符串
+let _calcLastValid = '';    // 上一次有效结果（关闭时兜底用）
+let _calcOnChange  = null;  // 值变化后的联动回调（转账用）
 
-function _calcOpen(inputEl, onConfirmCb) {
-    _calcTarget    = inputEl;
-    _calcOnConfirm = onConfirmCb || null;
-    // 读取当前值作为初始表达式
+// 把有效结果实时写入金额框
+function _calcFlush() {
+    if (!_calcTarget) return;
+    const v = _calcEval(_calcExpr);
+    const out = v !== null ? parseFloat(v.toFixed(10)).toString() : _calcLastValid;
+    if (out !== '') {
+        _calcTarget.value = out;
+        _calcTarget.dispatchEvent(new Event('input', { bubbles: true }));
+        if (_calcOnChange) _calcOnChange();
+    }
+    if (v !== null) _calcLastValid = out;
+}
+
+function _calcOpen(inputEl, onChangeCb) {
+    _calcTarget   = inputEl;
+    _calcOnChange = onChangeCb || null;
     const v = inputEl.value.trim();
-    _calcExpr = (v && !isNaN(parseFloat(v))) ? v : '';
+    _calcExpr      = (v && !isNaN(parseFloat(v))) ? v : '';
+    _calcLastValid = _calcExpr;
     _calcRender();
     $('calc-overlay').style.display = 'block';
     $('calc-panel').style.display   = 'block';
-    // 让 panel 滑入动画
     const p = $('calc-panel');
-    p.style.transform = 'translateY(100%)';
+    p.style.transform  = 'translateY(100%)';
     p.style.transition = 'transform 0.22s cubic-bezier(.32,1.1,.58,1)';
     requestAnimationFrame(() => requestAnimationFrame(() => { p.style.transform = 'translateY(0)'; }));
 }
 
 function _calcClose() {
+    // 关闭时用上一次有效值兜底写入
+    if (_calcTarget && _calcLastValid !== '') {
+        const cur = _calcTarget.value;
+        if (cur !== _calcLastValid) {
+            _calcTarget.value = _calcLastValid;
+            _calcTarget.dispatchEvent(new Event('input', { bubbles: true }));
+            if (_calcOnChange) _calcOnChange();
+        }
+    }
     const p = $('calc-panel');
     p.style.transform = 'translateY(100%)';
     setTimeout(() => {
@@ -5667,14 +5679,13 @@ function calcOverlayClick(e) {
 
 function _calcEval(expr) {
     try {
-        // 将 ÷ × − 替换为 JS 运算符，且不允许危险字符
-        const safe = expr.replace(/÷/g,'/').replace(/×/g,'*').replace(/−/g,'-');
-        if (!/^[\d\s\+\-\*\/\.\(\)]+$/.test(safe)) return null;
+        const safe = expr.replace(/÷/g, '/').replace(/×/g, '*').replace(/−/g, '-');
+        if (!/^[\d\s\+\-\*\/\.]+$/.test(safe)) return null;
         // eslint-disable-next-line no-new-func
         const r = Function('"use strict"; return (' + safe + ')')();
-        if (!isFinite(r)) return null;
+        if (!isFinite(r) || r < 0) return null;
         return r;
-    } catch(_) { return null; }
+    } catch (_) { return null; }
 }
 
 function _calcRender() {
@@ -5684,11 +5695,8 @@ function _calcRender() {
         return;
     }
     const v = _calcEval(_calcExpr);
-    if (v !== null) {
-        $('calc-result-preview').textContent = parseFloat(v.toFixed(10)).toString();
-    } else {
-        $('calc-result-preview').textContent = _calcExpr;
-    }
+    $('calc-result-preview').textContent =
+        v !== null ? parseFloat(v.toFixed(10)).toString() : _calcExpr;
 }
 
 function calcInput(key) {
@@ -5700,43 +5708,28 @@ function calcInput(key) {
         const v = _calcEval(_calcExpr);
         if (v !== null) _calcExpr = parseFloat(v.toFixed(10)).toString();
     } else if (key === '.') {
-        // 只在当前数字段末尾没有小数点时添加
         const parts = _calcExpr.split(/[\+\-×÷]/);
-        const last = parts[parts.length - 1];
+        const last  = parts[parts.length - 1];
         if (!last.includes('.')) _calcExpr += '.';
     } else {
         _calcExpr += key;
     }
     _calcRender();
+    _calcFlush();  // 每次按键后实时写入金额框
 }
 
-function calcConfirm() {
-    const v = _calcEval(_calcExpr);
-    const finalVal = v !== null ? parseFloat(v.toFixed(10)) : parseFloat(_calcExpr);
-    if (!isNaN(finalVal) && finalVal >= 0) {
-        if (_calcTarget) {
-            _calcTarget.value = finalVal.toString();
-            // 触发 input 事件（让转账联动生效）
-            _calcTarget.dispatchEvent(new Event('input', { bubbles: true }));
-        }
-        if (_calcOnConfirm) _calcOnConfirm(finalVal);
-    }
-    _calcClose();
-}
-
-// 初始化：给所有 data-calc 输入框绑定点击事件（含动态生成的模态框）
+// 绑定所有 data-calc 输入框
 document.addEventListener('click', (e) => {
     const el = e.target.closest('[data-calc="true"]');
     if (!el) return;
     e.preventDefault();
-    // 判断是转账金额，绑定对应的联动回调
     let cb = null;
     if (el.id === 'edit-transfer-amount-out') cb = () => handleEditTransferAmountChange('out');
     if (el.id === 'edit-transfer-amount-in')  cb = () => handleEditTransferAmountChange('in');
     _calcOpen(el, cb);
 }, true);
 
-// 阻止 data-calc 输入框的默认 focus 行为（防止系统键盘弹出）
+// 阻止系统键盘弹出
 document.addEventListener('focus', (e) => {
     if (e.target && e.target.getAttribute && e.target.getAttribute('data-calc') === 'true') {
         e.target.blur();
@@ -5744,3 +5737,4 @@ document.addEventListener('focus', (e) => {
 }, true);
 </script>
 </body></html>
+
