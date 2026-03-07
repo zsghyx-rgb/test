@@ -732,10 +732,10 @@ body {
 
         <!-- 手机端悬浮操作按钮 (仅交易页显示) -->
         <div id="mobile-fab-group" class="d-none d-md-none">
-            <button class="fab-btn fab-btn-transfer" onclick="openNewTransfer()" title="新增转账">
+            <button class="fab-btn fab-btn-transfer" onclick="openMobileEntry('transfer')" title="新增转账">
                 <i class="bi bi-arrow-left-right"></i>
             </button>
-            <button class="fab-btn fab-btn-add" onclick="openNewTransaction()" title="新增收支">
+            <button class="fab-btn fab-btn-add" onclick="openMobileEntry('expense')" title="新增收支">
                 <i class="bi bi-plus-lg"></i>
             </button>
         </div>
@@ -1264,6 +1264,186 @@ body {
         </div>
     </div>
 </div>
+
+<!-- ==================== 手机端全屏记账页 ==================== -->
+<div id="mobile-entry-page" style="display:none;position:fixed;inset:0;z-index:2000;background:var(--bs-body-bg);flex-direction:column;">
+
+    <!-- 顶部：返回 + tab -->
+    <div style="display:flex;align-items:center;padding:12px 16px 0;flex-shrink:0;border-bottom:1px solid var(--bs-border-color);">
+        <button onclick="closeMobileEntry()" style="background:none;border:none;padding:4px 10px 4px 0;color:var(--bs-body-color);font-size:1.3rem;cursor:pointer;flex-shrink:0;">
+            <i class="bi bi-chevron-left"></i>
+        </button>
+        <div id="mep-tabs" style="display:flex;gap:0;flex:1;">
+            <button class="mep-tab active" onclick="mepSwitchTab('expense',this)">支出</button>
+            <button class="mep-tab" onclick="mepSwitchTab('income',this)">收入</button>
+            <button class="mep-tab" onclick="mepSwitchTab('transfer',this)">转账</button>
+        </div>
+    </div>
+
+    <!-- 中间：分类区 / 转账账户区（可滚动） -->
+    <div id="mep-middle" style="flex:1;overflow-y:auto;padding:14px 16px 8px;">
+        <!-- 收支分类网格 -->
+        <div id="mep-category-grid" style="display:flex;flex-wrap:wrap;gap:10px;"></div>
+        <!-- 转账账户选择 -->
+        <div id="mep-transfer-area" style="display:none;">
+            <div style="margin-bottom:12px;">
+                <div class="small text-muted mb-1">转出账户</div>
+                <div id="mep-from-acc-btn" onclick="mepPickAccount('from')" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:10px;background:var(--bs-tertiary-bg);cursor:pointer;border:1px solid var(--bs-border-color);">
+                    <span id="mep-from-acc-label" style="font-weight:600;">请选择账户</span>
+                    <span id="mep-from-amt" class="text-danger fw-bold"></span>
+                </div>
+            </div>
+            <div style="text-align:center;margin:4px 0;color:var(--bs-secondary);font-size:1.2rem;">
+                <i class="bi bi-arrow-down-up"></i>
+            </div>
+            <div>
+                <div class="small text-muted mb-1">转入账户</div>
+                <div id="mep-to-acc-btn" onclick="mepPickAccount('to')" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:10px;background:var(--bs-tertiary-bg);cursor:pointer;border:1px solid var(--bs-border-color);">
+                    <span id="mep-to-acc-label" style="font-weight:600;">请选择账户</span>
+                    <span id="mep-to-amt" class="text-success fw-bold"></span>
+                </div>
+            </div>
+            <!-- 转入金额独立输入（跨币种时显示） -->
+            <div id="mep-transfer-in-row" style="display:none;margin-top:10px;">
+                <div class="small text-muted mb-1">转入金额（不同币种）</div>
+                <input type="text" inputmode="none" id="mep-amount-in" data-calc="true" readonly
+                    style="width:100%;padding:10px 14px;border-radius:10px;border:1px solid var(--bs-border-color);background:var(--bs-tertiary-bg);font-size:1.1rem;font-weight:600;color:var(--bs-body-color);"
+                    placeholder="转入金额">
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部固定区 -->
+    <div style="flex-shrink:0;border-top:1px solid var(--bs-border-color);">
+
+        <!-- 金额 + 备注行 -->
+        <div style="display:flex;align-items:center;padding:10px 16px 6px;gap:10px;">
+            <input type="text" id="mep-desc" placeholder="添加备注..."
+                style="flex:1;border:none;background:transparent;font-size:0.95rem;color:var(--bs-body-color);outline:none;min-width:0;">
+            <div id="mep-amount-display" style="font-size:1.8rem;font-weight:700;color:var(--bs-body-color);white-space:nowrap;min-width:60px;text-align:right;">0</div>
+        </div>
+
+        <!-- 工具栏：日期 · 账户 · 标签 -->
+        <div style="display:flex;gap:0;padding:0 16px 8px;overflow-x:auto;white-space:nowrap;">
+            <button class="mep-tool-btn" onclick="mepPickDate()">
+                <i class="bi bi-calendar3" style="font-size:0.75rem;"></i>
+                <span id="mep-date-label">今天</span>
+            </button>
+            <span style="color:var(--bs-border-color);align-self:center;margin:0 2px;">·</span>
+            <button class="mep-tool-btn" id="mep-acc-btn" onclick="mepPickAccount('single')" style="display:none;">
+                <i class="bi bi-wallet2" style="font-size:0.75rem;"></i>
+                <span id="mep-acc-label">选择账户</span>
+            </button>
+            <span id="mep-acc-sep" style="color:var(--bs-border-color);align-self:center;margin:0 2px;display:none;">·</span>
+            <button class="mep-tool-btn" onclick="mepEditTags()">
+                <i class="bi bi-tag" style="font-size:0.75rem;"></i>
+                <span id="mep-tags-label">标签</span>
+            </button>
+        </div>
+
+        <!-- 计算器键盘 -->
+        <div id="mep-calc" style="display:grid;grid-template-columns:repeat(3,1fr) 1fr;grid-template-rows:repeat(3,48px) 52px;gap:1px;background:var(--bs-border-color);border-top:1px solid var(--bs-border-color);">
+            <button class="mep-key" onclick="mepKey('1')">1</button>
+            <button class="mep-key" onclick="mepKey('2')">2</button>
+            <button class="mep-key" onclick="mepKey('3')">3</button>
+            <button class="mep-key mep-key-op" onclick="mepKey('⌫')"><i class="bi bi-backspace"></i></button>
+
+            <button class="mep-key" onclick="mepKey('4')">4</button>
+            <button class="mep-key" onclick="mepKey('5')">5</button>
+            <button class="mep-key" onclick="mepKey('6')">6</button>
+            <button class="mep-key mep-key-op" onclick="mepKey('+')">+</button>
+
+            <button class="mep-key" onclick="mepKey('7')">7</button>
+            <button class="mep-key" onclick="mepKey('8')">8</button>
+            <button class="mep-key" onclick="mepKey('9')">9</button>
+            <button class="mep-key mep-key-op" onclick="mepKey('-')">−</button>
+
+            <button class="mep-key mep-key-func" onclick="mepSaveAndReset()" style="font-size:0.9rem;">再记</button>
+            <button class="mep-key" onclick="mepKey('0')">0</button>
+            <button class="mep-key" onclick="mepKey('.')">.</button>
+            <button class="mep-key mep-key-done" onclick="mepSaveAndClose()">完成</button>
+        </div>
+        <!-- 底部安全区 -->
+        <div style="height:env(safe-area-inset-bottom,0px);background:var(--bs-body-bg);"></div>
+    </div>
+</div>
+
+<!-- 账户选择器（底部弹层） -->
+<div id="mep-acc-picker" style="display:none;position:fixed;inset:0;z-index:3000;">
+    <div onclick="document.getElementById('mep-acc-picker').style.display='none'" style="position:absolute;inset:0;background:rgba(0,0,0,0.4);"></div>
+    <div style="position:absolute;bottom:0;left:0;right:0;background:var(--bs-body-bg);border-radius:16px 16px 0 0;padding:16px;max-height:60vh;overflow-y:auto;">
+        <div style="font-weight:700;margin-bottom:12px;font-size:1rem;">选择账户</div>
+        <div id="mep-acc-picker-list"></div>
+        <div style="height:env(safe-area-inset-bottom,0px);"></div>
+    </div>
+</div>
+
+<!-- 日期选择器（底部弹层） -->
+<div id="mep-date-picker" style="display:none;position:fixed;inset:0;z-index:3000;">
+    <div onclick="document.getElementById('mep-date-picker').style.display='none'" style="position:absolute;inset:0;background:rgba(0,0,0,0.4);"></div>
+    <div style="position:absolute;bottom:0;left:0;right:0;background:var(--bs-body-bg);border-radius:16px 16px 0 0;padding:16px 16px 0;">
+        <div style="font-weight:700;margin-bottom:12px;">选择日期</div>
+        <input type="date" id="mep-date-input" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--bs-border-color);background:var(--bs-tertiary-bg);color:var(--bs-body-color);font-size:1rem;" onchange="mepDateSelected()">
+        <div style="height:calc(env(safe-area-inset-bottom,0px) + 16px);"></div>
+    </div>
+</div>
+
+<!-- 标签输入（底部弹层） -->
+<div id="mep-tags-picker" style="display:none;position:fixed;inset:0;z-index:3000;">
+    <div onclick="mepTagsClose()" style="position:absolute;inset:0;background:rgba(0,0,0,0.4);"></div>
+    <div style="position:absolute;bottom:0;left:0;right:0;background:var(--bs-body-bg);border-radius:16px 16px 0 0;padding:16px;">
+        <div style="font-weight:700;margin-bottom:12px;">标签</div>
+        <input type="text" id="mep-tags-input" placeholder="输入标签..." style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--bs-border-color);background:var(--bs-tertiary-bg);color:var(--bs-body-color);font-size:1rem;">
+        <button onclick="mepTagsClose()" style="margin-top:12px;width:100%;padding:10px;border-radius:8px;border:none;background:var(--bs-primary);color:#fff;font-size:1rem;font-weight:600;">确定</button>
+        <div style="height:calc(env(safe-area-inset-bottom,0px) + 8px);"></div>
+    </div>
+</div>
+
+<style>
+/* 手机端全屏记账页样式 */
+.mep-tab {
+    flex:1; border:none; background:transparent; padding:8px 4px 10px;
+    font-size:0.95rem; font-weight:500; color:var(--bs-secondary); cursor:pointer;
+    border-bottom:2px solid transparent; transition:all 0.15s;
+}
+.mep-tab.active { color:var(--bs-primary); border-bottom-color:var(--bs-primary); font-weight:700; }
+
+.mep-cat-btn {
+    padding:7px 14px; border-radius:20px; border:1px solid var(--bs-border-color);
+    background:var(--bs-tertiary-bg); color:var(--bs-body-color);
+    font-size:0.88rem; cursor:pointer; transition:all 0.12s; white-space:nowrap;
+}
+.mep-cat-btn.active {
+    background:var(--bs-primary); color:#fff; border-color:var(--bs-primary); font-weight:600;
+}
+
+.mep-tool-btn {
+    display:inline-flex; align-items:center; gap:4px; padding:3px 8px;
+    background:none; border:none; color:var(--bs-secondary); font-size:0.8rem;
+    cursor:pointer; white-space:nowrap;
+}
+.mep-tool-btn:active { opacity:0.6; }
+
+.mep-key {
+    height:100%; width:100%; border:none; font-size:1.2rem; font-weight:500;
+    background:var(--bs-body-bg); color:var(--bs-body-color); cursor:pointer;
+    -webkit-tap-highlight-color:transparent; display:flex; align-items:center; justify-content:center;
+    transition:background 0.08s;
+}
+.mep-key:active { background:var(--bs-tertiary-bg) !important; }
+.mep-key-op   { background:var(--bs-tertiary-bg); color:var(--bs-primary); font-size:1.1rem; }
+.mep-key-func { background:var(--bs-tertiary-bg); color:var(--bs-secondary); }
+.mep-key-func:active { background:rgba(var(--bs-secondary-rgb),0.2) !important; }
+.mep-key-done { background:var(--bs-primary); color:#fff; font-size:0.95rem; font-weight:700; }
+.mep-key-done:active { background:var(--bs-primary) !important; opacity:0.82; }
+
+.mep-acc-item {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 4px; border-bottom:1px solid var(--bs-border-color); cursor:pointer;
+}
+.mep-acc-item:last-child { border-bottom:none; }
+.mep-acc-item:active { opacity:0.6; }
+</style>
 
 <!-- ==================== 模态框 ==================== -->
 
@@ -5618,8 +5798,308 @@ window.addEventListener('online', () => {
 .calc-btn-eq:active { background: var(--bs-primary) !important; opacity: 0.82; }
 </style>
 
-<script>
-// ==================== 底部计算器 ====================
+// ==================== 手机端全屏记账页 ====================
+let _mepTab     = 'expense';   // 当前 tab
+let _mepCat     = '';          // 选中分类
+let _mepDate    = '';          // 选中日期 YYYY-MM-DD
+let _mepAccId   = null;        // 收支账户 id
+let _mepFromId  = null;        // 转账转出账户 id
+let _mepToId    = null;        // 转账转入账户 id
+let _mepExpr    = '';          // 计算器表达式
+let _mepLastVal = '0';         // 上一次有效值
+
+function openMobileEntry(tab) {
+    _mepTab    = tab || 'expense';
+    _mepDate   = formatLocal(new Date());
+    _mepExpr   = '';
+    _mepLastVal = '0';
+
+    // 默认账户
+    const firstAcc = userAccounts[0];
+    _mepAccId  = firstAcc ? firstAcc.id : null;
+    const accs = userAccounts;
+    _mepFromId = accs[0] ? accs[0].id : null;
+    _mepToId   = accs[1] ? accs[1].id : (accs[0] ? accs[0].id : null);
+
+    // 默认分类：对应列表第一个
+    const cats = categories[_mepTab === 'income' ? 'income' : 'expense'] || [];
+    _mepCat = cats[0] || '';
+
+    // 清空输入
+    $('mep-desc').value = '';
+    $('mep-tags-input').value = '';
+    $('mep-tags-label').textContent = '标签';
+
+    mepRenderTab(_mepTab);
+    mepRenderDate();
+    mepRenderAcc();
+    mepRenderAmount();
+
+    const page = $('mobile-entry-page');
+    page.style.display = 'flex';
+    // 滑入动画
+    page.style.transform = 'translateY(100%)';
+    page.style.transition = 'transform 0.25s cubic-bezier(.32,1,.58,1)';
+    requestAnimationFrame(() => requestAnimationFrame(() => { page.style.transform = 'translateY(0)'; }));
+}
+
+function closeMobileEntry() {
+    const page = $('mobile-entry-page');
+    page.style.transform = 'translateY(100%)';
+    setTimeout(() => { page.style.display = 'none'; page.style.transform = ''; }, 240);
+}
+
+function mepSwitchTab(tab, el) {
+    _mepTab = tab;
+    $$('.mep-tab').forEach(b => b.classList.remove('active'));
+    if (el) el.classList.add('active');
+    // 重置分类
+    const cats = categories[tab === 'income' ? 'income' : 'expense'] || [];
+    _mepCat = cats[0] || '';
+    mepRenderTab(tab);
+    mepRenderAcc();
+    // 重置转账金额
+    if (tab === 'transfer') {
+        _mepExpr = ''; _mepLastVal = '0'; mepRenderAmount();
+    }
+}
+
+function mepRenderTab(tab) {
+    const grid   = $('mep-category-grid');
+    const trArea = $('mep-transfer-area');
+    const accBtn = $('mep-acc-btn');
+    const accSep = $('mep-acc-sep');
+
+    if (tab === 'transfer') {
+        grid.style.display   = 'none';
+        trArea.style.display = 'block';
+        accBtn.style.display = 'none';
+        accSep.style.display = 'none';
+        mepRenderTransferArea();
+    } else {
+        grid.style.display   = 'flex';
+        trArea.style.display = 'none';
+        accBtn.style.display = 'inline-flex';
+        accSep.style.display = 'inline';
+        // 渲染分类网格
+        const cats = categories[tab === 'income' ? 'income' : 'expense'] || [];
+        grid.innerHTML = '';
+        cats.forEach(c => {
+            const btn = document.createElement('button');
+            btn.className = 'mep-cat-btn' + (c === _mepCat ? ' active' : '');
+            btn.textContent = c;
+            btn.onclick = () => {
+                _mepCat = c;
+                grid.querySelectorAll('.mep-cat-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            };
+            grid.appendChild(btn);
+        });
+    }
+}
+
+function mepRenderTransferArea() {
+    const fromAcc = accounts.find(a => a.id == _mepFromId);
+    const toAcc   = accounts.find(a => a.id == _mepToId);
+    const sym     = fromAcc ? (CURRENCY_SYMBOLS[fromAcc.currency] || '') : '';
+    const symTo   = toAcc   ? (CURRENCY_SYMBOLS[toAcc.currency]   || '') : '';
+    const val     = _mepLastVal !== '0' ? _mepLastVal : '';
+
+    $('mep-from-acc-label').textContent = fromAcc ? getAccountDisplayName(fromAcc) : '请选择账户';
+    $('mep-from-amt').textContent = val ? `-${sym}${val}` : '';
+    $('mep-to-acc-label').textContent = toAcc ? getAccountDisplayName(toAcc) : '请选择账户';
+    $('mep-to-amt').textContent = val ? `+${symTo}${val}` : '';
+
+    // 跨币种时显示转入金额独立输入
+    const crossCur = fromAcc && toAcc && fromAcc.currency !== toAcc.currency;
+    $('mep-transfer-in-row').style.display = crossCur ? 'block' : 'none';
+}
+
+function mepRenderDate() {
+    const today = formatLocal(new Date());
+    const yesterday = formatLocal(new Date(Date.now() - 86400000));
+    let label = _mepDate;
+    if (_mepDate === today) label = '今天';
+    else if (_mepDate === yesterday) label = '昨天';
+    $('mep-date-label').textContent = label;
+    $('mep-date-input').value = _mepDate;
+}
+
+function mepRenderAcc() {
+    if (_mepTab === 'transfer') return;
+    const acc = userAccounts.find(a => a.id == _mepAccId);
+    $('mep-acc-label').textContent = acc ? acc.name : '账户';
+}
+
+function mepRenderAmount() {
+    $('mep-amount-display').textContent = _mepLastVal || '0';
+    if (_mepTab === 'transfer') mepRenderTransferArea();
+}
+
+// ---- 键盘 ----
+function mepKey(key) {
+    if (key === '⌫') {
+        _mepExpr = _mepExpr.slice(0, -1);
+    } else if (key === '.') {
+        const parts = _mepExpr.split(/[\+\-]/);
+        const last = parts[parts.length - 1];
+        if (!last.includes('.')) _mepExpr += '.';
+    } else {
+        _mepExpr += key;
+    }
+    // 实时求值
+    const v = _mepEval(_mepExpr);
+    if (v !== null) {
+        _mepLastVal = parseFloat(v.toFixed(10)).toString();
+    } else if (_mepExpr === '' || _mepExpr === '0') {
+        _mepLastVal = '0';
+    }
+    $('mep-amount-display').textContent = _mepExpr === '' ? '0'
+        : (v !== null ? _mepLastVal : _mepExpr);
+    if (_mepTab === 'transfer') mepRenderTransferArea();
+}
+
+function _mepEval(expr) {
+    try {
+        const safe = expr.replace(/−/g, '-');
+        if (!/^[\d\s\+\-\.]+$/.test(safe)) return null;
+        // eslint-disable-next-line no-new-func
+        const r = Function('"use strict"; return (' + safe + ')')();
+        if (!isFinite(r) || r < 0) return null;
+        return r;
+    } catch (_) { return null; }
+}
+
+// ---- 日期选择 ----
+function mepPickDate() {
+    $('mep-date-picker').style.display = 'block';
+    $('mep-date-input').value = _mepDate;
+}
+function mepDateSelected() {
+    _mepDate = $('mep-date-input').value || formatLocal(new Date());
+    mepRenderDate();
+    $('mep-date-picker').style.display = 'none';
+}
+
+// ---- 账户选择 ----
+let _mepAccPickerTarget = 'single'; // 'single' | 'from' | 'to'
+function mepPickAccount(target) {
+    _mepAccPickerTarget = target;
+    const list = $('mep-acc-picker-list');
+    list.innerHTML = '';
+    const accsToShow = target === 'to' ? accounts : userAccounts;
+    accsToShow.forEach(acc => {
+        const bal = calculateBalance(acc.id);
+        const sym = CURRENCY_SYMBOLS[acc.currency] || '';
+        const item = document.createElement('div');
+        item.className = 'mep-acc-item';
+        const isSelected = (target === 'from' && acc.id == _mepFromId)
+            || (target === 'to'   && acc.id == _mepToId)
+            || (target === 'single' && acc.id == _mepAccId);
+        item.innerHTML = `
+            <div>
+                <div style="font-weight:600;">${getAccountDisplayName(acc)}</div>
+                <div style="font-size:0.78rem;color:var(--bs-secondary);">${acc.currency}</div>
+            </div>
+            <div style="text-align:right;">
+                <div style="font-weight:600;${isSelected ? 'color:var(--bs-primary);' : ''}">${sym}${formatAmount(bal, acc.currency)}</div>
+                ${isSelected ? '<i class="bi bi-check2" style="color:var(--bs-primary);"></i>' : ''}
+            </div>`;
+        item.onclick = () => {
+            if (target === 'from') { _mepFromId = acc.id; mepRenderTransferArea(); }
+            else if (target === 'to') { _mepToId = acc.id; mepRenderTransferArea(); }
+            else { _mepAccId = acc.id; mepRenderAcc(); }
+            $('mep-acc-picker').style.display = 'none';
+        };
+        list.appendChild(item);
+    });
+    $('mep-acc-picker').style.display = 'block';
+}
+
+// ---- 标签 ----
+function mepEditTags() {
+    $('mep-tags-picker').style.display = 'block';
+    setTimeout(() => $('mep-tags-input').focus(), 100);
+}
+function mepTagsClose() {
+    $('mep-tags-picker').style.display = 'none';
+    const v = $('mep-tags-input').value.trim();
+    $('mep-tags-label').textContent = v || '标签';
+}
+
+// ---- 保存逻辑 ----
+function _mepGetAmount() {
+    const v = parseFloat(_mepLastVal);
+    return (!isNaN(v) && v > 0) ? v : 0;
+}
+
+function _mepSave() {
+    const amount = _mepGetAmount();
+    if (amount === 0) return false;
+
+    const date    = _mepDate;
+    const desc    = $('mep-desc').value.trim();
+    const tags    = $('mep-tags-input').value.trim();
+
+    if (_mepTab === 'transfer') {
+        if (!_mepFromId || !_mepToId) { showToast('请选择账户', 'error'); return false; }
+        if (_mepFromId == _mepToId) { showToast('转出转入账户不能相同', 'error'); return false; }
+        const fromAcc = accounts.find(a => a.id == _mepFromId);
+        const toAcc   = accounts.find(a => a.id == _mepToId);
+        const crossCur = fromAcc && toAcc && fromAcc.currency !== toAcc.currency;
+        const amtIn = crossCur
+            ? (parseFloat($('mep-amount-in').value) || amount)
+            : amount;
+        const uid = Date.now() + Math.random();
+        transactions.unshift({
+            id: uid, date, type: 'expense', accountId: _mepFromId,
+            amount: -amount, category: '', desc, ownerName: currentUserName,
+            isTransfer: true, relatedAccountId: _mepToId, transferPairId: uid, tags, updatedAt: Date.now()
+        });
+        transactions.unshift({
+            id: uid + 0.1, date, type: 'income', accountId: _mepToId,
+            amount: amtIn, category: '', desc, ownerName: currentUserName,
+            isTransfer: true, relatedAccountId: _mepFromId, transferPairId: uid, tags, updatedAt: Date.now()
+        });
+    } else {
+        if (!_mepAccId) { showToast('请选择账户', 'error'); return false; }
+        const finalAmount = _mepTab === 'expense' ? -amount : amount;
+        _lastTransPrefs = { type: _mepTab, accountId: _mepAccId, category: _mepCat };
+        transactions.unshift({
+            id: Date.now() + Math.random(), date, type: _mepTab,
+            accountId: _mepAccId, amount: finalAmount, category: _mepCat,
+            desc, tags, ownerName: currentUserName, isTransfer: false, updatedAt: Date.now()
+        });
+    }
+    saveUserData(); triggerAutoSave(); loadAllData(); filterUserData();
+    displayedTransactionCount = 100; renderAllTransactions(); renderAccounts();
+    return true;
+}
+
+function mepSaveAndClose() {
+    const ok = _mepSave();
+    if (ok) showToast('已添加', 'success', 1500);
+    closeMobileEntry();
+}
+
+function mepSaveAndReset() {
+    const amount = _mepGetAmount();
+    if (amount > 0) {
+        _mepSave();
+        showToast('已添加', 'success', 1500);
+    }
+    // 清空金额/备注/标签，保留日期/账户/分类
+    _mepExpr    = '';
+    _mepLastVal = '0';
+    $('mep-desc').value = '';
+    $('mep-tags-input').value = '';
+    $('mep-tags-label').textContent = '标签';
+    $('mep-amount-display').textContent = '0';
+    if ($('mep-amount-in')) $('mep-amount-in').value = '';
+    if (_mepTab === 'transfer') mepRenderTransferArea();
+}
+
+
 let _calcTarget    = null;  // 当前绑定的 input 元素
 let _calcExpr      = '';    // 当前表达式字符串
 let _calcLastValid = '';    // 上一次有效结果（关闭时兜底用）
@@ -5726,6 +6206,7 @@ document.addEventListener('click', (e) => {
     let cb = null;
     if (el.id === 'edit-transfer-amount-out') cb = () => handleEditTransferAmountChange('out');
     if (el.id === 'edit-transfer-amount-in')  cb = () => handleEditTransferAmountChange('in');
+    if (el.id === 'mep-amount-in')            cb = () => mepRenderTransferArea();
     _calcOpen(el, cb);
 }, true);
 
