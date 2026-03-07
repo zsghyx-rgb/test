@@ -5798,6 +5798,7 @@ window.addEventListener('online', () => {
 .calc-btn-eq:active { background: var(--bs-primary) !important; opacity: 0.82; }
 </style>
 
+<script>
 // ==================== 手机端全屏记账页 ====================
 let _mepTab     = 'expense';   // 当前 tab
 let _mepCat     = '';          // 选中分类
@@ -6099,7 +6100,9 @@ function mepSaveAndReset() {
     if (_mepTab === 'transfer') mepRenderTransferArea();
 }
 
+</script>
 
+<script>
 let _calcTarget    = null;  // 当前绑定的 input 元素
 let _calcExpr      = '';    // 当前表达式字符串
 let _calcLastValid = '';    // 上一次有效结果（关闭时兜底用）
