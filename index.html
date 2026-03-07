@@ -732,10 +732,7 @@ body {
 
         <!-- 手机端悬浮操作按钮 (仅交易页显示) -->
         <div id="mobile-fab-group" class="d-none d-md-none">
-            <button class="fab-btn fab-btn-transfer" onclick="openMobileEntry('transfer')" title="新增转账">
-                <i class="bi bi-arrow-left-right"></i>
-            </button>
-            <button class="fab-btn fab-btn-add" onclick="openMobileEntry('expense')" title="新增收支">
+            <button class="fab-btn fab-btn-add" onclick="openMobileEntry('expense')" title="新增记录">
                 <i class="bi bi-plus-lg"></i>
             </button>
         </div>
@@ -1268,7 +1265,7 @@ body {
 <!-- ==================== 手机端全屏记账页 ==================== -->
 <div id="mobile-entry-page" style="display:none;position:fixed;inset:0;z-index:2000;background:var(--bs-body-bg);flex-direction:column;">
 
-    <!-- 顶部：返回 + tab -->
+    <!-- 顶部：返回 + tab + 删除 -->
     <div style="display:flex;align-items:center;padding:12px 16px 0;flex-shrink:0;border-bottom:1px solid var(--bs-border-color);">
         <button onclick="closeMobileEntry()" style="background:none;border:none;padding:4px 10px 4px 0;color:var(--bs-body-color);font-size:1.3rem;cursor:pointer;flex-shrink:0;">
             <i class="bi bi-chevron-left"></i>
@@ -1278,6 +1275,9 @@ body {
             <button class="mep-tab" onclick="mepSwitchTab('income',this)">收入</button>
             <button class="mep-tab" onclick="mepSwitchTab('transfer',this)">转账</button>
         </div>
+        <button id="mep-delete-btn" onclick="mepDeleteCurrent()" style="display:none;background:none;border:none;padding:4px 0 4px 10px;color:#dc3545;font-size:1.1rem;cursor:pointer;flex-shrink:0;">
+            <i class="bi bi-trash"></i>
+        </button>
     </div>
 
     <!-- 中间：分类区 / 转账账户区（可滚动） -->
@@ -1303,28 +1303,25 @@ body {
                     <span id="mep-to-amt" class="text-success fw-bold"></span>
                 </div>
             </div>
-            <!-- 转入金额独立输入（跨币种时显示） -->
-            <div id="mep-transfer-in-row" style="display:none;margin-top:10px;">
-                <div class="small text-muted mb-1">转入金额（不同币种）</div>
-                <input type="text" inputmode="none" id="mep-amount-in" data-calc="true" readonly
-                    style="width:100%;padding:10px 14px;border-radius:10px;border:1px solid var(--bs-border-color);background:var(--bs-tertiary-bg);font-size:1.1rem;font-weight:600;color:var(--bs-body-color);"
-                    placeholder="转入金额">
-            </div>
-        </div>
     </div>
 
     <!-- 底部固定区 -->
     <div style="flex-shrink:0;border-top:1px solid var(--bs-border-color);">
 
-        <!-- 金额 + 备注行 -->
-        <div style="display:flex;align-items:center;padding:10px 16px 6px;gap:10px;">
+        <!-- 算式 + 结果显示行 -->
+        <div style="padding:8px 16px 4px;text-align:right;min-height:52px;display:flex;flex-direction:column;justify-content:center;">
+            <div id="mep-expr-display" style="font-size:0.8rem;color:var(--bs-secondary);min-height:1em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+            <div id="mep-amount-display" style="font-size:1.8rem;font-weight:700;color:var(--bs-body-color);line-height:1.2;">0</div>
+        </div>
+
+        <!-- 备注行 -->
+        <div style="display:flex;align-items:center;padding:4px 16px 4px;gap:10px;border-top:1px solid var(--bs-border-color);">
             <input type="text" id="mep-desc" placeholder="添加备注..."
                 style="flex:1;border:none;background:transparent;font-size:0.95rem;color:var(--bs-body-color);outline:none;min-width:0;">
-            <div id="mep-amount-display" style="font-size:1.8rem;font-weight:700;color:var(--bs-body-color);white-space:nowrap;min-width:60px;text-align:right;">0</div>
         </div>
 
         <!-- 工具栏：日期 · 账户 · 标签 -->
-        <div style="display:flex;gap:0;padding:0 16px 8px;overflow-x:auto;white-space:nowrap;">
+        <div style="display:flex;gap:0;padding:2px 16px 6px;overflow-x:auto;white-space:nowrap;">
             <button class="mep-tool-btn" onclick="mepPickDate()">
                 <i class="bi bi-calendar3" style="font-size:0.75rem;"></i>
                 <span id="mep-date-label">今天</span>
@@ -1358,10 +1355,10 @@ body {
             <button class="mep-key" onclick="mepKey('9')">9</button>
             <button class="mep-key mep-key-op" onclick="mepKey('-')">−</button>
 
-            <button class="mep-key mep-key-func" onclick="mepSaveAndReset()" style="font-size:0.9rem;">再记</button>
+            <button class="mep-key mep-key-done" onclick="mepSaveAndClose()">完成</button>
             <button class="mep-key" onclick="mepKey('0')">0</button>
             <button class="mep-key" onclick="mepKey('.')">.</button>
-            <button class="mep-key mep-key-done" onclick="mepSaveAndClose()">完成</button>
+            <button class="mep-key mep-key-func" onclick="mepSaveAndReset()" style="font-size:0.9rem;">再记</button>
         </div>
         <!-- 底部安全区 -->
         <div style="height:env(safe-area-inset-bottom,0px);background:var(--bs-body-bg);"></div>
@@ -1564,7 +1561,7 @@ body {
                     </div>
                     <div class="mb-2">
                         <label class="compact-form-label" id="acc-balance-label">初始余额</label>
-                        <input type="text" inputmode="none" class="form-control compact-form-control" id="acc-balance" value="0" data-calc="true" autocomplete="off" readonly required="">
+                        <input type="number" step="0.01" class="form-control compact-form-control" id="acc-balance" value="0" autocomplete="off" required>
                         <div class="form-text d-none" id="acc-balance-hint">修改余额将自动生成一笔调整记录</div>
                     </div>
                     <div class="mb-2">
@@ -1619,7 +1616,7 @@ body {
                     <div class="row g-2 mb-2">
                         <div class="col-6">
                             <label class="compact-form-label">金额</label>
-                            <input type="text" inputmode="none" class="form-control compact-form-control" id="edit-trans-amount" data-calc="true" required="" autocomplete="off" readonly>
+                            <input type="number" step="0.01" class="form-control compact-form-control" id="edit-trans-amount" required autocomplete="off">
                         </div>
                         <div class="col-6">
                             <label class="compact-form-label">标签</label>
@@ -1684,7 +1681,7 @@ body {
                         </div>
                         <div class="col-6">
                             <label class="compact-form-label">转出金额</label>
-                            <input type="text" inputmode="none" class="form-control compact-form-control" id="edit-transfer-amount-out" data-calc="true" autocomplete="off" readonly required="">
+                            <input type="number" step="0.01" class="form-control compact-form-control" id="edit-transfer-amount-out" autocomplete="off" required>
                         </div>
                     </div>
                     <div class="row g-2 mb-2">
@@ -1694,7 +1691,7 @@ body {
                         </div>
                         <div class="col-6">
                             <label class="compact-form-label">转入金额</label>
-                            <input type="text" inputmode="none" class="form-control compact-form-control" id="edit-transfer-amount-in" data-calc="true" autocomplete="off" readonly required="">
+                            <input type="number" step="0.01" class="form-control compact-form-control" id="edit-transfer-amount-in" autocomplete="off" required>
                         </div>
                     </div>
                     <div class="mb-2">
@@ -2815,6 +2812,9 @@ function triggerAutoSave() {
 }
 
 function showUnsavedToast() {
+    // 全屏记账页打开时不显示同步提醒，避免遮挡 tab 栏
+    const mepPage = $('mobile-entry-page');
+    if (mepPage && mepPage.style.display !== 'none') return;
     const el = $('app-toast');
     if (!el) return;
     clearTimeout(_toastTimer);
@@ -3953,6 +3953,17 @@ function openEditTransaction(id) {
     if (!t || t.ownerName !== currentUserName) { alert('无法编辑此交易'); return; }
     if (t.isTransfer) { openEditTransfer(id); return; }
 
+    // 手机端走全屏页
+    if (window.innerWidth < 768) {
+        openMobileEntry(t.type, {
+            date: t.date, amount: Math.abs(t.amount),
+            accId: t.accountId, category: t.category,
+            desc: t.desc || '', tags: t.tags || '',
+            editId: t.id
+        });
+        return;
+    }
+
     $('edit-trans-id').value = t.id;
     $('edit-trans-mode').value = 'edit';
     $('editTransactionModalTitle').textContent = '编辑交易';
@@ -3995,6 +4006,17 @@ function openEditTransfer(id) {
         }
     }
     if (!tOut || !tIn) { alert('找不到配对的转账记录'); return; }
+
+    // 手机端走全屏页
+    if (window.innerWidth < 768) {
+        openMobileEntry('transfer', {
+            date: tOut.date, amount: Math.abs(tOut.amount),
+            fromId: tOut.accountId, toId: tIn.accountId,
+            desc: tOut.desc || '', tags: tOut.tags || '',
+            editId: tOut.id, editTransferInId: tIn.id
+        });
+        return;
+    }
 
     $('edit-transfer-id').value = tOut.id;
     $('edit-transfer-mode').value = 'edit';
@@ -5736,68 +5758,6 @@ window.addEventListener('online', () => {
 </script>
 
 
-<!-- ==================== 底部计算器 ==================== -->
-<div id="calc-overlay" style="display:none;position:fixed;inset:0;z-index:9000;background:transparent;" onclick="calcOverlayClick(event)"></div>
-<div id="calc-panel" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9001;background:var(--bs-body-bg);border-top:1px solid var(--bs-border-color);border-radius:18px 18px 0 0;box-shadow:0 -6px 30px rgba(0,0,0,0.15);padding-bottom:env(safe-area-inset-bottom,0px);user-select:none;">
-
-    <!-- 显示区 -->
-    <div style="padding:10px 18px 6px;border-bottom:1px solid var(--bs-border-color);">
-        <div id="calc-expr" style="font-size:0.8rem;color:var(--bs-secondary);text-align:right;min-height:1em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
-        <div id="calc-result-preview" style="font-size:1.75rem;font-weight:700;color:var(--bs-body-color);text-align:right;line-height:1.2;"></div>
-    </div>
-
-    <!-- 按键区：左3列数字 + 右1列运算符 -->
-    <div style="display:grid;grid-template-columns:repeat(3,1fr) 1fr;grid-template-rows:repeat(4,46px) 46px;gap:1px;background:var(--bs-border-color);">
-
-        <button class="calc-btn" onclick="calcInput('7')">7</button>
-        <button class="calc-btn" onclick="calcInput('8')">8</button>
-        <button class="calc-btn" onclick="calcInput('9')">9</button>
-        <button class="calc-btn calc-btn-op" onclick="calcInput('÷')">÷</button>
-
-        <button class="calc-btn" onclick="calcInput('4')">4</button>
-        <button class="calc-btn" onclick="calcInput('5')">5</button>
-        <button class="calc-btn" onclick="calcInput('6')">6</button>
-        <button class="calc-btn calc-btn-op" onclick="calcInput('×')">×</button>
-
-        <button class="calc-btn" onclick="calcInput('1')">1</button>
-        <button class="calc-btn" onclick="calcInput('2')">2</button>
-        <button class="calc-btn" onclick="calcInput('3')">3</button>
-        <button class="calc-btn calc-btn-op" onclick="calcInput('-')">−</button>
-
-        <button class="calc-btn" style="grid-column:span 2;" onclick="calcInput('0')">0</button>
-        <button class="calc-btn" onclick="calcInput('.')">.</button>
-        <button class="calc-btn calc-btn-op" onclick="calcInput('+')">+</button>
-
-        <!-- 底部行：C  ⌫  = -->
-        <button class="calc-btn calc-btn-func" onclick="calcInput('C')">C</button>
-        <button class="calc-btn calc-btn-func" onclick="calcInput('⌫')"><i class="bi bi-backspace" style="font-size:1rem;"></i></button>
-        <button class="calc-btn calc-btn-eq" style="grid-column:span 2;" onclick="calcInput('=')">=</button>
-    </div>
-</div>
-
-<style>
-.calc-btn {
-    height: 100%;
-    width: 100%;
-    border: none;
-    font-size: 1.2rem;
-    font-weight: 500;
-    background: var(--bs-body-bg);
-    color: var(--bs-body-color);
-    cursor: pointer;
-    transition: background 0.08s;
-    -webkit-tap-highlight-color: transparent;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.calc-btn:active { background: var(--bs-tertiary-bg) !important; }
-.calc-btn-func { background: var(--bs-tertiary-bg); color: var(--bs-secondary); font-size: 0.95rem; }
-.calc-btn-op   { background: var(--bs-tertiary-bg); color: var(--bs-primary); font-size: 1.3rem; font-weight: 600; }
-.calc-btn-eq   { background: var(--bs-primary); color: #fff; font-size: 1.4rem; font-weight: 600; }
-.calc-btn-eq:active { background: var(--bs-primary) !important; opacity: 0.82; }
-</style>
-
 <script>
 // ==================== 手机端全屏记账页 ====================
 let _mepTab     = 'expense';   // 当前 tab
@@ -5808,37 +5768,65 @@ let _mepFromId  = null;        // 转账转出账户 id
 let _mepToId    = null;        // 转账转入账户 id
 let _mepExpr    = '';          // 计算器表达式
 let _mepLastVal = '0';         // 上一次有效值
+let _mepMode    = 'add';       // 'add' | 'edit'
+let _mepEditId  = null;        // 编辑时的交易 id（转账为 tOut.id）
+let _mepEditTransferInId = null; // 转账配对 tIn.id
 
-function openMobileEntry(tab) {
+function openMobileEntry(tab, editData) {
+    _mepMode   = editData ? 'edit' : 'add';
+    _mepEditId = null;
+    _mepEditTransferInId = null;
     _mepTab    = tab || 'expense';
-    _mepDate   = formatLocal(new Date());
-    _mepExpr   = '';
-    _mepLastVal = '0';
+    _mepDate   = editData ? editData.date : formatLocal(new Date());
+    _mepExpr   = editData ? String(editData.amount) : '';
+    _mepLastVal = editData ? String(editData.amount) : '0';
 
-    // 默认账户
+    // 账户
     const firstAcc = userAccounts[0];
-    _mepAccId  = firstAcc ? firstAcc.id : null;
+    _mepAccId  = editData ? editData.accId  : (firstAcc ? firstAcc.id : null);
     const accs = userAccounts;
-    _mepFromId = accs[0] ? accs[0].id : null;
-    _mepToId   = accs[1] ? accs[1].id : (accs[0] ? accs[0].id : null);
+    _mepFromId = editData ? editData.fromId : (accs[0] ? accs[0].id : null);
+    _mepToId   = editData ? editData.toId   : (accs[1] ? accs[1].id : (accs[0] ? accs[0].id : null));
 
-    // 默认分类：对应列表第一个
+    // 编辑 id
+    if (editData) {
+        _mepEditId = editData.editId || null;
+        _mepEditTransferInId = editData.editTransferInId || null;
+    }
+
+    // 默认分类
     const cats = categories[_mepTab === 'income' ? 'income' : 'expense'] || [];
-    _mepCat = cats[0] || '';
+    _mepCat = editData ? (editData.category || cats[0] || '') : (cats[0] || '');
 
-    // 清空输入
-    $('mep-desc').value = '';
-    $('mep-tags-input').value = '';
-    $('mep-tags-label').textContent = '标签';
+    // 清空/填入输入
+    $('mep-desc').value = editData ? (editData.desc || '') : '';
+    $('mep-tags-input').value = editData ? (editData.tags || '') : '';
+    $('mep-tags-label').textContent = (editData && editData.tags) ? editData.tags : '标签';
+
+    // 删除按钮：编辑时显示
+    const delBtn = $('mep-delete-btn');
+    if (delBtn) delBtn.style.display = _mepMode === 'edit' ? 'block' : 'none';
+
+    // 算式/金额显示
+    $('mep-expr-display').textContent = '';
+    $('mep-amount-display').textContent = _mepLastVal || '0';
 
     mepRenderTab(_mepTab);
     mepRenderDate();
     mepRenderAcc();
-    mepRenderAmount();
+    // 分类回填
+    if (editData && editData.category) {
+        const grid = $('mep-category-grid');
+        if (grid) {
+            grid.querySelectorAll('.mep-cat-btn').forEach(b => {
+                if (b.textContent === editData.category) b.classList.add('active');
+                else b.classList.remove('active');
+            });
+        }
+    }
 
     const page = $('mobile-entry-page');
     page.style.display = 'flex';
-    // 滑入动画
     page.style.transform = 'translateY(100%)';
     page.style.transition = 'transform 0.25s cubic-bezier(.32,1,.58,1)';
     requestAnimationFrame(() => requestAnimationFrame(() => { page.style.transform = 'translateY(0)'; }));
@@ -5861,7 +5849,9 @@ function mepSwitchTab(tab, el) {
     mepRenderAcc();
     // 重置转账金额
     if (tab === 'transfer') {
-        _mepExpr = ''; _mepLastVal = '0'; mepRenderAmount();
+        _mepExpr = ''; _mepLastVal = '0';
+        $('mep-expr-display').textContent = '';
+        $('mep-amount-display').textContent = '0';
     }
 }
 
@@ -5905,15 +5895,13 @@ function mepRenderTransferArea() {
     const sym     = fromAcc ? (CURRENCY_SYMBOLS[fromAcc.currency] || '') : '';
     const symTo   = toAcc   ? (CURRENCY_SYMBOLS[toAcc.currency]   || '') : '';
     const val     = _mepLastVal !== '0' ? _mepLastVal : '';
+    const crossCur = fromAcc && toAcc && fromAcc.currency !== toAcc.currency;
 
     $('mep-from-acc-label').textContent = fromAcc ? getAccountDisplayName(fromAcc) : '请选择账户';
     $('mep-from-amt').textContent = val ? `-${sym}${val}` : '';
     $('mep-to-acc-label').textContent = toAcc ? getAccountDisplayName(toAcc) : '请选择账户';
-    $('mep-to-amt').textContent = val ? `+${symTo}${val}` : '';
-
-    // 跨币种时显示转入金额独立输入
-    const crossCur = fromAcc && toAcc && fromAcc.currency !== toAcc.currency;
-    $('mep-transfer-in-row').style.display = crossCur ? 'block' : 'none';
+    // 跨币种时转入金额不自动填写
+    $('mep-to-amt').textContent = (!crossCur && val) ? `+${symTo}${val}` : (crossCur && symTo ? symTo : '');
 }
 
 function mepRenderDate() {
@@ -5955,6 +5943,10 @@ function mepKey(key) {
     } else if (_mepExpr === '' || _mepExpr === '0') {
         _mepLastVal = '0';
     }
+    // 算式行：有运算符才显示表达式，否则空
+    const hasOp = /[\+\-]/.test(_mepExpr);
+    $('mep-expr-display').textContent = hasOp ? _mepExpr : '';
+    // 结果行
     $('mep-amount-display').textContent = _mepExpr === '' ? '0'
         : (v !== null ? _mepLastVal : _mepExpr);
     if (_mepTab === 'transfer') mepRenderTransferArea();
@@ -5973,11 +5965,16 @@ function _mepEval(expr) {
 
 // ---- 日期选择 ----
 function mepPickDate() {
-    $('mep-date-picker').style.display = 'block';
     $('mep-date-input').value = _mepDate;
+    $('mep-date-picker').style.display = 'block';
+    setTimeout(() => {
+        const inp = $('mep-date-input');
+        try { inp.showPicker(); } catch(e) { inp.focus(); }
+    }, 50);
 }
 function mepDateSelected() {
-    _mepDate = $('mep-date-input').value || formatLocal(new Date());
+    const v = $('mep-date-input').value;
+    if (v) _mepDate = v;
     mepRenderDate();
     $('mep-date-picker').style.display = 'none';
 }
@@ -6038,19 +6035,34 @@ function _mepSave() {
     const amount = _mepGetAmount();
     if (amount === 0) return false;
 
-    const date    = _mepDate;
-    const desc    = $('mep-desc').value.trim();
-    const tags    = $('mep-tags-input').value.trim();
+    const date = _mepDate;
+    const desc = $('mep-desc').value.trim();
+    const tags = $('mep-tags-input').value.trim();
 
+    if (_mepMode === 'edit') {
+        // 编辑模式
+        if (_mepTab === 'transfer') {
+            const tOut = transactions.find(x => x.id === _mepEditId);
+            const tIn  = transactions.find(x => x.id === _mepEditTransferInId);
+            if (tOut) { tOut.date = date; tOut.amount = -amount; tOut.desc = desc; tOut.tags = tags; tOut.accountId = _mepFromId; tOut.relatedAccountId = _mepToId; tOut.updatedAt = Date.now(); }
+            if (tIn)  { tIn.date  = date; tIn.amount  =  amount; tIn.desc  = desc; tIn.tags  = tags; tIn.accountId  = _mepToId;   tIn.relatedAccountId  = _mepFromId; tIn.updatedAt  = Date.now(); }
+        } else {
+            const t = transactions.find(x => x.id === _mepEditId);
+            if (t) {
+                t.date = date; t.type = _mepTab; t.accountId = _mepAccId;
+                t.category = _mepCat; t.amount = _mepTab === 'expense' ? -amount : amount;
+                t.desc = desc; t.tags = tags; t.updatedAt = Date.now();
+            }
+        }
+        saveUserData(); triggerAutoSave(); loadAllData(); filterUserData();
+        displayedTransactionCount = 100; renderAllTransactions(); renderAccounts();
+        return true;
+    }
+
+    // 新增模式
     if (_mepTab === 'transfer') {
         if (!_mepFromId || !_mepToId) { showToast('请选择账户', 'error'); return false; }
         if (_mepFromId == _mepToId) { showToast('转出转入账户不能相同', 'error'); return false; }
-        const fromAcc = accounts.find(a => a.id == _mepFromId);
-        const toAcc   = accounts.find(a => a.id == _mepToId);
-        const crossCur = fromAcc && toAcc && fromAcc.currency !== toAcc.currency;
-        const amtIn = crossCur
-            ? (parseFloat($('mep-amount-in').value) || amount)
-            : amount;
         const uid = Date.now() + Math.random();
         transactions.unshift({
             id: uid, date, type: 'expense', accountId: _mepFromId,
@@ -6059,7 +6071,7 @@ function _mepSave() {
         });
         transactions.unshift({
             id: uid + 0.1, date, type: 'income', accountId: _mepToId,
-            amount: amtIn, category: '', desc, ownerName: currentUserName,
+            amount: amount, category: '', desc, ownerName: currentUserName,
             isTransfer: true, relatedAccountId: _mepFromId, transferPairId: uid, tags, updatedAt: Date.now()
         });
     } else {
@@ -6075,6 +6087,13 @@ function _mepSave() {
     saveUserData(); triggerAutoSave(); loadAllData(); filterUserData();
     displayedTransactionCount = 100; renderAllTransactions(); renderAccounts();
     return true;
+}
+
+function mepDeleteCurrent() {
+    if (!confirm('确定删除此交易？')) return;
+    if (_mepEditId) deleteTransaction(_mepEditId);
+    closeMobileEntry();
+    maybeReturnToDetail();
 }
 
 function mepSaveAndClose() {
@@ -6095,130 +6114,11 @@ function mepSaveAndReset() {
     $('mep-desc').value = '';
     $('mep-tags-input').value = '';
     $('mep-tags-label').textContent = '标签';
+    $('mep-expr-display').textContent = '';
     $('mep-amount-display').textContent = '0';
-    if ($('mep-amount-in')) $('mep-amount-in').value = '';
     if (_mepTab === 'transfer') mepRenderTransferArea();
 }
 
-</script>
-
-<script>
-let _calcTarget    = null;  // 当前绑定的 input 元素
-let _calcExpr      = '';    // 当前表达式字符串
-let _calcLastValid = '';    // 上一次有效结果（关闭时兜底用）
-let _calcOnChange  = null;  // 值变化后的联动回调（转账用）
-
-// 把有效结果实时写入金额框
-function _calcFlush() {
-    if (!_calcTarget) return;
-    const v = _calcEval(_calcExpr);
-    const out = v !== null ? parseFloat(v.toFixed(10)).toString() : _calcLastValid;
-    if (out !== '') {
-        _calcTarget.value = out;
-        _calcTarget.dispatchEvent(new Event('input', { bubbles: true }));
-        if (_calcOnChange) _calcOnChange();
-    }
-    if (v !== null) _calcLastValid = out;
-}
-
-function _calcOpen(inputEl, onChangeCb) {
-    _calcTarget   = inputEl;
-    _calcOnChange = onChangeCb || null;
-    const v = inputEl.value.trim();
-    _calcExpr      = (v && !isNaN(parseFloat(v))) ? v : '';
-    _calcLastValid = _calcExpr;
-    _calcRender();
-    $('calc-overlay').style.display = 'block';
-    $('calc-panel').style.display   = 'block';
-    const p = $('calc-panel');
-    p.style.transform  = 'translateY(100%)';
-    p.style.transition = 'transform 0.22s cubic-bezier(.32,1.1,.58,1)';
-    requestAnimationFrame(() => requestAnimationFrame(() => { p.style.transform = 'translateY(0)'; }));
-}
-
-function _calcClose() {
-    // 关闭时用上一次有效值兜底写入
-    if (_calcTarget && _calcLastValid !== '') {
-        const cur = _calcTarget.value;
-        if (cur !== _calcLastValid) {
-            _calcTarget.value = _calcLastValid;
-            _calcTarget.dispatchEvent(new Event('input', { bubbles: true }));
-            if (_calcOnChange) _calcOnChange();
-        }
-    }
-    const p = $('calc-panel');
-    p.style.transform = 'translateY(100%)';
-    setTimeout(() => {
-        $('calc-overlay').style.display = 'none';
-        $('calc-panel').style.display   = 'none';
-        p.style.transform = '';
-        _calcTarget = null;
-    }, 200);
-}
-
-function calcOverlayClick(e) {
-    if (e.target === $('calc-overlay')) _calcClose();
-}
-
-function _calcEval(expr) {
-    try {
-        const safe = expr.replace(/÷/g, '/').replace(/×/g, '*').replace(/−/g, '-');
-        if (!/^[\d\s\+\-\*\/\.]+$/.test(safe)) return null;
-        // eslint-disable-next-line no-new-func
-        const r = Function('"use strict"; return (' + safe + ')')();
-        if (!isFinite(r) || r < 0) return null;
-        return r;
-    } catch (_) { return null; }
-}
-
-function _calcRender() {
-    $('calc-expr').textContent = _calcExpr || '';
-    if (_calcExpr === '') {
-        $('calc-result-preview').textContent = '0';
-        return;
-    }
-    const v = _calcEval(_calcExpr);
-    $('calc-result-preview').textContent =
-        v !== null ? parseFloat(v.toFixed(10)).toString() : _calcExpr;
-}
-
-function calcInput(key) {
-    if (key === 'C') {
-        _calcExpr = '';
-    } else if (key === '⌫') {
-        _calcExpr = _calcExpr.slice(0, -1);
-    } else if (key === '=') {
-        const v = _calcEval(_calcExpr);
-        if (v !== null) _calcExpr = parseFloat(v.toFixed(10)).toString();
-    } else if (key === '.') {
-        const parts = _calcExpr.split(/[\+\-×÷]/);
-        const last  = parts[parts.length - 1];
-        if (!last.includes('.')) _calcExpr += '.';
-    } else {
-        _calcExpr += key;
-    }
-    _calcRender();
-    _calcFlush();  // 每次按键后实时写入金额框
-}
-
-// 绑定所有 data-calc 输入框
-document.addEventListener('click', (e) => {
-    const el = e.target.closest('[data-calc="true"]');
-    if (!el) return;
-    e.preventDefault();
-    let cb = null;
-    if (el.id === 'edit-transfer-amount-out') cb = () => handleEditTransferAmountChange('out');
-    if (el.id === 'edit-transfer-amount-in')  cb = () => handleEditTransferAmountChange('in');
-    if (el.id === 'mep-amount-in')            cb = () => mepRenderTransferArea();
-    _calcOpen(el, cb);
-}, true);
-
-// 阻止系统键盘弹出
-document.addEventListener('focus', (e) => {
-    if (e.target && e.target.getAttribute && e.target.getAttribute('data-calc') === 'true') {
-        e.target.blur();
-    }
-}, true);
 </script>
 </body></html>
 
