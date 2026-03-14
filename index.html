@@ -639,7 +639,7 @@ body {
                 </button>
             </div>
             <div class="text-end mt-2">
-                <span class="text-muted" style="font-size:0.7rem;">v1.1.9</span>
+                <span class="text-muted" style="font-size:0.7rem;">v1.2.0</span>
             </div>
         </div>
 
@@ -1493,7 +1493,9 @@ body {
                         <div class="col-6">
                             <label class="compact-form-label d-flex justify-content-between align-items-center">
                                 <span>金额</span>
-                                <small id="edit-trans-multi-hint" class="text-muted d-none" style="font-size:0.7rem;cursor:pointer;" onclick="openMultiItemsModal()">编辑明细 →</small>
+                                <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-1 d-none" style="font-size:0.7rem;line-height:1.4;" onclick="openMultiItemsModal()" id="edit-trans-multi-hint" title="编辑多笔明细">
+                                    <i class="bi bi-list-ul"></i> 多笔
+                                </button>
                             </label>
                             <input type="number" step="0.01" class="form-control compact-form-control" id="edit-trans-amount" required="">
                         </div>
@@ -4008,19 +4010,23 @@ function openMultiItemsModal() {
     const cats = type === 'expense' ? categories.expense : categories.income;
 
     // 初始化草稿：若已有多笔数据则加载，否则从当前单笔字段预填第一行
-    let rows = _multiItemsDraft ? _multiItemsDraft.slice() : [];
+    let rows = _multiItemsDraft ? _multiItemsDraft.map(r => ({ category: r.category, amount: Math.abs(r.amount) })) : [];
     if (rows.length === 0) {
         const singleAmt = parseFloat($('edit-trans-amount').value);
         const singleCat = $('edit-trans-category').value || cats[0] || '';
-        rows = [{ category: singleCat, amount: isNaN(singleAmt) ? '' : singleAmt }];
+        rows = [{ category: singleCat, amount: isNaN(singleAmt) ? '' : Math.abs(singleAmt) }];
     }
 
     // 渲染行
     renderMultiItemRows(rows, cats);
 
-    // 显示子 modal（用 Bootstrap API，backdrop:false 避免遮罩拦截输入）
-    const bsModal = new bootstrap.Modal(document.getElementById('multiItemsModal'), { backdrop: false, keyboard: false });
+    // 显示子 modal（backdrop:static 防止关闭父modal，但添加点击空白关闭）
+    const bsModal = new bootstrap.Modal(document.getElementById('multiItemsModal'), { backdrop: false, keyboard: true });
     bsModal.show();
+    // 点击子 modal 背景（非内容区）关闭
+    const el = document.getElementById('multiItemsModal');
+    el._closeHandler = function(e) { if (e.target === el) closeMultiItemsModal(); };
+    el.addEventListener('click', el._closeHandler);
 }
 
 function renderMultiItemRows(rows, cats) {
@@ -4135,7 +4141,9 @@ function setMultiMode(on) {
 }
 
 function closeMultiItemsModal() {
-    const inst = bootstrap.Modal.getInstance(document.getElementById('multiItemsModal'));
+    const el = document.getElementById('multiItemsModal');
+    if (el._closeHandler) { el.removeEventListener('click', el._closeHandler); el._closeHandler = null; }
+    const inst = bootstrap.Modal.getInstance(el);
     if (inst) inst.hide();
 }
 
