@@ -636,7 +636,7 @@ body {
                 </button>
             </div>
             <div class="text-end mt-2">
-                <span class="text-muted" style="font-size:0.7rem;">v1.1.6</span>
+                <span class="text-muted" style="font-size:0.7rem;">v1.1.7</span>
             </div>
         </div>
 
@@ -1264,7 +1264,33 @@ body {
     </div>
 </div>
 
-<!-- ==================== 多分录详情弹窗 ==================== -->
+<!-- ==================== 多笔交易子弹窗 ==================== -->
+<div class="modal fade" id="multiItemsModal" tabindex="-1" style="z-index:1060;">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h5 class="modal-title fs-6">多笔记录</h5>
+                <button type="button" class="btn-close" onclick="closeMultiItemsModal()"></button>
+            </div>
+            <div class="modal-body p-2">
+                <div class="d-flex mb-1" style="font-size:0.75rem;color:var(--bs-secondary);padding:0 2px;">
+                    <div style="flex:2;">类别</div>
+                    <div style="flex:1;text-align:right;padding-right:30px;">金额</div>
+                </div>
+                <div id="multi-items-list"></div>
+                <button type="button" class="btn btn-outline-secondary btn-sm w-100 mt-1" onclick="addMultiItemRow()">
+                    <i class="bi bi-plus"></i> 添加一行
+                </button>
+            </div>
+            <div class="modal-footer py-2 gap-2">
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="clearMultiItems()" title="清除多笔，恢复单笔">清除多笔</button>
+                <button type="button" class="btn btn-primary btn-sm flex-grow-1" onclick="confirmMultiItems()">确认</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== 多笔明细查看弹窗 ==================== -->
 <div class="modal fade" id="transItemsDetailModal" tabindex="-1">
     <div class="modal-dialog modal-sm">
         <div class="modal-content">
@@ -1273,7 +1299,7 @@ body {
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-2" id="transItemsDetailBody"></div>
-            <div class="modal-footer py-2 d-flex gap-2">
+            <div class="modal-footer py-2 gap-2">
                 <button type="button" class="btn btn-outline-primary btn-sm flex-grow-1" id="transItemsEditBtn">编辑</button>
                 <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">关闭</button>
             </div>
@@ -1441,31 +1467,44 @@ body {
                         </div>
                     </div>
 
-                    <div class="mb-2">
-                        <label class="compact-form-label">账户</label>
-                        <select class="form-select compact-form-control" id="edit-trans-account" required=""></select>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="compact-form-label">账户</label>
+                            <select class="form-select compact-form-control" id="edit-trans-account" required=""></select>
+                        </div>
+                        <div class="col-6">
+                            <label class="compact-form-label d-flex justify-content-between align-items-center">
+                                <span>类别</span>
+                                <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-1" style="font-size:0.7rem;line-height:1.4;" onclick="openMultiItemsModal()" id="multi-items-btn" title="多笔记录">
+                                    <i class="bi bi-list-ul"></i> 多笔
+                                </button>
+                            </label>
+                            <!-- 单笔：正常下拉 -->
+                            <select class="form-select compact-form-control" id="edit-trans-category" required=""></select>
+                            <!-- 多笔：灰显文字，点击可编辑 -->
+                            <div id="edit-trans-category-multi" class="form-control compact-form-control text-muted d-none" style="cursor:pointer;background:var(--bs-secondary-bg);" onclick="openMultiItemsModal()"></div>
+                        </div>
                     </div>
 
-                    <!-- 多分录区 -->
-                    <div id="trans-items-container"></div>
-                    <button type="button" class="btn btn-outline-secondary btn-sm w-100 mb-2" onclick="addTransItem()">
-                        <i class="bi bi-plus"></i> 添加分录
-                    </button>
-                    <!-- 总金额显示（多条时才显示） -->
-                    <div id="trans-total-row" class="d-none text-end mb-2">
-                        <small class="text-muted">合计：<span id="trans-total-display" class="fw-bold"></span></small>
-                    </div>
-
-                    <div class="mb-2">
-                        <label class="compact-form-label">标签</label>
-                        <input type="text" class="form-control compact-form-control" id="edit-trans-tags">
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="compact-form-label d-flex justify-content-between align-items-center">
+                                <span>金额</span>
+                                <small id="edit-trans-multi-hint" class="text-muted d-none" style="font-size:0.7rem;cursor:pointer;" onclick="openMultiItemsModal()">编辑明细 →</small>
+                            </label>
+                            <input type="number" step="0.01" class="form-control compact-form-control" id="edit-trans-amount" required="">
+                        </div>
+                        <div class="col-6">
+                            <label class="compact-form-label">标签</label>
+                            <input type="text" class="form-control compact-form-control" id="edit-trans-tags">
+                        </div>
                     </div>
 
                     <div class="mb-2">
                         <label class="compact-form-label">备注</label>
                         <div class="input-group" id="desc-input-group">
                             <input type="text" class="form-control compact-form-control" id="edit-trans-desc" 
-                                   oninput="updateDescHint('edit-trans-desc','edit-trans-desc-hint','edit-trans-type',null,'edit-trans-account')"
+                                   oninput="updateDescHint('edit-trans-desc','edit-trans-desc-hint','edit-trans-type','edit-trans-category','edit-trans-account')"
                                    placeholder="添加备注...">
                             <button type="button" class="btn btn-outline-secondary btn-sm" id="attachment-btn" style="width: 45px;" onclick="document.getElementById('attachment-file-input').click()">
                                 <i class="bi bi-image"></i>
@@ -2725,7 +2764,8 @@ function mergeData(local, remote) {
         const mergedTransactions = mergeArray(localU.transactions, remoteU.transactions)
             .filter(t => !deletedIdSet.has(String(t.id))); // 过滤已删除的交易
         merged.allUserData[u] = {
-            accounts: mergeArray(localU.accounts, remoteU.accounts),
+            accounts: mergeArray(localU.accounts, remoteU.accounts)
+                .filter(a => !deletedIdSet.has(String(a.id))), // 过滤已删除的账户
             transactions: mergedTransactions,
             plannedTransactions: mergeArray(localU.plannedTransactions, remoteU.plannedTransactions)
         };
@@ -3060,13 +3100,14 @@ function exportTransactionCsv() {
     transactions.filter(t => !t.isTransfer).forEach(t => {
         const acc = accounts.find(a => a.id == t.accountId);
         const accName = acc?.name || '';
+        const descEsc = (t.desc || '').replace(/"/g, '""');
+        const tagsEsc = (t.tags || '').replace(/"/g, '""');
         if (t.items && t.items.length > 1) {
-            // 多分录：每条拆一行
             t.items.forEach(it => {
-                csv += `${t.date},${t.type},${Math.abs(it.amount)},${it.category || ''},${t.ownerName},${accName},"${(t.desc || '').replace(/"/g, '""')}","${(t.tags || '').replace(/"/g, '""')}"\n`;
+                csv += `${t.date},${t.type},${Math.abs(it.amount)},${it.category || ''},${t.ownerName},${accName},"${descEsc}","${tagsEsc}"\n`;
             });
         } else {
-            csv += `${t.date},${t.type},${Math.abs(t.amount)},${t.category || ''},${t.ownerName},${accName},"${(t.desc || '').replace(/"/g, '""')}","${(t.tags || '').replace(/"/g, '""')}"\n`;
+            csv += `${t.date},${t.type},${Math.abs(t.amount)},${t.category || ''},${t.ownerName},${accName},"${descEsc}","${tagsEsc}"\n`;
         }
     });
     const blob = new Blob(['\ufeff' + csv], {type: 'text/csv'});
@@ -3317,6 +3358,12 @@ function deleteAccount(id) {
         const index = accounts.findIndex(a => a.id == id);
         if (index > -1) {
             accounts.splice(index, 1);
+            // 写入删除日志，防止多设备同步时被恢复
+            if (!inMemoryLoadedData.deletedLog) inMemoryLoadedData.deletedLog = [];
+            const strId = String(id);
+            if (!inMemoryLoadedData.deletedLog.find(e => String(e.id) === strId)) {
+                inMemoryLoadedData.deletedLog.push({ id: strId, deletedAt: Date.now(), type: 'account' });
+            }
             filterUserData();
             renderAccounts();
             updateSelectOptions();
@@ -3487,8 +3534,8 @@ function renderDetailContent(id) {
                 if (cleanDesc) subLine += ' · ' + cleanDesc;
             } else {
                 const tagsHtml = t.tags ? `<span style="font-size:0.72rem;color:var(--bs-secondary);margin-left:4px;">@${t.tags}</span>` : '';
-                const multiTag = (t.items && t.items.length > 1) ? `<span style="font-size:0.65rem;background:rgba(var(--bs-primary-rgb),0.12);color:var(--bs-primary);border-radius:3px;padding:0 3px;margin-left:3px;vertical-align:middle;">${t.items.length}项</span>` : '';
-                titleHtml = `<span style="font-weight:600;font-size:0.83rem;">${t.category || ''}${multiTag}${tagsHtml}</span>`;
+                const catDisplay = t.items && t.items.length > 1 ? t.items[0].category + '等' + (t.items.length-1) + '项' : (t.category || '');
+                titleHtml = `<span style="font-weight:600;font-size:0.83rem;">${catDisplay}${tagsHtml}</span>`;
                 if (t.desc) subLine += ' · ' + t.desc;
             }
 
@@ -3566,8 +3613,7 @@ function renderDetailContent(id) {
                 amtColorClass = t.amount < 0 ? 'text-danger' : 'text-success';
                 accountOutDisplay = `<small>${getAccountDisplayName(acc)}</small>`;
                 displayAmt = `${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}`;
-                categoryDisplay = t.category || '';
-                if (t.items && t.items.length > 1) categoryDisplay += ` <span style="font-size:0.68rem;background:rgba(var(--bs-primary-rgb),0.12);color:var(--bs-primary);border-radius:3px;padding:0 4px;">${t.items.length}项</span>`;
+                categoryDisplay = t.items && t.items.length > 1 ? t.items[0].category + '等' + (t.items.length-1) + '项' : (t.category || '');
                 descDisplay = t.desc || '';
             }
 
@@ -3637,15 +3683,15 @@ function openNewTransFromDetail() {
     updateEditFormCategories();
     const accSelect = $('edit-trans-account');
     accSelect.value = currentDetailAccountId;
+    const catSelect = $('edit-trans-category');
+    if (catSelect && prefs.category) {
+        const opt = [...catSelect.options].find(o => o.value === prefs.category);
+        if (opt) catSelect.value = prefs.category;
+    }
+    $('edit-trans-amount').value = '';
     $('edit-trans-tags').value = '';
     $('edit-trans-desc').value = '';
-    updateEditFormCategories();
-    initTransItems(null);
-    const catSelDet = $('trans-items-container').querySelector('.trans-item-category');
-    if (catSelDet && prefs.category) {
-        const opt = [...catSelDet.options].find(o => o.value === prefs.category);
-        if (opt) catSelDet.value = prefs.category;
-    }
+    resetMultiItems();
     new bootstrap.Modal($('editTransactionModal')).show();
 }
 
@@ -3693,16 +3739,17 @@ function openNewTransaction() {
         else accSelect.selectedIndex = 0;
     }
 
+    // 分类（updateEditFormCategories 已填充选项，再设值）
+    const catSelect = $('edit-trans-category');
+    if (catSelect && prefs.category) {
+        const lastCatOpt = [...catSelect.options].find(o => o.value === prefs.category);
+        if (lastCatOpt) catSelect.value = prefs.category;
+    }
+
+    $('edit-trans-amount').value = '';
     $('edit-trans-tags').value = '';
     $('edit-trans-desc').value = '';
-    updateEditFormCategories();
-    initTransItems(null);
-    // restore category preference after initTransItems rebuilds options
-    const catSelectNew = $('trans-items-container').querySelector('.trans-item-category');
-    if (catSelectNew && prefs.category) {
-        const opt = [...catSelectNew.options].find(o => o.value === prefs.category);
-        if (opt) catSelectNew.value = prefs.category;
-    }
+    resetMultiItems();
     new bootstrap.Modal($('editTransactionModal')).show();
 }
 
@@ -3828,11 +3875,22 @@ function openEditTransaction(id) {
     $('edit-trans-account').value = t.accountId;
     $('edit-trans-tags').value = t.tags || '';
     $('edit-trans-desc').value = t.desc || '';
-    // 加载分录（兼容旧数据）
-    if (t.items && t.items.length > 0) {
-        initTransItems(t.items, t.type);
+    // 加载多笔 or 单笔
+    if (t.items && t.items.length > 1) {
+        const type = t.type;
+        _multiItemsDraft = t.items.slice();
+        const total = t.items.reduce((s, it) => s + Math.abs(it.amount), 0);
+        $('edit-trans-amount').value = total.toFixed(2);
+        const firstCat = t.items[0].category;
+        const moreCount = t.items.length - 1;
+        $('edit-trans-category-multi').textContent = `${firstCat}等${moreCount}项`;
+        setMultiMode(true);
+        // 选中第一项分类（隐藏状态，供回退用）
+        $('edit-trans-category').value = firstCat;
     } else {
-        initTransItems([{ amount: t.amount, category: t.category }], t.type);
+        resetMultiItems();
+        $('edit-trans-category').value = t.category;
+        $('edit-trans-amount').value = Math.abs(t.amount);
     }
     // 加载附件
     resetAttachmentUI();
@@ -3884,30 +3942,26 @@ function openEditTransfer(id) {
 
 function showTransItemsDetail(t) {
     const acc = accounts.find(a => a.id == t.accountId);
-    const sym = acc ? (CURRENCY_SYMBOLS[acc.currency]||'') : '';
+    const sym = acc ? (CURRENCY_SYMBOLS[acc.currency] || '') : '';
     const cur = acc ? acc.currency : '';
-    const typeLabel = t.type === 'expense' ? '支出' : '收入';
     const colorClass = t.type === 'expense' ? 'text-danger' : 'text-success';
-
-    let html = `<div class="mb-2 small text-muted">${t.date} · ${typeLabel} · ${acc ? acc.name : ''}</div>`;
+    let html = `<div class="mb-2 small text-muted">${t.date} · ${acc ? acc.name : ''}</div>`;
     html += '<table class="table table-sm mb-2"><tbody>';
     t.items.forEach(it => {
         html += `<tr>
-            <td class="ps-0">${it.category}</td>
-            <td class="text-end fw-bold ${colorClass} pe-0">${sym}${formatAmount(Math.abs(it.amount), cur)}</td>
+            <td class="ps-0 py-1">${it.category}</td>
+            <td class="text-end fw-bold ${colorClass} pe-0 py-1">${sym}${formatAmount(Math.abs(it.amount), cur)}</td>
         </tr>`;
     });
     html += `</tbody><tfoot><tr class="border-top">
-        <td class="ps-0 fw-bold">合计</td>
-        <td class="text-end fw-bold ${colorClass} pe-0">${sym}${formatAmount(Math.abs(t.amount), cur)}</td>
+        <td class="ps-0 fw-bold py-1">合计</td>
+        <td class="text-end fw-bold ${colorClass} pe-0 py-1">${sym}${formatAmount(Math.abs(t.amount), cur)}</td>
     </tr></tfoot></table>`;
-    if (t.desc) html += `<div class="small text-muted">备注：${t.desc}</div>`;
+    if (t.desc) html += `<div class="small text-muted mb-1">备注：${t.desc}</div>`;
     if (t.tags) html += `<div class="small text-muted">标签：${t.tags}</div>`;
-
     $('transItemsDetailBody').innerHTML = html;
     $('transItemsDetailTitle').textContent = `${t.items.length} 条分录明细`;
-    const editBtn = $('transItemsEditBtn');
-    editBtn.onclick = () => {
+    $('transItemsEditBtn').onclick = () => {
         bootstrap.Modal.getInstance($('transItemsDetailModal')).hide();
         openedFromDetail = true;
         openEditTransaction(t.id);
@@ -3942,123 +3996,169 @@ function deleteCurrentTransfer() {
     }
 }
 
+// ==================== 多笔交易 ====================
+// 当前暂存的多笔分录（确认前）
+let _multiItemsDraft = null; // null = 单笔模式, [{category, amount}] = 多笔模式
+
+function openMultiItemsModal() {
+    const type = $('edit-trans-type').value;
+    const cats = type === 'expense' ? categories.expense : categories.income;
+
+    // 初始化草稿：若已有多笔数据则加载，否则从当前单笔字段预填第一行
+    let rows = _multiItemsDraft ? _multiItemsDraft.slice() : [];
+    if (rows.length === 0) {
+        const singleAmt = parseFloat($('edit-trans-amount').value);
+        const singleCat = $('edit-trans-category').value || cats[0] || '';
+        rows = [{ category: singleCat, amount: isNaN(singleAmt) ? '' : singleAmt }];
+    }
+
+    // 渲染行
+    renderMultiItemRows(rows, cats);
+
+    // 显示子 modal（保持父 modal 在背后）
+    const el = document.getElementById('multiItemsModal');
+    el.style.display = 'flex';
+    el.style.alignItems = 'center';
+    el.style.justifyContent = 'center';
+    el.classList.add('show');
+    el.style.background = 'rgba(0,0,0,0.5)';
+}
+
+function renderMultiItemRows(rows, cats) {
+    const list = $('multi-items-list');
+    list.innerHTML = '';
+    const type = $('edit-trans-type').value;
+    const catList = cats || (type === 'expense' ? categories.expense : categories.income);
+    rows.forEach((row, i) => {
+        const div = document.createElement('div');
+        div.className = 'd-flex gap-1 mb-1 align-items-center';
+        div.dataset.idx = i;
+        const catOpts = catList.map(c => `<option value="${c}"${c === row.category ? ' selected' : ''}>${c}</option>`).join('');
+        div.innerHTML = `
+            <select class="form-select compact-form-control multi-row-cat" style="flex:2;">${catOpts}</select>
+            <input type="number" step="0.01" min="0.01" class="form-control compact-form-control multi-row-amt" style="flex:1;" placeholder="金额" value="${row.amount || ''}" required>
+            <button type="button" class="btn btn-outline-danger btn-sm multi-row-del" style="width:28px;padding:0;flex-shrink:0;" onclick="removeMultiItemRow(this)"><i class="bi bi-x"></i></button>`;
+        list.appendChild(div);
+    });
+    updateRemoveMultiBtns();
+}
+
+function addMultiItemRow() {
+    const type = $('edit-trans-type').value;
+    const cats = type === 'expense' ? categories.expense : categories.income;
+    const list = $('multi-items-list');
+    const rows = getMultiItemRowData();
+    rows.push({ category: cats[0] || '', amount: '' });
+    renderMultiItemRows(rows, cats);
+}
+
+function removeMultiItemRow(btn) {
+    const rows = getMultiItemRowData();
+    const idx = parseInt(btn.closest('[data-idx]').dataset.idx);
+    if (rows.length <= 1) return;
+    rows.splice(idx, 1);
+    renderMultiItemRows(rows);
+}
+
+function updateRemoveMultiBtns() {
+    const btns = $('multi-items-list').querySelectorAll('.multi-row-del');
+    btns.forEach(b => b.style.visibility = btns.length > 1 ? 'visible' : 'hidden');
+}
+
+function getMultiItemRowData() {
+    const rows = [];
+    $('multi-items-list').querySelectorAll('[data-idx]').forEach(div => {
+        rows.push({
+            category: div.querySelector('.multi-row-cat').value,
+            amount: parseFloat(div.querySelector('.multi-row-amt').value) || ''
+        });
+    });
+    return rows;
+}
+
+function confirmMultiItems() {
+    const rows = getMultiItemRowData();
+    const validRows = rows.filter(r => r.amount > 0);
+    if (validRows.length === 0) { alert('请至少填写一条有效金额'); return; }
+
+    if (validRows.length === 1) {
+        // 只有一行，退回单笔模式
+        _multiItemsDraft = null;
+        const type = $('edit-trans-type').value;
+        const sign = type === 'expense' ? -1 : 1;
+        $('edit-trans-amount').value = validRows[0].amount;
+        $('edit-trans-category').value = validRows[0].category;
+        setMultiMode(false);
+    } else {
+        const type = $('edit-trans-type').value;
+        const sign = type === 'expense' ? -1 : 1;
+        _multiItemsDraft = validRows.map(r => ({ category: r.category, amount: sign * Math.abs(r.amount) }));
+        const total = validRows.reduce((s, r) => s + r.amount, 0);
+        const firstCat = validRows[0].category;
+        const moreCount = validRows.length - 1;
+        // update main modal display
+        $('edit-trans-amount').value = total.toFixed(2);
+        $('edit-trans-category-multi').textContent = `${firstCat}等${moreCount}项`;
+        setMultiMode(true);
+    }
+    closeMultiItemsModal();
+}
+
+function clearMultiItems() {
+    _multiItemsDraft = null;
+    setMultiMode(false);
+    closeMultiItemsModal();
+}
+
+function setMultiMode(on) {
+    const catSel = $('edit-trans-category');
+    const catMulti = $('edit-trans-category-multi');
+    const amtInput = $('edit-trans-amount');
+    const hint = $('edit-trans-multi-hint');
+    if (on) {
+        catSel.classList.add('d-none');
+        catMulti.classList.remove('d-none');
+        amtInput.readOnly = true;
+        amtInput.style.background = 'var(--bs-secondary-bg)';
+        amtInput.style.color = 'var(--bs-secondary)';
+        amtInput.removeAttribute('required');
+        if (hint) hint.classList.remove('d-none');
+    } else {
+        catSel.classList.remove('d-none');
+        catMulti.classList.add('d-none');
+        amtInput.readOnly = false;
+        amtInput.style.background = '';
+        amtInput.style.color = '';
+        amtInput.setAttribute('required', '');
+        if (hint) hint.classList.add('d-none');
+        $('edit-trans-amount').value = '';
+    }
+}
+
+function closeMultiItemsModal() {
+    const el = document.getElementById('multiItemsModal');
+    el.classList.remove('show');
+    el.style.display = 'none';
+}
+
+function resetMultiItems() {
+    _multiItemsDraft = null;
+    setMultiMode(false);
+}
+
+// ==================== 多笔交易 END ====================
+
 function updateEditFormCategories() {
     const type = $('edit-trans-type').value;
-    const isExpense = type === 'expense';
-    // 刷新所有分录行的类别下拉框
-    const container = $('trans-items-container');
-    if (container) {
-        container.querySelectorAll('.trans-item-category').forEach(sel => {
-            const cur = sel.value;
-            sel.innerHTML = '';
-            (isExpense ? categories.expense : categories.income).forEach(c => sel.add(new Option(c, c)));
-            if (cur && [...sel.options].find(o => o.value === cur)) sel.value = cur;
-        });
-    }
+    const catSelect = $('edit-trans-category');
+    catSelect.innerHTML = '';
+    (type === 'expense' ? categories.expense : categories.income).forEach(c => catSelect.add(new Option(c, c)));
     // 附件区域和相机按钮只在支出时显示
     const attachSec = $('attachment-section');
     const attachBtn = $('attachment-btn');
+    const isExpense = type === 'expense';
     if (attachSec) attachSec.style.display = isExpense ? '' : 'none';
     if (attachBtn) attachBtn.style.display = isExpense ? '' : 'none';
-}
-
-// ==================== 多分录管理 ====================
-function buildCategoryOptions(type, selected) {
-    const cats = type === 'expense' ? categories.expense : categories.income;
-    return cats.map(c => `<option value="${c}"${c === selected ? ' selected' : ''}>${c}</option>`).join('');
-}
-
-function addTransItem(amount='', category='', isFirst=false) {
-    const container = $('trans-items-container');
-    const type = $('edit-trans-type').value;
-    const idx = container.children.length;
-    const div = document.createElement('div');
-    div.className = 'trans-item-row d-flex align-items-center gap-1 mb-1';
-    div.dataset.idx = idx;
-    // label row only on first item
-    const labelHtml = idx === 0 ? `
-        <div style="width:100%;display:flex;gap:4px;margin-bottom:2px;">
-            <div style="flex:1;"><span class="compact-form-label">金额</span></div>
-            <div style="flex:2;"><span class="compact-form-label">类别</span></div>
-            <div style="width:30px;"></div>
-        </div>` : '';
-    if (labelHtml) {
-        const labelRow = document.createElement('div');
-        labelRow.className = 'trans-item-labels';
-        labelRow.style.width = '100%';
-        labelRow.innerHTML = `<div style="display:flex;gap:4px;margin-bottom:2px;">
-            <div style="flex:1;"><span class="compact-form-label">金额</span></div>
-            <div style="flex:2;"><span class="compact-form-label">类别</span></div>
-            <div style="width:30px;"></div>
-        </div>`;
-        container.appendChild(labelRow);
-    }
-    const defCat = category || (type === 'expense' ? (categories.expense[0]||'') : (categories.income[0]||''));
-    div.innerHTML = `
-        <input type="number" step="0.01" min="0.01" class="form-control compact-form-control trans-item-amount" style="flex:1;" placeholder="金额" value="${amount}" required oninput="updateTransTotal()">
-        <select class="form-select compact-form-control trans-item-category" style="flex:2;">${buildCategoryOptions(type, defCat)}</select>
-        <button type="button" class="btn btn-outline-danger btn-sm trans-item-remove" style="width:30px;padding:0;line-height:1;" onclick="removeTransItem(this)" title="删除此行"><i class="bi bi-x"></i></button>`;
-    container.appendChild(div);
-    updateTransTotal();
-    updateRemoveButtons();
-}
-
-function removeTransItem(btn) {
-    const row = btn.closest('.trans-item-row');
-    const container = $('trans-items-container');
-    if (container.querySelectorAll('.trans-item-row').length <= 1) return;
-    row.remove();
-    // also remove preceding label row if exists
-    const labels = container.querySelectorAll('.trans-item-labels');
-    // rebuild labels: keep only first label
-    labels.forEach((l, i) => { if (i > 0) l.remove(); });
-    updateTransTotal();
-    updateRemoveButtons();
-}
-
-function updateRemoveButtons() {
-    const rows = $('trans-items-container').querySelectorAll('.trans-item-row');
-    rows.forEach(r => {
-        const btn = r.querySelector('.trans-item-remove');
-        if (btn) btn.style.visibility = rows.length > 1 ? 'visible' : 'hidden';
-    });
-}
-
-function updateTransTotal() {
-    const rows = $('trans-items-container').querySelectorAll('.trans-item-row');
-    const totalRow = $('trans-total-row');
-    const totalDisplay = $('trans-total-display');
-    if (rows.length <= 1) { totalRow.classList.add('d-none'); return; }
-    let sum = 0;
-    rows.forEach(r => { const v = parseFloat(r.querySelector('.trans-item-amount').value); if (!isNaN(v)) sum += v; });
-    const acc = accounts.find(a => a.id == $('edit-trans-account').value);
-    const sym = acc ? (CURRENCY_SYMBOLS[acc.currency]||'') : '';
-    totalDisplay.textContent = `${sym}${sum.toFixed(2)}`;
-    totalRow.classList.remove('d-none');
-}
-
-function getTransItems() {
-    const rows = $('trans-items-container').querySelectorAll('.trans-item-row');
-    const type = $('edit-trans-type').value;
-    const result = [];
-    rows.forEach(r => {
-        const amt = parseFloat(r.querySelector('.trans-item-amount').value);
-        const cat = r.querySelector('.trans-item-category').value;
-        if (!isNaN(amt) && amt > 0) {
-            result.push({ amount: type === 'expense' ? -Math.abs(amt) : Math.abs(amt), category: cat });
-        }
-    });
-    return result;
-}
-
-function initTransItems(items, type) {
-    const container = $('trans-items-container');
-    container.innerHTML = '';
-    if (items && items.length > 0) {
-        items.forEach((it, i) => addTransItem(Math.abs(it.amount), it.category));
-    } else {
-        addTransItem();
-    }
 }
 
 // 编辑弹窗关闭时：若来自账户详情，刷新详情视图
@@ -4081,53 +4181,58 @@ $('edit-transaction-form').addEventListener('submit', (e) => {
     const desc = $('edit-trans-desc').value;
     const attachmentId = $('edit-trans-attachment-id')?.value || '';
 
-    // 读取所有分录
-    const items = getTransItems();
-    if (items.length === 0) { alert('请至少填写一条金额'); return; }
-
-    // 主记录：amount = 合计，category = 第一条，items 存全部（单条时不存 items 保持向后兼容）
-    const totalAmount = items.reduce((s, it) => s + it.amount, 0);
-    const mainCategory = items[0].category;
-    const multiItems = items.length > 1 ? items : null;
+    // 多笔 or 单笔
+    let category, finalAmount, itemsData;
+    if (_multiItemsDraft && _multiItemsDraft.length > 1) {
+        const sign = type === 'expense' ? -1 : 1;
+        itemsData = _multiItemsDraft.map(it => ({ category: it.category, amount: sign * Math.abs(it.amount) }));
+        finalAmount = itemsData.reduce((s, it) => s + it.amount, 0);
+        category = itemsData[0].category;
+    } else {
+        category = $('edit-trans-category').value;
+        const amount = parseFloat($('edit-trans-amount').value);
+        if (isNaN(amount) || amount <= 0) { alert('请输入有效金额'); return; }
+        finalAmount = type === 'expense' ? -Math.abs(amount) : Math.abs(amount);
+        itemsData = null;
+    }
 
     if (mode === 'add') {
-        _lastTransPrefs = { type, accountId, category: mainCategory };
+        _lastTransPrefs = { type, accountId, category };
         transactions.unshift({
             id: Date.now() + Math.random(), date, type, accountId,
-            amount: totalAmount, category: mainCategory,
-            ...(multiItems ? { items: multiItems } : {}),
-            tags, desc,
+            amount: finalAmount, category, tags, desc,
+            ...(itemsData ? { items: itemsData } : {}),
             ...(attachmentId ? { attachmentId } : {}),
             ownerName: currentUserName, isTransfer: false, updatedAt: Date.now()
         });
         saveUserData(); triggerAutoSave(); loadAllData(); filterUserData();
         displayedTransactionCount = 100; renderAllTransactions(); renderAccounts();
         $('edit-trans-account').value = accountId;
+        const catEl = $('edit-trans-category');
+        if (catEl && [...catEl.options].find(o => o.value === category)) catEl.value = category;
         if (currentDetailAccountId) refreshDetailContent(currentDetailAccountId);
-        // 清空分录行，保留账户/类型，重置为单行
-        initTransItems(null);
+        $('edit-trans-amount').value = '';
         $('edit-trans-tags').value = '';
         $('edit-trans-desc').value = '';
         const hintEl = $('edit-trans-desc-hint');
         if (hintEl) hintEl.style.display = 'none';
         resetAttachmentUI();
+        resetMultiItems();
         showToast('已添加', 'success', 1500);
     } else {
         const id = parseFloat($('edit-trans-id').value);
         const t = transactions.find(x => x.id === id);
         if (t) {
             t.date = date; t.type = type; t.accountId = accountId;
-            t.category = mainCategory; t.amount = totalAmount;
-            if (multiItems) t.items = multiItems;
-            else delete t.items;
-            t.tags = tags; t.desc = desc;
-            if (attachmentId) t.attachmentId = attachmentId;
-            else delete t.attachmentId;
+            t.category = category; t.amount = finalAmount; t.tags = tags; t.desc = desc;
+            if (itemsData) t.items = itemsData; else delete t.items;
+            if (attachmentId) t.attachmentId = attachmentId; else delete t.attachmentId;
             t.updatedAt = Date.now();
             saveUserData(); triggerAutoSave(); filterUserData();
             displayedTransactionCount = 100;
             renderAllTransactions(); renderAccounts();
             bootstrap.Modal.getInstance($('editTransactionModal')).hide();
+            resetMultiItems();
             maybeReturnToDetail();
         }
     }
@@ -4383,7 +4488,7 @@ function renderAllTransactions() {
         tr.innerHTML = `
             <td>${t.date}</td>
             <td><div class="text-start ps-2 ${typeColorClass}">${typeText}</div></td>
-            <td>${t.isTransfer ? '' : ((t.category || '') + (t.items && t.items.length > 1 ? ` <span style="font-size:0.68rem;background:rgba(var(--bs-primary-rgb),0.12);color:var(--bs-primary);border-radius:3px;padding:0 4px;">${t.items.length}项</span>` : ''))}</td>
+            <td>${t.isTransfer ? '' : (t.items && t.items.length > 1 ? t.items[0].category + '等' + (t.items.length-1) + '项' : (t.category || ''))}</td>
             <td><small>${getAccountDisplayName(acc)}</small></td>
             <td><div class="fw-bold ${t.isTransfer ? 'text-warning' : (t.amount < 0 ? 'text-danger' : 'text-success')}">${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}</div></td>
             <td>${toAccountDisplay}</td>
@@ -4433,10 +4538,9 @@ function renderAllTransactions() {
                 const tagsHtml = t.tags ? `<span style="color:var(--bs-secondary);"> @${t.tags}</span>` : '';
                 const noteHtml = descClean ? `<span style="color:var(--bs-secondary);"> · ${descClean}</span>` : '';
                 const attachIconHtml = t.attachmentId ? ` <i class="bi bi-paperclip" style="color:var(--bs-secondary);font-size:0.72rem;"></i>` : '';
-                const multiHtml = (t.items && t.items.length > 1) ? ` <span style="font-size:0.68rem;background:rgba(var(--bs-primary-rgb),0.12);color:var(--bs-primary);border-radius:3px;padding:0 4px;vertical-align:middle;">${t.items.length}项</span>` : '';
                 card.innerHTML = `
                     <div class="card-line-1">
-                        <span class="category-text">${t.category || ''}${multiHtml}${tagsHtml}${attachIconHtml}</span>
+                        <span class="category-text">${(t.items && t.items.length > 1 ? t.items[0].category + '等' + (t.items.length-1) + '项' : (t.category || ''))}${tagsHtml}${attachIconHtml}</span>
                         <div class="${amountClass} fw-bold">${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}</div>
                     </div>
                     <div class="card-line-2">
@@ -4534,9 +4638,6 @@ function updateDescHint(descId, hintId, typeId, catId, accId) {
     const hint = $(hintId);
     if (!hint) return;
     if (desc.trim().length < 2) { hint.style.display = 'none'; return; }
-    // 多分录时不显示分类提示（每行分类各不同，推断无意义）
-    const itemRows = $('trans-items-container')?.querySelectorAll('.trans-item-row');
-    if (itemRows && itemRows.length > 1) { hint.style.display = 'none'; return; }
 
     const result = findBestCategoryFromHistory(desc, type);
     if (!result) { hint.style.display = 'none'; return; }
@@ -4546,17 +4647,7 @@ function updateDescHint(descId, hintId, typeId, catId, accId) {
         `<span style="flex:1;">💡 <b>${result.category}</b>` +
         ` <span style="color:var(--bs-secondary);font-size:0.72rem;">(${result.count}次)</span></span>` +
         `<button type="button" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size:0.73rem;"` +
-        ` onclick="applyDescHintToFirstItem('${result.category}')">应用</button>`;
-}
-
-function applyDescHintToFirstItem(category) {
-    const firstSel = $('trans-items-container')?.querySelector('.trans-item-category');
-    if (firstSel) {
-        const opt = [...firstSel.options].find(o => o.value === category);
-        if (opt) firstSel.value = category;
-    }
-    const hint = $('edit-trans-desc-hint');
-    if (hint) hint.style.display = 'none';
+        ` onclick="applyDescHint('${catId}','${result.category}')">应用</button>`;
 }
 
 
@@ -4781,6 +4872,10 @@ function showFullImagePreviewFromSrc(src) {
 
 
 
+function applyDescHint(catId, category) {
+    const catEl = $(catId);
+    if (catEl) catEl.value = category;
+}
 /**
  * 自动校对：基于历史记忆，检测分类与相似备注不一致的交易
  */
@@ -4923,11 +5018,11 @@ function renderExpenseChart(data) {
         const acc = accounts.find(a => a.id == t.accountId);
         if (t.items && t.items.length > 1) {
             t.items.forEach(it => {
-                let amt = convertAmt(Math.abs(it.amount), acc.currency);
+                const amt = convertAmt(Math.abs(it.amount), acc.currency);
                 cats[it.category] = (cats[it.category] || 0) + amt;
             });
         } else {
-            let amt = convertAmt(Math.abs(t.amount), acc.currency);
+            const amt = convertAmt(Math.abs(t.amount), acc.currency);
             cats[t.category] = (cats[t.category] || 0) + amt;
         }
     });
@@ -5050,7 +5145,7 @@ function renderCategoryTrendChart(data) {
     if (chartInstances.cattrend) { chartInstances.cattrend.destroy(); chartInstances.cattrend = null; }
     if (!cat) return;
     const months = {};
-    (data || []).filter(t => !t.isTransfer && t.amount < 0).forEach(t => {
+    (data || []).filter(t => t.amount < 0 && !t.isTransfer).forEach(t => {
         const acc = accounts.find(a => a.id == t.accountId);
         const m = t.date.substring(0, 7);
         if (t.items && t.items.length > 1) {
@@ -5101,7 +5196,7 @@ function updateSelectOptions() {
         arr.forEach(x => el.add(new Option(x, x)));
     };
     const currentType = $('edit-trans-type')?.value || 'expense';
-    // edit-trans-category removed (now handled by multi-item rows)
+    fill('edit-trans-category', currentType === 'expense' ? categories.expense : categories.income);
     const plannedType = $('planned-type')?.value || 'expense';
     fill('planned-category', plannedType === 'expense' ? categories.expense : categories.income);
 
