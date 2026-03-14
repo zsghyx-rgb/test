@@ -537,6 +537,9 @@ body {
     }
 }
 
+.multi-row-amt::-webkit-outer-spin-button,
+.multi-row-amt::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.multi-row-amt { -moz-appearance: textfield; }
 </style>
     <!-- 鸿蒙HarmonyOS 3.0 兼容补丁 -->
     <script>
@@ -636,7 +639,7 @@ body {
                 </button>
             </div>
             <div class="text-end mt-2">
-                <span class="text-muted" style="font-size:0.7rem;">v1.1.7</span>
+                <span class="text-muted" style="font-size:0.7rem;">v1.1.9</span>
             </div>
         </div>
 
@@ -1265,8 +1268,8 @@ body {
 </div>
 
 <!-- ==================== 多笔交易子弹窗 ==================== -->
-<div class="modal fade" id="multiItemsModal" tabindex="-1" style="z-index:1060;">
-    <div class="modal-dialog modal-sm">
+<div class="modal fade" id="multiItemsModal" tabindex="-1" data-bs-backdrop="false" style="z-index:1065;">
+    <div class="modal-dialog modal-sm" style="z-index:1066;">
         <div class="modal-content">
             <div class="modal-header py-2">
                 <h5 class="modal-title fs-6">多笔记录</h5>
@@ -4015,13 +4018,9 @@ function openMultiItemsModal() {
     // 渲染行
     renderMultiItemRows(rows, cats);
 
-    // 显示子 modal（保持父 modal 在背后）
-    const el = document.getElementById('multiItemsModal');
-    el.style.display = 'flex';
-    el.style.alignItems = 'center';
-    el.style.justifyContent = 'center';
-    el.classList.add('show');
-    el.style.background = 'rgba(0,0,0,0.5)';
+    // 显示子 modal（用 Bootstrap API，backdrop:false 避免遮罩拦截输入）
+    const bsModal = new bootstrap.Modal(document.getElementById('multiItemsModal'), { backdrop: false, keyboard: false });
+    bsModal.show();
 }
 
 function renderMultiItemRows(rows, cats) {
@@ -4136,9 +4135,8 @@ function setMultiMode(on) {
 }
 
 function closeMultiItemsModal() {
-    const el = document.getElementById('multiItemsModal');
-    el.classList.remove('show');
-    el.style.display = 'none';
+    const inst = bootstrap.Modal.getInstance(document.getElementById('multiItemsModal'));
+    if (inst) inst.hide();
 }
 
 function resetMultiItems() {
