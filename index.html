@@ -290,7 +290,7 @@ body {
 /* 统一通知 toast */
 #app-toast {
     position: fixed;
-    top: 14px;
+    top: 6px;
     left: 50%;
     transform: translateX(-50%);
     padding: 8px 18px;
@@ -639,7 +639,7 @@ body {
                 </button>
             </div>
             <div class="text-end mt-2">
-                <span class="text-muted" style="font-size:0.7rem;">v1.2.3</span>
+                <span class="text-muted" style="font-size:0.7rem;">v1.2.4</span>
             </div>
         </div>
 
@@ -2670,12 +2670,6 @@ function showUnsavedToast() {
     const el = $('app-toast');
     if (!el) return;
     clearTimeout(_toastTimer);
-    // 模态窗打开时完全隐藏未保存 toast，关闭后再显示
-    const modalOpen = document.getElementById('editTransactionModal')?.classList.contains('show');
-    if (modalOpen) {
-        el.classList.remove('show');
-        return;
-    }
     applyToastStyle(el, 'warning');
     el.innerHTML = `${toastIcons.warning} 有未保存的修改 <button onclick="syncToDrive(true)" style="margin-left:8px;padding:1px 10px;font-size:0.78rem;border-radius:12px;border:1px solid #664d03;background:transparent;color:#664d03;cursor:pointer;font-weight:600;">立即同步</button>`;
     el.classList.add('show');
@@ -4148,8 +4142,7 @@ function onSubModalHide() {
     if (hintEl) hintEl.style.display = 'none';
     resetAttachmentUI();
     maybeReturnToDetail();
-    // 模态窗关闭后，若有未同步变更则重新显示完整 toast
-    if (hasUnsavedChanges) showUnsavedToast();
+
 }
 $('editTransactionModal').addEventListener('hidden.bs.modal', onSubModalHide);
 
@@ -4189,7 +4182,13 @@ $('edit-transaction-form').addEventListener('submit', (e) => {
         });
         saveUserData(); triggerAutoSave(); loadAllData(); filterUserData();
         displayedTransactionCount = 100; renderAllTransactions(); renderAccounts();
+        // renderAccounts()->updateSelectOptions() resets dropdowns, manually restore
         $('edit-trans-account').value = accountId;
+        const catEl = $('edit-trans-category');
+        if (catEl && !itemsData) {
+            const opt = [...catEl.options].find(o => o.value === category);
+            if (opt) catEl.value = category;
+        }
         if (currentDetailAccountId) refreshDetailContent(currentDetailAccountId);
         resetInlineItems();
         $('edit-trans-amount').value = '';
