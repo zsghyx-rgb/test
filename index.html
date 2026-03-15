@@ -639,7 +639,7 @@ body {
                 </button>
             </div>
             <div class="text-end mt-2">
-                <span class="text-muted" style="font-size:0.7rem;">v1.2.8</span>
+                <span class="text-muted" style="font-size:0.7rem;">v1.2.9</span>
             </div>
         </div>
 
@@ -3658,6 +3658,19 @@ function switchTransTab(tab, skipReset) {
     transForm.style.display = isTransfer ? 'none' : '';
     transferForm.style.display = isTransfer ? '' : 'none';
 
+    // 更新标题
+    const mode = $('edit-trans-mode').value;
+    if (mode === 'add') {
+        const titleMap = { expense: '新增支出', income: '新增收入', transfer: '新增转账' };
+        $('editTransactionModalTitle').textContent = titleMap[tab] || '新增交易';
+    }
+
+    // 切换时同步日期：把当前可见表单的日期复制到另一个
+    const transDate = $('edit-trans-date').value;
+    const transferDate = $('edit-transfer-date').value;
+    if (isTransfer && !transferDate && transDate) $('edit-transfer-date').value = transDate;
+    if (!isTransfer && !transDate && transferDate) $('edit-trans-date').value = transferDate;
+
     // tab 按钮高亮
     ['expense','income','transfer'].forEach(t => {
         const btn = $('tab-btn-' + t);
@@ -3712,7 +3725,9 @@ function _initNewTransModal(mode, title) {
     $('editTransactionModalTitle').textContent = title;
     $('edit-trans-submit-btn').textContent = '保存';
     $('edit-trans-delete-btn').style.setProperty('display','none','important');
+    // 两个表单的日期同步初始化
     $('edit-trans-date').value = today;
+    $('edit-transfer-date').value = today;
     $('edit-trans-tags').value = '';
     $('edit-trans-desc').value = '';
     const hintEl = $('edit-trans-desc-hint');
@@ -3799,18 +3814,12 @@ function fillTransferSelects(fromValue, toValue) {
 }
 
 function openNewTransfer() {
-    const today = new Date().toISOString().split('T')[0];
-    $('editTransactionModalTitle').textContent = '新增转账';
+    _initNewTransModal('add', '新增转账');
     $('edit-transfer-id').value = '';
     $('edit-transfer-mode').value = 'add';
-    $('edit-transfer-submit-btn').textContent = '保存';
-    $('edit-transfer-delete-btn').style.setProperty('display','none','important');
-    $('edit-transfer-date').value = today;
-    fillTransferSelects(null, null);
     $('edit-transfer-amount-out').value = '';
     $('edit-transfer-amount-in').value = '';
     $('edit-transfer-desc').value = '';
-    $('trans-tab-bar').style.display = '';
     switchTransTab('transfer', true);
     new bootstrap.Modal($('editTransactionModal')).show();
 }
