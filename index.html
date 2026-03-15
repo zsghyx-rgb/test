@@ -639,7 +639,7 @@ body {
                 </button>
             </div>
             <div class="text-end mt-2">
-                <span class="text-muted" style="font-size:0.7rem;">v1.3.1</span>
+                <span class="text-muted" style="font-size:0.7rem;">v1.3.2</span>
             </div>
         </div>
 
@@ -1266,7 +1266,8 @@ body {
         </div>
     </div>
 </div>
-    
+
+<!-- ==================== 多笔交易子弹窗 ==================== -->
 <!-- ==================== 多笔明细查看弹窗 ==================== -->
 <div class="modal fade" id="transItemsDetailModal" tabindex="-1">
     <div class="modal-dialog modal-sm">
@@ -1473,7 +1474,7 @@ body {
                     <!-- 添加按钮行 -->
                     <div class="mb-2">
                         <button type="button" id="add-inline-item-btn" class="btn btn-outline-secondary btn-sm w-100" style="font-size:0.78rem;" onclick="addInlineItemRow()">
-                            <i class="bi bi-plus"></i> 多类别
+                            <i class="bi bi-plus"></i> 添加
                         </button>
                     </div>
 
@@ -2433,7 +2434,7 @@ async function unarchiveYear(year) {
 
         // 静默删除 Drive 上的 archive_YYYY.enc（Backup 文件夹的 .bak 保留）
         try {
-            const delResp = await fetch(gasRequestUrl({ action: 'deleteFile', file: archiveFile }), { method: 'POST', body: '', headers: { 'Content-Type': 'text/plain' } });
+            const delResp = await fetch(gasRequestUrl({ action: 'deleteFile', file: archiveFile }));
             const delResult = (await delResp.text()).trim();
             if (delResult !== 'OK') console.warn('[unarchiveYear] deleteFile:', delResult);
         } catch(e) { console.warn('[unarchiveYear] 删除归档文件失败（非致命）:', e); }
