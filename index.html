@@ -639,7 +639,7 @@ body {
                 </button>
             </div>
             <div class="text-end mt-2">
-                <span class="text-muted" style="font-size:0.7rem;">v1.2.4</span>
+                <span class="text-muted" style="font-size:0.7rem;">v1.2.8</span>
             </div>
         </div>
 
@@ -3691,7 +3691,7 @@ function switchTransTab(tab, skipReset) {
             // 切换 tab 清空分类/金额
             resetInlineItems();
             $('edit-trans-amount').value = '';
-            $('edit-trans-amount').dataset.baseAmt = '';
+        
         }
         updateEditFormCategories();
         const attachSec = $('attachment-section');
@@ -3903,15 +3903,11 @@ function openEditTransaction(id) {
     switchTransTab(t.type, true);
     // 加载分录
     if (t.items && t.items.length > 1) {
-        $('edit-trans-category').value = t.items[0].category;
-        $('edit-trans-amount').dataset.baseAmt = Math.abs(t.items[0].amount);
-        $('edit-trans-amount').value = Math.abs(t.items[0].amount);
         loadInlineItems(t.items, t.type);
     } else {
         resetInlineItems();
         $('edit-trans-category').value = t.category;
         $('edit-trans-amount').value = Math.abs(t.amount);
-        $('edit-trans-amount').dataset.baseAmt = Math.abs(t.amount);
     }
     // 加载附件
     resetAttachmentUI();
@@ -4015,31 +4011,27 @@ function deleteCurrentTransfer() {
 }
 
 // ==================== 内联多笔分录 ====================
-let _extraItems = []; // [{category, amount}] 额外分录（主行之外的）
+
+function _buildItemRow(defCat, defAmt, cats) {
+    // 构建一行分录 DOM（类别 | 金额 | 删除），类别和金额等宽
+    const catOpts = cats.map(c => `<option value="${c}"${c === defCat ? ' selected' : ''}>${c}</option>`).join('');
+    const row = document.createElement('div');
+    row.className = 'd-flex gap-1 mb-1 align-items-center extra-item-row';
+    row.innerHTML = `
+        <select class="form-select compact-form-control extra-row-cat" style="flex:1;min-width:0;" onchange="refreshInlineTotal()">${catOpts}</select>
+        <input type="number" step="0.01" min="0.01" class="form-control compact-form-control extra-row-amt" style="flex:1;min-width:0;" placeholder="金额" value="${defAmt !== undefined && defAmt !== '' ? defAmt : ''}" oninput="refreshInlineTotal()">
+        <button type="button" class="btn btn-outline-danger btn-sm" style="padding:2px 4px;font-size:0.72rem;flex-shrink:0;" onclick="removeInlineItemRow(this)"><i class="bi bi-x"></i></button>`;
+    return row;
+}
 
 function addInlineItemRow(category, amount) {
     const type = $('edit-trans-type').value;
     if (type === 'income') return; // 收入不支持多笔
     const cats = type === 'expense' ? categories.expense : categories.income;
     const container = $('extra-items-container');
-    const idx = container.children.length;
     const defCat = category || cats[0] || '';
     const defAmt = amount !== undefined ? amount : '';
-    const catOpts = cats.map(c => `<option value="${c}"${c === defCat ? ' selected' : ''}>${c}</option>`).join('');
-    const row = document.createElement('div');
-    row.className = 'row g-1 mb-1 align-items-center extra-item-row';
-    row.dataset.idx = idx;
-    row.innerHTML = `
-        <div class="col-5">
-            <select class="form-select compact-form-control extra-row-cat">${catOpts}</select>
-        </div>
-        <div class="col-5">
-            <input type="number" step="0.01" min="0.01" class="form-control compact-form-control extra-row-amt" placeholder="金额" value="${defAmt}" oninput="refreshInlineTotal()">
-        </div>
-        <div class="col-1 text-center" style="max-width:28px;padding:0 2px;">
-            <button type="button" class="btn btn-outline-danger btn-sm w-100" style="padding:2px 0;font-size:0.75rem;min-width:0;" onclick="removeInlineItemRow(this)"><i class="bi bi-x"></i></button>
-        </div>`;
-    container.appendChild(row);
+    container.appendChild(_buildItemRow(defCat, defAmt, cats));
     refreshInlineTotal();
 }
 
@@ -4049,75 +4041,82 @@ function removeInlineItemRow(btn) {
 }
 
 function refreshInlineTotal() {
-    const extraRows = $('extra-items-container').querySelectorAll('.extra-item-row');
-    const catSel   = $('edit-trans-category');
-    const catMulti = $('edit-trans-category-multi');
-    const amtInput = $('edit-trans-amount');
+    const rows = $('extra-items-container').querySelectorAll('.extra-item-row');
+    const catSel    = $('edit-trans-category');
+    const catMulti  = $('edit-trans-category-multi');
+    const amtInput  = $('edit-trans-amount');
     const totalHint = $('amount-total-hint');
+    const addBtn    = document.querySelector('[onclick="addInlineItemRow()"]');
 
-    if (extraRows.length === 0) {
+    if (rows.length === 0) {
         // 单笔模式
-        catSel.classList.remove('d-none'); catMulti.classList.add('d-none');
-        amtInput.readOnly = false; amtInput.style.background = ''; amtInput.style.color = '';
+        catSel.classList.remove('d-none');
+        catMulti.classList.add('d-none');
+        amtInput.readOnly = false;
+        amtInput.style.background = '';
+        amtInput.style.color = '';
         amtInput.setAttribute('required', '');
         if (totalHint) totalHint.classList.add('d-none');
+        if (addBtn) addBtn.style.display = '';
         return;
     }
-    // 多笔模式
-    catSel.classList.add('d-none'); catMulti.classList.remove('d-none');
+
+    // 多笔模式：主行变灰色汇总
+    catSel.classList.add('d-none');
+    catMulti.classList.remove('d-none');
     amtInput.readOnly = true;
     amtInput.style.background = 'var(--bs-secondary-bg)';
     amtInput.style.color = 'var(--bs-secondary)';
     amtInput.removeAttribute('required');
     if (totalHint) totalHint.classList.remove('d-none');
+    if (addBtn) addBtn.style.display = '';
 
-    // 合计
-    let total = parseFloat(amtInput.dataset.baseAmt || '0') || 0;
-    extraRows.forEach(r => { const v = parseFloat(r.querySelector('.extra-row-amt').value); if (!isNaN(v)) total += v; });
-    amtInput.value = total.toFixed(2);
+    // 合计金额 = 所有分录行之和（主行仅显示汇总，不参与计算）
+    let total = 0;
+    rows.forEach(r => { const v = parseFloat(r.querySelector('.extra-row-amt').value); if (!isNaN(v)) total += v; });
+    amtInput.value = total > 0 ? total.toFixed(2) : '';
 
-    // 类别汇总显示
-    const allCats = [catSel.dataset.baseVal || catSel.value];
-    extraRows.forEach(r => allCats.push(r.querySelector('.extra-row-cat').value));
-    catMulti.textContent = allCats[0] + (allCats.length > 1 ? `等${allCats.length - 1}项` : '');
+    // 类别汇总：第一条分录类别 + 等N项
+    const firstCat = rows[0].querySelector('.extra-row-cat').value || '';
+    catMulti.textContent = firstCat + (rows.length > 1 ? `等${rows.length - 1}项` : '');
 }
 
 function getInlineItems() {
-    // 返回完整 items 数组（主行 + 额外行），amount 带符号
+    // 有分录行时，items 来自分录行；否则返回 null（单笔用主行）
     const type = $('edit-trans-type').value;
     const sign = type === 'expense' ? -1 : 1;
     const extraRows = $('extra-items-container').querySelectorAll('.extra-item-row');
-    if (extraRows.length === 0) return null; // 单笔，不用 items
+    if (extraRows.length === 0) return null;
 
-    const mainAmt  = parseFloat($('edit-trans-amount').dataset.baseAmt || '0') || 0;
-    const mainCat  = $('edit-trans-category').value;
-    const items = [{ category: mainCat, amount: sign * Math.abs(mainAmt) }];
+    const items = [];
     extraRows.forEach(r => {
         const amt = parseFloat(r.querySelector('.extra-row-amt').value);
         const cat = r.querySelector('.extra-row-cat').value;
         if (!isNaN(amt) && amt > 0) items.push({ category: cat, amount: sign * Math.abs(amt) });
     });
+    if (items.length === 0) { alert('请至少填写一条有效金额'); return null; }
     return items.length > 1 ? items : null;
 }
 
 function resetInlineItems() {
     $('extra-items-container').innerHTML = '';
     const amtInput = $('edit-trans-amount');
-    amtInput.dataset.baseAmt = '';
+    amtInput.readOnly = false;
+    amtInput.style.background = '';
+    amtInput.style.color = '';
+    amtInput.setAttribute('required', '');
+    amtInput.value = '';
     refreshInlineTotal();
 }
 
 function loadInlineItems(items, type) {
-    // 从已保存的 items 恢复
+    // 从已保存的 items 恢复：全部放入分录行，主行显示汇总
     $('extra-items-container').innerHTML = '';
     if (!items || items.length <= 1) { resetInlineItems(); return; }
-    const sign = type === 'expense' ? -1 : 1;
-    // 主行用第一条
-    const mainAmt = Math.abs(items[0].amount);
-    $('edit-trans-category').value = items[0].category;
-    $('edit-trans-amount').dataset.baseAmt = mainAmt;
-    // 额外行
-    items.slice(1).forEach(it => addInlineItemRow(it.category, Math.abs(it.amount)));
+    const cats = type === 'expense' ? categories.expense : categories.income;
+    items.forEach(it => {
+        $('extra-items-container').appendChild(_buildItemRow(it.category, Math.abs(it.amount), cats));
+    });
     refreshInlineTotal();
 }
 
@@ -4191,8 +4190,6 @@ $('edit-transaction-form').addEventListener('submit', (e) => {
         }
         if (currentDetailAccountId) refreshDetailContent(currentDetailAccountId);
         resetInlineItems();
-        $('edit-trans-amount').value = '';
-        $('edit-trans-amount').dataset.baseAmt = '';
         $('edit-trans-tags').value = '';
         $('edit-trans-desc').value = '';
         const hintEl = $('edit-trans-desc-hint');
