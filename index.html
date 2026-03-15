@@ -639,7 +639,7 @@ body {
                 </button>
             </div>
             <div class="text-end mt-2">
-                <span class="text-muted" style="font-size:0.7rem;">v1.2.9</span>
+                <span class="text-muted" style="font-size:0.7rem;">v1.3.1</span>
             </div>
         </div>
 
@@ -1473,7 +1473,7 @@ body {
 
                     <!-- 添加按钮行 -->
                     <div class="mb-2">
-                        <button type="button" class="btn btn-outline-secondary btn-sm w-100" style="font-size:0.78rem;" onclick="addInlineItemRow()">
+                        <button type="button" id="add-inline-item-btn" class="btn btn-outline-secondary btn-sm w-100" style="font-size:0.78rem;" onclick="addInlineItemRow()">
                             <i class="bi bi-plus"></i> 添加
                         </button>
                     </div>
@@ -3709,7 +3709,7 @@ function switchTransTab(tab, skipReset) {
         updateEditFormCategories();
         const attachSec = $('attachment-section');
         const attachBtn = $('attachment-btn');
-        const addBtn = document.querySelector('[onclick="addInlineItemRow()"]');
+        const addBtn = $('add-inline-item-btn');
         if (attachSec) attachSec.style.display = tab === 'expense' ? '' : 'none';
         if (attachBtn) attachBtn.style.display = tab === 'expense' ? '' : 'none';
         if (addBtn) addBtn.style.display = tab === 'expense' ? '' : 'none';
@@ -4055,7 +4055,7 @@ function refreshInlineTotal() {
     const catMulti  = $('edit-trans-category-multi');
     const amtInput  = $('edit-trans-amount');
     const totalHint = $('amount-total-hint');
-    const addBtn    = document.querySelector('[onclick="addInlineItemRow()"]');
+    const addBtn    = $('add-inline-item-btn');
 
     if (rows.length === 0) {
         // 单笔模式
@@ -4066,7 +4066,8 @@ function refreshInlineTotal() {
         amtInput.style.color = '';
         amtInput.setAttribute('required', '');
         if (totalHint) totalHint.classList.add('d-none');
-        if (addBtn) addBtn.style.display = '';
+        // 收入 tab 时始终隐藏添加按钮
+        if (addBtn) addBtn.style.display = $('edit-trans-type').value === 'income' ? 'none' : '';
         return;
     }
 
