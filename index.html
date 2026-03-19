@@ -317,7 +317,8 @@ body {
 .sort-indicator { margin-left: 5px; opacity: 0.5; }
 
 .compact-form-label { margin-bottom: 0.1rem; font-size: 0.85rem; }
-.compact-form-control { padding: 0.25rem 0.5rem; font-size: 0.9rem; }
+.compact-form-control { padding: 0.25rem 0.5rem; font-size: 0.9rem; height: 2.1rem; }
+select.compact-form-control { height: 2.1rem; }
 
 .modal-body { padding: 1rem; }
 
@@ -639,7 +640,7 @@ body {
                 </button>
             </div>
             <div class="text-end mt-2">
-                <span class="text-muted" style="font-size:0.7rem;">v1.3.2</span>
+                <span class="text-muted" style="font-size:0.7rem;">v1.3.3</span>
             </div>
         </div>
 
@@ -943,6 +944,9 @@ body {
         <div id="view-stats" class="view-section">
             <div class="d-flex align-items-center mb-3 gap-2">
                 <h4 class="mb-0 flex-shrink-0">数据分析</h4>
+                <button class="btn btn-sm btn-outline-secondary ms-auto" onclick="openSpendingAnalysis()">
+                    <i class="bi bi-pie-chart-fill"></i> 消费类型
+                </button>
                 <div style="overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex:1;min-width:0;">
                     <div class="btn-group flex-nowrap" id="stats-currency-btns" style="white-space:nowrap;">
                         <!-- dynamically rendered based on account currencies -->
@@ -1182,8 +1186,14 @@ body {
                     </div>
                 </div>
 
-                <div class="col-12 mobile-hide">
-                    <div class="card shadow-sm">
+                <div class="col-12">
+                    <!-- 手机端显示提示，桌面端显示完整管理 -->
+                    <div class="card shadow-sm d-md-none">
+                        <div class="card-body py-3 text-center text-muted small">
+                            <i class="bi bi-laptop me-1"></i> 类别管理功能请在电脑端操作
+                        </div>
+                    </div>
+                    <div class="card shadow-sm d-none d-md-block">
                         <div class="card-header bg-transparent fw-bold">类别管理 (可拖拽排序)</div>
                         <div class="card-body">
                             <div class="row">
@@ -1206,6 +1216,7 @@ body {
                             </div>
                         </div>
                     </div>
+                    </div><!-- end d-none d-md-block -->
                 </div>
 
                 <div class="col-12">
@@ -1268,6 +1279,44 @@ body {
 </div>
 
 <!-- ==================== 多笔交易子弹窗 ==================== -->
+<!-- ==================== 消费类型统计全屏视图 ==================== -->
+<div id="view-spending-analysis" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bs-body-bg);z-index:2000;overflow-y:auto;">
+    <div class="p-3">
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <button class="btn btn-sm btn-outline-secondary" onclick="closeSpendingAnalysis()"><i class="bi bi-arrow-left"></i></button>
+            <h5 class="mb-0">消费类型分析</h5>
+        </div>
+        <!-- 日期筛选 -->
+        <div class="d-flex gap-2 mb-3 flex-wrap">
+            <input type="date" class="form-control form-control-sm" id="sa-start-date" style="width:140px;" onchange="renderSpendingAnalysis()">
+            <input type="date" class="form-control form-control-sm" id="sa-end-date" style="width:140px;" onchange="renderSpendingAnalysis()">
+            <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-secondary" onclick="saQuickDate('month')">本月</button>
+                <button class="btn btn-outline-secondary" onclick="saQuickDate('3months')">3个月</button>
+                <button class="btn btn-outline-secondary" onclick="saQuickDate('year')">本年</button>
+                <button class="btn btn-outline-secondary" onclick="saQuickDate('all')">全部</button>
+            </div>
+        </div>
+        <!-- 汇总卡片 -->
+        <div class="row g-2 mb-3" id="sa-summary-cards"></div>
+        <!-- 图表 -->
+        <div class="card shadow-sm mb-3">
+            <div class="card-body">
+                <h6 class="card-title">占比分布</h6>
+                <div style="height:260px;"><canvas id="saTypeChart"></canvas></div>
+            </div>
+        </div>
+        <div class="card shadow-sm mb-3">
+            <div class="card-body">
+                <h6 class="card-title">月度趋势</h6>
+                <div style="height:260px;overflow-x:auto;"><canvas id="saTrendChart"></canvas></div>
+            </div>
+        </div>
+        <!-- 明细列表 -->
+        <div id="sa-detail-list"></div>
+    </div>
+</div>
+
 <!-- ==================== 多笔明细查看弹窗 ==================== -->
 <div class="modal fade" id="transItemsDetailModal" tabindex="-1">
     <div class="modal-dialog modal-sm">
@@ -1323,7 +1372,7 @@ body {
                         </div>
                         <div class="col-6">
                             <label class="compact-form-label">金额</label>
-                            <input type="number" step="0.01" class="form-control compact-form-control" id="planned-amount" required="">
+                            <input type="number" step="0.01" inputmode="decimal" class="form-control compact-form-control" id="planned-amount" required="">
                         </div>
                     </div>
                     <div class="row g-2 mb-2">
@@ -1404,7 +1453,7 @@ body {
                     </div>
                     <div class="mb-2">
                         <label class="compact-form-label" id="acc-balance-label">初始余额</label>
-                        <input type="number" step="0.01" class="form-control compact-form-control" id="acc-balance" value="0" required="">
+                        <input type="number" step="0.01" inputmode="decimal" class="form-control compact-form-control" id="acc-balance" value="0" required="">
                         <div class="form-text d-none" id="acc-balance-hint">修改余额将自动生成一笔调整记录</div>
                     </div>
                     <div class="mb-2">
@@ -1453,21 +1502,30 @@ body {
                         </div>
                     </div>
 
-                    <!-- 主分录行 -->
-                    <div class="row g-2 mb-1">
-                        <div class="col-6">
+                    <!-- 主分录行：类别 | 金额 | 消费类型 -->
+                    <div class="d-flex gap-1 mb-1 align-items-end" id="spending-type-row">
+                        <div style="flex:2;min-width:0;">
                             <label class="compact-form-label">类别</label>
                             <select class="form-select compact-form-control" id="edit-trans-category" required=""></select>
                             <div id="edit-trans-category-multi" class="form-control compact-form-control text-muted d-none"
                                  style="background:var(--bs-secondary-bg);font-size:0.85rem;cursor:default;"></div>
                         </div>
-                        <div class="col-6">
+                        <div style="flex:1.4;min-width:0;">
                             <label class="compact-form-label d-flex justify-content-between align-items-center">
                                 <span>金额</span>
                                 <small id="amount-total-hint" class="d-none fw-normal"
                                        style="font-size:0.68rem;color:var(--bs-secondary);background:var(--bs-secondary-bg);border-radius:3px;padding:0 4px;">合计</small>
                             </label>
-                            <input type="number" step="0.01" class="form-control compact-form-control" id="edit-trans-amount" required="">
+                            <input type="number" step="0.01" inputmode="decimal" class="form-control compact-form-control" id="edit-trans-amount" required="">
+                        </div>
+                        <div style="flex:1.6;min-width:0;" id="spending-type-select-wrap">
+                            <label class="compact-form-label" style="font-size:0.78rem;">消费类型</label>
+                            <select class="form-select compact-form-control" id="edit-trans-spending-type" style="font-size:0.8rem;">
+                                <option value="">未标记</option>
+                                <option value="need">必须的</option>
+                                <option value="want">想要的</option>
+                                <option value="regret">后悔的</option>
+                            </select>
                         </div>
                     </div>
 
@@ -1528,7 +1586,7 @@ body {
                         </div>
                         <div class="col-6">
                             <label class="compact-form-label">转出金额</label>
-                            <input type="number" step="0.01" class="form-control compact-form-control" id="edit-transfer-amount-out" oninput="handleEditTransferAmountChange('out')" required="">
+                            <input type="number" step="0.01" inputmode="decimal" class="form-control compact-form-control" id="edit-transfer-amount-out" oninput="handleEditTransferAmountChange('out')" required="">
                         </div>
                     </div>
                     <div class="row g-2 mb-2">
@@ -1538,7 +1596,7 @@ body {
                         </div>
                         <div class="col-6">
                             <label class="compact-form-label">转入金额</label>
-                            <input type="number" step="0.01" class="form-control compact-form-control" id="edit-transfer-amount-in" oninput="handleEditTransferAmountChange('in')" required="">
+                            <input type="number" step="0.01" inputmode="decimal" class="form-control compact-form-control" id="edit-transfer-amount-in" oninput="handleEditTransferAmountChange('in')" required="">
                         </div>
                     </div>
                     <div class="mb-2">
@@ -3713,6 +3771,7 @@ function switchTransTab(tab, skipReset) {
         if (attachSec) attachSec.style.display = tab === 'expense' ? '' : 'none';
         if (attachBtn) attachBtn.style.display = tab === 'expense' ? '' : 'none';
         if (addBtn) addBtn.style.display = tab === 'expense' ? '' : 'none';
+        showSpendingTypeRow(tab === 'expense');
         // 收入切换时清除已有额外行
         if (tab === 'income') { $('extra-items-container').innerHTML = ''; refreshInlineTotal(); }
     }
@@ -3734,6 +3793,7 @@ function _initNewTransModal(mode, title) {
     if (hintEl) hintEl.style.display = 'none';
     resetInlineItems();
     resetAttachmentUI();
+    resetSpendingType();
     $('trans-tab-bar').style.display = '';
 }
 
@@ -3907,6 +3967,7 @@ function openEditTransaction(id) {
     $('edit-trans-account').value = t.accountId;
     $('edit-trans-tags').value = t.tags || '';
     $('edit-trans-desc').value = t.desc || '';
+    setSpendingType(t.spendingType || '');
     // 编辑时隐藏 tab bar（固定类型）
     $('trans-tab-bar').style.display = 'none';
     switchTransTab(t.type, true);
@@ -4028,7 +4089,7 @@ function _buildItemRow(defCat, defAmt, cats) {
     row.className = 'd-flex gap-1 mb-1 align-items-center extra-item-row';
     row.innerHTML = `
         <select class="form-select compact-form-control extra-row-cat" style="flex:1;min-width:0;" onchange="refreshInlineTotal()">${catOpts}</select>
-        <input type="number" step="0.01" min="0.01" class="form-control compact-form-control extra-row-amt" style="flex:1;min-width:0;" placeholder="金额" value="${defAmt !== undefined && defAmt !== '' ? defAmt : ''}" oninput="refreshInlineTotal()">
+        <input type="number" step="0.01" min="0.01" class="form-control compact-form-control extra-row-amt" style="flex:1;min-width:0;" inputmode="decimal" placeholder="金额" value="${defAmt !== undefined && defAmt !== '' ? defAmt : ''}" oninput="refreshInlineTotal()">
         <button type="button" class="btn btn-outline-danger btn-sm" style="padding:2px 4px;font-size:0.72rem;flex-shrink:0;" onclick="removeInlineItemRow(this)"><i class="bi bi-x"></i></button>`;
     return row;
 }
@@ -4132,6 +4193,157 @@ function loadInlineItems(items, type) {
 
 // ==================== 内联多笔分录 END ====================
 
+// ==================== 消费类型 ====================
+const SPENDING_TYPE_CONFIG = {
+    need:   { label: '必须的', color: '#0d6efd', bg: 'rgba(13,110,253,0.12)' },
+    want:   { label: '想要的', color: '#fd7e14', bg: 'rgba(253,126,20,0.12)' },
+    regret: { label: '后悔的', color: '#dc3545', bg: 'rgba(220,53,69,0.12)' },
+};
+
+function setSpendingType(val) {
+    const sel = $('edit-trans-spending-type');
+    if (sel) sel.value = val || '';
+}
+
+function resetSpendingType() {
+    const sel = $('edit-trans-spending-type');
+    if (sel) sel.value = '';
+}
+
+function showSpendingTypeRow(show) {
+    // 消费类型下拉框随支出/收入 tab 显示或隐藏
+    const wrap = $('spending-type-select-wrap');
+    if (wrap) wrap.style.display = show ? '' : 'none';
+}
+
+// ==================== 消费类型统计 ====================
+let saChartType = null, saChartTrend = null;
+
+function openSpendingAnalysis() {
+    const view = $('view-spending-analysis');
+    view.style.display = 'block';
+    // sync dates from stats filter
+    const sd = $('stats-start-date')?.value || '';
+    const ed = $('stats-end-date')?.value || '';
+    $('sa-start-date').value = sd;
+    $('sa-end-date').value = ed;
+    renderSpendingAnalysis();
+}
+
+function closeSpendingAnalysis() {
+    $('view-spending-analysis').style.display = 'none';
+}
+
+function saQuickDate(p) {
+    const today = new Date();
+    let start = '', end = '';
+    if (p === 'month') { start = new Date(today.getFullYear(), today.getMonth(), 1); end = today; }
+    else if (p === '3months') { start = new Date(today); start.setMonth(start.getMonth()-3); end = today; }
+    else if (p === 'year') { start = new Date(today.getFullYear(),0,1); end = new Date(today.getFullYear(),11,31); }
+    $('sa-start-date').value = start ? formatLocal(start) : '';
+    $('sa-end-date').value = end ? formatLocal(end) : '';
+    renderSpendingAnalysis();
+}
+
+function renderSpendingAnalysis() {
+    const start = $('sa-start-date').value;
+    const end   = $('sa-end-date').value;
+    const data  = transactions.filter(t => {
+        if (t.isTransfer || t._isBaseline || t.amount >= 0) return false;
+        if (start && t.date < start) return false;
+        if (end   && t.date > end)   return false;
+        return true;
+    });
+
+    // Group by spendingType
+    const groups = { need: 0, want: 0, regret: 0, '': 0 };
+    data.forEach(t => {
+        const acc = accounts.find(a => a.id == t.accountId);
+        const amt = acc ? convertAmt(Math.abs(t.amount), acc.currency) : Math.abs(t.amount);
+        const key = t.spendingType || '';
+        groups[key] = (groups[key] || 0) + amt;
+    });
+    const total = Object.values(groups).reduce((s, v) => s + v, 0);
+
+    // Summary cards
+    const cardsEl = $('sa-summary-cards');
+    cardsEl.innerHTML = '';
+    const types = [
+        { key: 'need', label: '必须的', icon: 'bi-shield-check', color: '#0d6efd' },
+        { key: 'want', label: '想要的', icon: 'bi-star', color: '#fd7e14' },
+        { key: 'regret', label: '后悔的', icon: 'bi-emoji-frown', color: '#dc3545' },
+        { key: '',     label: '未标记', icon: 'bi-question-circle', color: '#6c757d' },
+    ];
+    types.forEach(tp => {
+        const amt = groups[tp.key] || 0;
+        const pct = total > 0 ? ((amt / total) * 100).toFixed(1) : '0.0';
+        cardsEl.innerHTML += `<div class="col-6">
+            <div class="card shadow-sm text-center py-2">
+                <div style="color:${tp.color};font-size:1.3rem;"><i class="bi ${tp.icon}"></i></div>
+                <div class="fw-bold" style="font-size:0.85rem;">${tp.label}</div>
+                <div class="fw-bold" style="color:${tp.color};">${formatAmount(amt,'RMB')}</div>
+                <div class="text-muted" style="font-size:0.75rem;">${pct}%</div>
+            </div>
+        </div>`;
+    });
+
+    // Pie chart
+    if (saChartType) { saChartType.destroy(); saChartType = null; }
+    const ctxPie = $('saTypeChart');
+    const pieLabels = types.map(t => t.label);
+    const pieData   = types.map(t => groups[t.key] || 0);
+    const pieColors = types.map(t => t.color);
+    saChartType = new Chart(ctxPie, {
+        type: 'doughnut',
+        data: { labels: pieLabels, datasets: [{ data: pieData, backgroundColor: pieColors }] },
+        options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, animation: { duration: 400 } }
+    });
+
+    // Trend chart (monthly)
+    if (saChartTrend) { saChartTrend.destroy(); saChartTrend = null; }
+    const months = {};
+    data.forEach(t => {
+        const m = t.date.substring(0,7);
+        const acc = accounts.find(a => a.id == t.accountId);
+        const amt = acc ? convertAmt(Math.abs(t.amount), acc.currency) : Math.abs(t.amount);
+        if (!months[m]) months[m] = { need:0, want:0, regret:0, '':0 };
+        months[m][t.spendingType || ''] = (months[m][t.spendingType || ''] || 0) + amt;
+    });
+    const mLabels = Object.keys(months).sort();
+    const ctxTrend = $('saTrendChart');
+    ctxTrend.width = Math.max(mLabels.length * 70, 400);
+    saChartTrend = new Chart(ctxTrend, {
+        type: 'bar',
+        data: {
+            labels: mLabels,
+            datasets: [
+                { label:'必须', data: mLabels.map(m => months[m].need), backgroundColor:'#0d6efd' },
+                { label:'想要', data: mLabels.map(m => months[m].want), backgroundColor:'#fd7e14' },
+                { label:'后悔的', data: mLabels.map(m => months[m].regret), backgroundColor:'#dc3545', stack:'s' },
+                { label:'未标记', data: mLabels.map(m => months[m]['']), backgroundColor:'#adb5bd' },
+            ]
+        },
+        options: { maintainAspectRatio: false, scales:{ x:{ stacked:true }, y:{ stacked:true, beginAtZero:true } }, plugins:{ legend:{ position:'bottom' } }, animation:{ duration:400 } }
+    });
+
+    // Detail list (last 50)
+    const listEl = $('sa-detail-list');
+    listEl.innerHTML = '<h6 class="mb-2">明细记录</h6>';
+    const sorted = [...data].sort((a,b) => b.date.localeCompare(a.date)).slice(0, 50);
+    sorted.forEach(t => {
+        const acc = accounts.find(a => a.id == t.accountId);
+        const cfg = SPENDING_TYPE_CONFIG[t.spendingType] || { label:'未标记', color:'#6c757d' };
+        const sym = acc ? CURRENCY_SYMBOLS[acc.currency] : '';
+        listEl.innerHTML += `<div class="d-flex align-items-center gap-2 py-1 border-bottom" style="font-size:0.85rem;">
+            <span class="badge" style="background:${cfg.color};min-width:44px;">${cfg.label}</span>
+            <span class="flex-grow-1">${t.date} · ${t.category || ''}</span>
+            <span class="text-danger fw-bold">${sym}${formatAmount(Math.abs(t.amount), acc?.currency||'RMB')}</span>
+        </div>`;
+    });
+}
+
+// ==================== 消费类型 END ====================
+
 function updateEditFormCategories() {
     const type = $('edit-trans-type').value;
     const catSelect = $('edit-trans-category');
@@ -4164,6 +4376,7 @@ $('edit-transaction-form').addEventListener('submit', (e) => {
     const tags = $('edit-trans-tags').value;
     const desc = $('edit-trans-desc').value;
     const attachmentId = $('edit-trans-attachment-id')?.value || '';
+    const spendingType = type === 'expense' ? ($('edit-trans-spending-type').value || '') : '';
 
     // 取分录（内联多笔）
     const itemsData = getInlineItems();
@@ -4187,6 +4400,7 @@ $('edit-transaction-form').addEventListener('submit', (e) => {
             amount: finalAmount, category, tags, desc,
             ...(itemsData ? { items: itemsData } : {}),
             ...(attachmentId ? { attachmentId } : {}),
+            ...(spendingType ? { spendingType } : {}),
             ownerName: currentUserName, isTransfer: false, updatedAt: Date.now()
         });
         saveUserData(); triggerAutoSave(); loadAllData(); filterUserData();
@@ -4200,6 +4414,7 @@ $('edit-transaction-form').addEventListener('submit', (e) => {
         }
         if (currentDetailAccountId) refreshDetailContent(currentDetailAccountId);
         resetInlineItems();
+        resetSpendingType();
         $('edit-trans-tags').value = '';
         $('edit-trans-desc').value = '';
         const hintEl = $('edit-trans-desc-hint');
@@ -4212,6 +4427,7 @@ $('edit-transaction-form').addEventListener('submit', (e) => {
         if (t) {
             t.date = date; t.type = type; t.accountId = accountId;
             t.category = category; t.amount = finalAmount; t.tags = tags; t.desc = desc;
+            if (spendingType) t.spendingType = spendingType; else delete t.spendingType;
             if (itemsData) t.items = itemsData; else delete t.items;
             if (attachmentId) t.attachmentId = attachmentId; else delete t.attachmentId;
             t.updatedAt = Date.now();
@@ -4524,9 +4740,11 @@ function renderAllTransactions() {
                 const tagsHtml = t.tags ? `<span style="color:var(--bs-secondary);"> @${t.tags}</span>` : '';
                 const noteHtml = descClean ? `<span style="color:var(--bs-secondary);"> · ${descClean}</span>` : '';
                 const attachIconHtml = t.attachmentId ? ` <i class="bi bi-paperclip" style="color:var(--bs-secondary);font-size:0.72rem;"></i>` : '';
+                const stCfg = t.spendingType ? SPENDING_TYPE_CONFIG[t.spendingType] : null;
+                const stBadge = stCfg ? `<span style="font-size:0.62rem;background:${stCfg.bg};color:${stCfg.color};border-radius:3px;padding:0 3px;margin-left:3px;border:1px solid ${stCfg.color};">${stCfg.label}</span>` : '';
                 card.innerHTML = `
                     <div class="card-line-1">
-                        <span class="category-text">${(t.items && t.items.length > 1 ? t.items[0].category + '等' + (t.items.length-1) + '项' : (t.category || ''))}${tagsHtml}${attachIconHtml}</span>
+                        <span class="category-text">${(t.items && t.items.length > 1 ? t.items[0].category + '等' + (t.items.length-1) + '项' : (t.category || ''))}${stBadge}${tagsHtml}${attachIconHtml}</span>
                         <div class="${amountClass} fw-bold">${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}</div>
                     </div>
                     <div class="card-line-2">
