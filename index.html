@@ -640,7 +640,7 @@ select.compact-form-control { height: 2.1rem; }
                 </button>
             </div>
             <div class="text-end mt-2">
-                <span class="text-muted" style="font-size:0.7rem;">v1.3.3</span>
+                <span class="text-muted" style="font-size:0.7rem;">v1.3.5</span>
             </div>
         </div>
 
@@ -1287,12 +1287,12 @@ select.compact-form-control { height: 2.1rem; }
             <h5 class="mb-0">消费类型分析</h5>
         </div>
         <!-- 日期筛选 -->
-        <div class="d-flex gap-2 mb-3 flex-wrap">
-            <input type="date" class="form-control form-control-sm" id="sa-start-date" style="width:140px;" onchange="renderSpendingAnalysis()">
-            <input type="date" class="form-control form-control-sm" id="sa-end-date" style="width:140px;" onchange="renderSpendingAnalysis()">
-            <div class="btn-group btn-group-sm">
+        <div class="d-flex gap-2 mb-3 align-items-center" style="overflow-x:auto;white-space:nowrap;flex-wrap:nowrap;">
+            <input type="date" class="form-control form-control-sm flex-shrink-0" id="sa-start-date" style="width:130px;min-width:130px;" onchange="renderSpendingAnalysis()">
+            <input type="date" class="form-control form-control-sm flex-shrink-0" id="sa-end-date" style="width:130px;min-width:130px;" onchange="renderSpendingAnalysis()">
+            <div class="btn-group btn-group-sm flex-shrink-0">
                 <button class="btn btn-outline-secondary" onclick="saQuickDate('month')">本月</button>
-                <button class="btn btn-outline-secondary" onclick="saQuickDate('3months')">3个月</button>
+                <button class="btn btn-outline-secondary" onclick="saQuickDate('3months')">3月</button>
                 <button class="btn btn-outline-secondary" onclick="saQuickDate('year')">本年</button>
                 <button class="btn btn-outline-secondary" onclick="saQuickDate('all')">全部</button>
             </div>
@@ -4396,8 +4396,21 @@ function renderSaDetailList() {
             <span class="text-danger fw-bold flex-shrink-0">${sym}${formatAmount(Math.abs(t.amount), acc?.currency||'RMB')}</span>`;
         if (canEdit) {
             div.addEventListener('click', () => {
-                closeSpendingAnalysis();
+                // 临时提升 modal z-index 使其显示在分析页上方
+                const modalEl = $('editTransactionModal');
+                modalEl.style.zIndex = '2100';
+                const backdrop = () => {
+                    document.querySelectorAll('.modal-backdrop').forEach(b => b.style.zIndex = '2050');
+                };
+                // 监听 modal 关闭后还原 z-index
+                const onHide = () => {
+                    modalEl.style.zIndex = '';
+                    document.querySelectorAll('.modal-backdrop').forEach(b => b.style.zIndex = '');
+                    modalEl.removeEventListener('hidden.bs.modal', onHide);
+                };
+                modalEl.addEventListener('hidden.bs.modal', onHide);
                 openEditTransaction(t.id);
+                setTimeout(backdrop, 50);
             });
             div.addEventListener('mouseenter', () => div.style.background = 'rgba(var(--bs-primary-rgb),0.06)');
             div.addEventListener('mouseleave', () => div.style.background = '');
@@ -4804,11 +4817,9 @@ function renderAllTransactions() {
                 const tagsHtml = t.tags ? `<span style="color:var(--bs-secondary);"> @${t.tags}</span>` : '';
                 const noteHtml = descClean ? `<span style="color:var(--bs-secondary);"> · ${descClean}</span>` : '';
                 const attachIconHtml = t.attachmentId ? ` <i class="bi bi-paperclip" style="color:var(--bs-secondary);font-size:0.72rem;"></i>` : '';
-                const stCfg = t.spendingType ? SPENDING_TYPE_CONFIG[t.spendingType] : null;
-                const stBadge = stCfg ? `<span style="font-size:0.62rem;background:${stCfg.bg};color:${stCfg.color};border-radius:3px;padding:0 3px;margin-left:3px;border:1px solid ${stCfg.color};">${stCfg.label}</span>` : '';
                 card.innerHTML = `
                     <div class="card-line-1">
-                        <span class="category-text">${(t.items && t.items.length > 1 ? t.items[0].category + '等' + (t.items.length-1) + '项' : (t.category || ''))}${stBadge}${tagsHtml}${attachIconHtml}</span>
+                        <span class="category-text">${(t.items && t.items.length > 1 ? t.items[0].category + '等' + (t.items.length-1) + '项' : (t.category || ''))}${tagsHtml}${attachIconHtml}</span>
                         <div class="${amountClass} fw-bold">${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}</div>
                     </div>
                     <div class="card-line-2">
