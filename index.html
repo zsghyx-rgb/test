@@ -1313,6 +1313,17 @@ select.compact-form-control { height: 2.1rem; }
             </div>
         </div>
         <!-- 明细列表 -->
+        <div class="d-flex gap-2 mb-2 flex-wrap align-items-center">
+            <select class="form-select form-select-sm" id="sa-filter-type" style="width:110px;" onchange="renderSaDetailList()">
+                <option value="">全部类型</option>
+                <option value="need">必须的</option>
+                <option value="want">想要的</option>
+                <option value="regret">后悔的</option>
+                <option value="none">未标记</option>
+            </select>
+            <input type="text" class="form-control form-control-sm" id="sa-filter-search" style="width:160px;" placeholder="搜索类别/备注..." oninput="renderSaDetailList()">
+            <span class="text-muted small ms-auto" id="sa-detail-count"></span>
+        </div>
         <div id="sa-detail-list"></div>
     </div>
 </div>
@@ -4082,14 +4093,21 @@ function deleteCurrentTransfer() {
 
 // ==================== 内联多笔分录 ====================
 
-function _buildItemRow(defCat, defAmt, cats) {
-    // 构建一行分录 DOM（类别 | 金额 | 删除），类别和金额等宽
+function _buildItemRow(defCat, defAmt, cats, defSpendingType) {
+    // 构建一行分录 DOM（类别 | 金额 | 消费类型 | 删除）
     const catOpts = cats.map(c => `<option value="${c}"${c === defCat ? ' selected' : ''}>${c}</option>`).join('');
+    const stOpts = [
+        {v:'',     l:'未标记'},
+        {v:'need', l:'必须的'},
+        {v:'want', l:'想要的'},
+        {v:'regret',l:'后悔的'},
+    ].map(o => `<option value="${o.v}"${o.v === (defSpendingType||'') ? ' selected' : ''}>${o.l}</option>`).join('');
     const row = document.createElement('div');
     row.className = 'd-flex gap-1 mb-1 align-items-center extra-item-row';
     row.innerHTML = `
-        <select class="form-select compact-form-control extra-row-cat" style="flex:1;min-width:0;" onchange="refreshInlineTotal()">${catOpts}</select>
+        <select class="form-select compact-form-control extra-row-cat" style="flex:1.5;min-width:0;" onchange="refreshInlineTotal()">${catOpts}</select>
         <input type="number" step="0.01" min="0.01" class="form-control compact-form-control extra-row-amt" style="flex:1;min-width:0;" inputmode="decimal" placeholder="金额" value="${defAmt !== undefined && defAmt !== '' ? defAmt : ''}" oninput="refreshInlineTotal()">
+        <select class="form-select compact-form-control extra-row-st" style="flex:1.2;min-width:0;font-size:0.78rem;">${stOpts}</select>
         <button type="button" class="btn btn-outline-danger btn-sm" style="padding:2px 4px;font-size:0.72rem;flex-shrink:0;" onclick="removeInlineItemRow(this)"><i class="bi bi-x"></i></button>`;
     return row;
 }
@@ -4129,6 +4147,9 @@ function refreshInlineTotal() {
         if (totalHint) totalHint.classList.add('d-none');
         // 收入 tab 时始终隐藏添加按钮
         if (addBtn) addBtn.style.display = $('edit-trans-type').value === 'income' ? 'none' : '';
+        // 恢复主行消费类型可选
+        const mainSt = $('edit-trans-spending-type');
+        if (mainSt) { mainSt.disabled = false; mainSt.style.background = ''; mainSt.style.color = ''; }
         return;
     }
 
@@ -4141,6 +4162,9 @@ function refreshInlineTotal() {
     amtInput.removeAttribute('required');
     if (totalHint) totalHint.classList.remove('d-none');
     if (addBtn) addBtn.style.display = '';
+    // 主行消费类型变灰不可选
+    const mainSt = $('edit-trans-spending-type');
+    if (mainSt) { mainSt.disabled = true; mainSt.style.background = 'var(--bs-secondary-bg)'; mainSt.style.color = 'var(--bs-secondary)'; }
 
     // 合计金额 = 所有分录行之和（主行仅显示汇总，不参与计算）
     let total = 0;
@@ -4163,7 +4187,8 @@ function getInlineItems() {
     extraRows.forEach(r => {
         const amt = parseFloat(r.querySelector('.extra-row-amt').value);
         const cat = r.querySelector('.extra-row-cat').value;
-        if (!isNaN(amt) && amt > 0) items.push({ category: cat, amount: sign * Math.abs(amt) });
+        const st  = r.querySelector('.extra-row-st')?.value || '';
+        if (!isNaN(amt) && amt > 0) items.push({ category: cat, amount: sign * Math.abs(amt), ...(st ? { spendingType: st } : {}) });
     });
     if (items.length === 0) { alert('请至少填写一条有效金额'); return null; }
     return items.length > 1 ? items : null;
@@ -4186,7 +4211,7 @@ function loadInlineItems(items, type) {
     if (!items || items.length <= 1) { resetInlineItems(); return; }
     const cats = type === 'expense' ? categories.expense : categories.income;
     items.forEach(it => {
-        $('extra-items-container').appendChild(_buildItemRow(it.category, Math.abs(it.amount), cats));
+        $('extra-items-container').appendChild(_buildItemRow(it.category, Math.abs(it.amount), cats, it.spendingType || ''));
     });
     refreshInlineTotal();
 }
@@ -4326,19 +4351,58 @@ function renderSpendingAnalysis() {
         options: { maintainAspectRatio: false, scales:{ x:{ stacked:true }, y:{ stacked:true, beginAtZero:true } }, plugins:{ legend:{ position:'bottom' } }, animation:{ duration:400 } }
     });
 
-    // Detail list (last 50)
+    // store data for filter re-render
+    window._saCurrentData = data;
+    renderSaDetailList();
+}
+
+function renderSaDetailList() {
+    const data = window._saCurrentData || [];
+    const filterType   = $('sa-filter-type')?.value || '';
+    const filterSearch = ($('sa-filter-search')?.value || '').toLowerCase();
+
+    let filtered = [...data].sort((a,b) => b.date.localeCompare(a.date));
+    if (filterType === 'none') {
+        filtered = filtered.filter(t => !t.spendingType);
+    } else if (filterType) {
+        filtered = filtered.filter(t => t.spendingType === filterType);
+    }
+    if (filterSearch) {
+        filtered = filtered.filter(t =>
+            (t.category || '').toLowerCase().includes(filterSearch) ||
+            (t.desc || '').toLowerCase().includes(filterSearch)
+        );
+    }
+
+    const countEl = $('sa-detail-count');
+    if (countEl) countEl.textContent = `共 ${filtered.length} 条`;
+
     const listEl = $('sa-detail-list');
-    listEl.innerHTML = '<h6 class="mb-2">明细记录</h6>';
-    const sorted = [...data].sort((a,b) => b.date.localeCompare(a.date)).slice(0, 50);
-    sorted.forEach(t => {
+    listEl.innerHTML = '';
+    filtered.slice(0, 100).forEach(t => {
         const acc = accounts.find(a => a.id == t.accountId);
         const cfg = SPENDING_TYPE_CONFIG[t.spendingType] || { label:'未标记', color:'#6c757d' };
         const sym = acc ? CURRENCY_SYMBOLS[acc.currency] : '';
-        listEl.innerHTML += `<div class="d-flex align-items-center gap-2 py-1 border-bottom" style="font-size:0.85rem;">
-            <span class="badge" style="background:${cfg.color};min-width:44px;">${cfg.label}</span>
-            <span class="flex-grow-1">${t.date} · ${t.category || ''}</span>
-            <span class="text-danger fw-bold">${sym}${formatAmount(Math.abs(t.amount), acc?.currency||'RMB')}</span>
-        </div>`;
+        const canEdit = t.ownerName === currentUserName && !t._isArchived;
+        const div = document.createElement('div');
+        div.className = 'd-flex align-items-center gap-2 py-2 border-bottom';
+        div.style.cssText = `font-size:0.85rem;${canEdit ? 'cursor:pointer;' : ''}`;
+        div.innerHTML = `
+            <span class="badge flex-shrink-0" style="background:${cfg.color};min-width:50px;text-align:center;">${cfg.label}</span>
+            <div class="flex-grow-1 overflow-hidden">
+                <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.category || ''}${t.desc ? ' · <span style="font-weight:normal;color:var(--bs-secondary);">' + t.desc + '</span>' : ''}</div>
+                <div style="font-size:0.75rem;color:var(--bs-secondary);">${t.date} · ${acc?.name || ''}</div>
+            </div>
+            <span class="text-danger fw-bold flex-shrink-0">${sym}${formatAmount(Math.abs(t.amount), acc?.currency||'RMB')}</span>`;
+        if (canEdit) {
+            div.addEventListener('click', () => {
+                closeSpendingAnalysis();
+                openEditTransaction(t.id);
+            });
+            div.addEventListener('mouseenter', () => div.style.background = 'rgba(var(--bs-primary-rgb),0.06)');
+            div.addEventListener('mouseleave', () => div.style.background = '');
+        }
+        listEl.appendChild(div);
     });
 }
 
