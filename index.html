@@ -640,7 +640,7 @@ select.compact-form-control { height: 2.1rem; }
                 </button>
             </div>
             <div class="text-end mt-2">
-                <span class="text-muted" style="font-size:0.7rem;">v1.3.5</span>
+                <span class="text-muted" style="font-size:0.7rem;">v1.3.6</span>
             </div>
         </div>
 
@@ -1383,7 +1383,7 @@ select.compact-form-control { height: 2.1rem; }
                         </div>
                         <div class="col-6">
                             <label class="compact-form-label">金额</label>
-                            <input type="number" step="0.01" inputmode="decimal" class="form-control compact-form-control" id="planned-amount" required="">
+                            <input type="number" step="0.01" class="form-control compact-form-control" id="planned-amount" required="">
                         </div>
                     </div>
                     <div class="row g-2 mb-2">
@@ -1464,7 +1464,7 @@ select.compact-form-control { height: 2.1rem; }
                     </div>
                     <div class="mb-2">
                         <label class="compact-form-label" id="acc-balance-label">初始余额</label>
-                        <input type="number" step="0.01" inputmode="decimal" class="form-control compact-form-control" id="acc-balance" value="0" required="">
+                        <input type="number" step="0.01" class="form-control compact-form-control" id="acc-balance" value="0" required="">
                         <div class="form-text d-none" id="acc-balance-hint">修改余额将自动生成一笔调整记录</div>
                     </div>
                     <div class="mb-2">
@@ -1527,7 +1527,7 @@ select.compact-form-control { height: 2.1rem; }
                                 <small id="amount-total-hint" class="d-none fw-normal"
                                        style="font-size:0.68rem;color:var(--bs-secondary);background:var(--bs-secondary-bg);border-radius:3px;padding:0 4px;">合计</small>
                             </label>
-                            <input type="number" step="0.01" inputmode="decimal" class="form-control compact-form-control" id="edit-trans-amount" required="">
+                            <input type="number" step="0.01" class="form-control compact-form-control" id="edit-trans-amount" required="">
                         </div>
                         <div style="flex:1.6;min-width:0;" id="spending-type-select-wrap">
                             <label class="compact-form-label" style="font-size:0.78rem;">消费类型</label>
@@ -1597,7 +1597,7 @@ select.compact-form-control { height: 2.1rem; }
                         </div>
                         <div class="col-6">
                             <label class="compact-form-label">转出金额</label>
-                            <input type="number" step="0.01" inputmode="decimal" class="form-control compact-form-control" id="edit-transfer-amount-out" oninput="handleEditTransferAmountChange('out')" required="">
+                            <input type="number" step="0.01" class="form-control compact-form-control" id="edit-transfer-amount-out" oninput="handleEditTransferAmountChange('out')" required="">
                         </div>
                     </div>
                     <div class="row g-2 mb-2">
@@ -1607,7 +1607,7 @@ select.compact-form-control { height: 2.1rem; }
                         </div>
                         <div class="col-6">
                             <label class="compact-form-label">转入金额</label>
-                            <input type="number" step="0.01" inputmode="decimal" class="form-control compact-form-control" id="edit-transfer-amount-in" oninput="handleEditTransferAmountChange('in')" required="">
+                            <input type="number" step="0.01" class="form-control compact-form-control" id="edit-transfer-amount-in" oninput="handleEditTransferAmountChange('in')" required="">
                         </div>
                     </div>
                     <div class="mb-2">
@@ -4106,7 +4106,7 @@ function _buildItemRow(defCat, defAmt, cats, defSpendingType) {
     row.className = 'd-flex gap-1 mb-1 align-items-center extra-item-row';
     row.innerHTML = `
         <select class="form-select compact-form-control extra-row-cat" style="flex:1.5;min-width:0;" onchange="refreshInlineTotal()">${catOpts}</select>
-        <input type="number" step="0.01" min="0.01" class="form-control compact-form-control extra-row-amt" style="flex:1;min-width:0;" inputmode="decimal" placeholder="金额" value="${defAmt !== undefined && defAmt !== '' ? defAmt : ''}" oninput="refreshInlineTotal()">
+        <input type="number" step="0.01" min="0.01" class="form-control compact-form-control extra-row-amt" style="flex:1;min-width:0;" placeholder="金额" value="${defAmt !== undefined && defAmt !== '' ? defAmt : ''}" oninput="refreshInlineTotal()">
         <select class="form-select compact-form-control extra-row-st" style="flex:1.2;min-width:0;font-size:0.78rem;">${stOpts}</select>
         <button type="button" class="btn btn-outline-danger btn-sm" style="padding:2px 4px;font-size:0.72rem;flex-shrink:0;" onclick="removeInlineItemRow(this)"><i class="bi bi-x"></i></button>`;
     return row;
