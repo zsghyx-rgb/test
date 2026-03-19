@@ -640,7 +640,7 @@ select.compact-form-control { height: 2.1rem; }
                 </button>
             </div>
             <div class="text-end mt-2">
-                <span class="text-muted" style="font-size:0.7rem;">v1.3.6</span>
+                <span class="text-muted" style="font-size:0.7rem;">v1.3.7</span>
             </div>
         </div>
 
@@ -4273,11 +4273,30 @@ function saQuickDate(p) {
 function renderSpendingAnalysis() {
     const start = $('sa-start-date').value;
     const end   = $('sa-end-date').value;
-    const data  = transactions.filter(t => {
+    const rawData = transactions.filter(t => {
         if (t.isTransfer || t._isBaseline || t.amount >= 0) return false;
         if (start && t.date < start) return false;
         if (end   && t.date > end)   return false;
         return true;
+    });
+
+    // 展开多笔分录：每条 item 作为独立统计单元
+    const data = [];
+    rawData.forEach(t => {
+        const acc = accounts.find(a => a.id == t.accountId);
+        if (t.items && t.items.length > 1) {
+            t.items.forEach(it => {
+                data.push({
+                    ...t,
+                    amount: it.amount,
+                    category: it.category,
+                    spendingType: it.spendingType || t.spendingType || '',
+                    _parentId: t.id,
+                });
+            });
+        } else {
+            data.push(t);
+        }
     });
 
     // Group by spendingType
@@ -4332,7 +4351,8 @@ function renderSpendingAnalysis() {
         const acc = accounts.find(a => a.id == t.accountId);
         const amt = acc ? convertAmt(Math.abs(t.amount), acc.currency) : Math.abs(t.amount);
         if (!months[m]) months[m] = { need:0, want:0, regret:0, '':0 };
-        months[m][t.spendingType || ''] = (months[m][t.spendingType || ''] || 0) + amt;
+        const key = t.spendingType || '';
+        months[m][key] = (months[m][key] || 0) + amt;
     });
     const mLabels = Object.keys(months).sort();
     const ctxTrend = $('saTrendChart');
@@ -4363,7 +4383,7 @@ function renderSaDetailList() {
 
     let filtered = [...data].sort((a,b) => b.date.localeCompare(a.date));
     if (filterType === 'none') {
-        filtered = filtered.filter(t => !t.spendingType);
+        filtered = filtered.filter(t => !t.spendingType || t.spendingType === '');
     } else if (filterType) {
         filtered = filtered.filter(t => t.spendingType === filterType);
     }
@@ -4383,33 +4403,32 @@ function renderSaDetailList() {
         const acc = accounts.find(a => a.id == t.accountId);
         const cfg = SPENDING_TYPE_CONFIG[t.spendingType] || { label:'未标记', color:'#6c757d' };
         const sym = acc ? CURRENCY_SYMBOLS[acc.currency] : '';
+        // 点击时打开父交易（多笔展开后用 _parentId 找回原始交易）
+        const editId = t._parentId || t.id;
         const canEdit = t.ownerName === currentUserName && !t._isArchived;
+        const isExpanded = !!t._parentId;
         const div = document.createElement('div');
         div.className = 'd-flex align-items-center gap-2 py-2 border-bottom';
         div.style.cssText = `font-size:0.85rem;${canEdit ? 'cursor:pointer;' : ''}`;
         div.innerHTML = `
             <span class="badge flex-shrink-0" style="background:${cfg.color};min-width:50px;text-align:center;">${cfg.label}</span>
             <div class="flex-grow-1 overflow-hidden">
-                <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.category || ''}${t.desc ? ' · <span style="font-weight:normal;color:var(--bs-secondary);">' + t.desc + '</span>' : ''}</div>
+                <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.category || ''}${isExpanded ? ' <span style="font-size:0.7rem;color:var(--bs-secondary);font-weight:normal;">[分录]</span>' : ''}${t.desc ? ' · <span style="font-weight:normal;color:var(--bs-secondary);">' + t.desc + '</span>' : ''}</div>
                 <div style="font-size:0.75rem;color:var(--bs-secondary);">${t.date} · ${acc?.name || ''}</div>
             </div>
             <span class="text-danger fw-bold flex-shrink-0">${sym}${formatAmount(Math.abs(t.amount), acc?.currency||'RMB')}</span>`;
         if (canEdit) {
             div.addEventListener('click', () => {
-                // 临时提升 modal z-index 使其显示在分析页上方
                 const modalEl = $('editTransactionModal');
                 modalEl.style.zIndex = '2100';
-                const backdrop = () => {
-                    document.querySelectorAll('.modal-backdrop').forEach(b => b.style.zIndex = '2050');
-                };
-                // 监听 modal 关闭后还原 z-index
+                const backdrop = () => { document.querySelectorAll('.modal-backdrop').forEach(b => b.style.zIndex = '2050'); };
                 const onHide = () => {
                     modalEl.style.zIndex = '';
                     document.querySelectorAll('.modal-backdrop').forEach(b => b.style.zIndex = '');
                     modalEl.removeEventListener('hidden.bs.modal', onHide);
                 };
                 modalEl.addEventListener('hidden.bs.modal', onHide);
-                openEditTransaction(t.id);
+                openEditTransaction(editId);
                 setTimeout(backdrop, 50);
             });
             div.addEventListener('mouseenter', () => div.style.background = 'rgba(var(--bs-primary-rgb),0.06)');
