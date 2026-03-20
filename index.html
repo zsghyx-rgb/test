@@ -653,7 +653,7 @@ select.compact-form-control { height: 2.1rem; }
                 </button>
             </div>
             <div class="text-end mt-2">
-                <span class="text-muted" style="font-size:0.7rem;">v1.3.9</span>
+                <span class="text-muted" style="font-size:0.7rem;">v1.4.0</span>
             </div>
         </div>
 
@@ -1534,42 +1534,44 @@ select.compact-form-control { height: 2.1rem; }
                         </div>
                     </div>
 
-                    <!-- 主分录行：类别 | 金额 | 消费类型 -->
-                    <div class="d-flex gap-1 mb-1 align-items-end" id="spending-type-row">
-                        <div style="flex:2;min-width:0;">
-                            <label class="compact-form-label">类别</label>
-                            <select class="form-select compact-form-control" id="edit-trans-category" required=""></select>
-                            <div id="edit-trans-category-multi" class="form-control compact-form-control text-muted d-none"
-                                 style="background:var(--bs-secondary-bg);font-size:0.85rem;cursor:default;"></div>
-                        </div>
-                        <div style="flex:1.4;min-width:0;">
-                            <label class="compact-form-label d-flex justify-content-between align-items-center">
-                                <span>金额</span>
-                                <small id="amount-total-hint" class="d-none fw-normal"
-                                       style="font-size:0.68rem;color:var(--bs-secondary);background:var(--bs-secondary-bg);border-radius:3px;padding:0 4px;">合计</small>
-                            </label>
-                            <input type="number" step="0.01" class="form-control compact-form-control" id="edit-trans-amount" required="">
-                        </div>
-                        <div style="flex:1.6;min-width:0;" id="spending-type-select-wrap">
-                            <label class="compact-form-label" style="font-size:0.78rem;">消费类型</label>
-                            <select class="form-select compact-form-control" id="edit-trans-spending-type" style="font-size:0.8rem;">
-                                <option value="">未标记</option>
-                                <option value="need">必须的</option>
-                                <option value="want">非必须</option>
-                                <option value="regret">后悔的</option>
-                            </select>
+                    <!-- 单笔：类别 | 金额 | 消费类型 -->
+                    <div id="single-item-row">
+                        <div class="d-flex gap-1 mb-1 align-items-end" id="spending-type-row">
+                            <div style="flex:2;min-width:0;">
+                                <label class="compact-form-label">类别</label>
+                                <select class="form-select compact-form-control" id="edit-trans-category" required=""></select>
+                            </div>
+                            <div style="flex:1.4;min-width:0;">
+                                <label class="compact-form-label">金额</label>
+                                <input type="number" step="0.01" class="form-control compact-form-control" id="edit-trans-amount" required="">
+                            </div>
+                            <div style="flex:1.6;min-width:0;" id="spending-type-select-wrap">
+                                <label class="compact-form-label" style="font-size:0.78rem;">消费类型</label>
+                                <select class="form-select compact-form-control" id="edit-trans-spending-type" style="font-size:0.8rem;">
+                                    <option value="">未标记</option>
+                                    <option value="need">必须的</option>
+                                    <option value="want">非必须</option>
+                                    <option value="regret">后悔的</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- 添加按钮行 -->
-                    <div class="mb-2">
-                        <button type="button" id="add-inline-item-btn" class="btn btn-outline-secondary btn-sm w-100" style="font-size:0.78rem;" onclick="addInlineItemRow()">
-                            <i class="bi bi-plus"></i> 添加
+                    <!-- 拆分汇总显示（拆分模式时替换上方单笔行） -->
+                    <div id="split-summary-row" class="d-none mb-1">
+                        <div class="d-flex gap-1 align-items-center p-2 rounded" style="background:var(--bs-tertiary-bg);border:1px solid var(--bs-border-color);">
+                            <i class="bi bi-scissors text-warning" style="font-size:0.9rem;"></i>
+                            <span id="split-summary-text" class="small fw-bold flex-grow-1" style="font-size:0.85rem;"></span>
+                            <span id="split-summary-total" class="fw-bold text-danger" style="font-size:0.92rem;"></span>
+                        </div>
+                    </div>
+
+                    <!-- 拆分 / 编辑拆分 按钮（仅支出时显示） -->
+                    <div class="mb-2" id="split-btn-wrap">
+                        <button type="button" id="split-btn" class="btn btn-outline-secondary btn-sm w-100" style="font-size:0.78rem;" onclick="openSplitModal()">
+                            <i class="bi bi-scissors"></i> 拆分账单
                         </button>
                     </div>
-
-                    <!-- 额外分录行容器 -->
-                    <div id="extra-items-container" class="mb-1"></div>
 
                     <div class="mb-2">
                         <label class="compact-form-label">标签</label>
@@ -1671,6 +1673,53 @@ select.compact-form-control { height: 2.1rem; }
                 <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">取消</button>
                 <button type="button" class="btn btn-warning btn-sm" onclick="changeDataPassword()">
                     <i class="bi bi-check-lg"></i> 确认修改
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ==================== 拆分账单弹窗 ==================== -->
+<div class="modal fade" id="splitModal" tabindex="-1" style="z-index:2060;">
+    <div class="modal-dialog modal-lg" style="max-width:680px;">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h5 class="modal-title fs-6"><i class="bi bi-scissors"></i> 拆分账单</h5>
+                <button type="button" class="btn-close" onclick="closeSplitModal()"></button>
+            </div>
+            <div class="modal-body p-0">
+                <!-- 拆分行列表 -->
+                <div id="split-items-wrapper" style="max-height:55vh;overflow-y:auto;">
+                    <table class="table table-sm mb-0" id="split-items-table" style="font-size:0.85rem;">
+                        <thead style="position:sticky;top:0;z-index:1;background:var(--bs-tertiary-bg);">
+                            <tr>
+                                <th style="width:22%;padding:6px 8px;">类别</th>
+                                <th style="width:14%;padding:6px 8px;">金额</th>
+                                <th style="width:16%;padding:6px 8px;">消费类型</th>
+                                <th style="width:16%;padding:6px 8px;">标签</th>
+                                <th style="padding:6px 8px;">备注</th>
+                                <th style="width:32px;padding:6px 4px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="split-items-body"></tbody>
+                    </table>
+                </div>
+                <!-- 合计 + 添加按钮 -->
+                <div class="d-flex align-items-center gap-2 px-3 py-2 border-top" style="background:var(--bs-tertiary-bg);">
+                    <button type="button" class="btn btn-outline-success btn-sm" onclick="addSplitRow()">
+                        <i class="bi bi-plus-lg"></i> 添加一项
+                    </button>
+                    <span class="ms-auto small text-muted">合计：</span>
+                    <span id="split-total-display" class="fw-bold text-danger" style="font-size:1rem;min-width:70px;text-align:right;">0.00</span>
+                </div>
+            </div>
+            <div class="modal-footer py-2 gap-2">
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearSplitAndClose()">
+                    <i class="bi bi-x-circle"></i> 清除拆分
+                </button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="confirmSplit()">
+                    <i class="bi bi-check-lg"></i> 确认拆分
                 </button>
             </div>
         </div>
@@ -3826,13 +3875,12 @@ function switchTransTab(tab, skipReset) {
         updateEditFormCategories();
         const attachSec = $('attachment-section');
         const attachBtn = $('attachment-btn');
-        const addBtn = $('add-inline-item-btn');
         if (attachSec) attachSec.style.display = tab === 'expense' ? '' : 'none';
         if (attachBtn) attachBtn.style.display = tab === 'expense' ? '' : 'none';
-        if (addBtn) addBtn.style.display = tab === 'expense' ? '' : 'none';
         showSpendingTypeRow(tab === 'expense');
-        // 收入切换时清除已有额外行
-        if (tab === 'income') { $('extra-items-container').innerHTML = ''; refreshInlineTotal(); }
+        hideSplitForIncome(tab !== 'expense');
+        // 收入切换时清除拆分状态
+        if (tab === 'income') { resetInlineItems(); }
     }
 }
 
@@ -4112,8 +4160,11 @@ function showTransItemsDetail(t) {
     let html = `<div class="mb-2 small text-muted">${t.date} · ${acc ? acc.name : ''}</div>`;
     html += '<table class="table table-sm mb-2"><tbody>';
     t.items.forEach(it => {
+        const stCfg = it.spendingType ? (SPENDING_TYPE_CONFIG[it.spendingType] || null) : null;
+        const stBadge = stCfg ? `<span style="font-size:0.65rem;padding:0 4px;border-radius:3px;color:${stCfg.color};border:1px solid ${stCfg.color};margin-left:4px;">${stCfg.label}</span>` : '';
+        const subMeta = [it.tags ? `@${it.tags}` : '', it.desc || ''].filter(Boolean).join(' · ');
         html += `<tr>
-            <td class="ps-0 py-1">${it.category}</td>
+            <td class="ps-0 py-1" style="white-space:normal;">${it.category}${stBadge}${subMeta ? `<div style="font-size:0.7rem;color:var(--bs-secondary);">${subMeta}</div>` : ''}</td>
             <td class="text-end fw-bold ${colorClass} pe-0 py-1">${sym}${formatAmount(Math.abs(it.amount), cur)}</td>
         </tr>`;
     });
@@ -4160,132 +4211,235 @@ function deleteCurrentTransfer() {
     }
 }
 
-// ==================== 内联多笔分录 ====================
+// ==================== 拆分账单 ====================
 
-function _buildItemRow(defCat, defAmt, cats, defSpendingType) {
-    // 构建一行分录 DOM（类别 | 金额 | 消费类型 | 删除）
-    const catOpts = cats.map(c => `<option value="${c}"${c === defCat ? ' selected' : ''}>${c}</option>`).join('');
-    const stOpts = [
-        {v:'',     l:'未标记'},
-        {v:'need', l:'必须的'},
-        {v:'want', l:'非必须'},
-        {v:'regret',l:'后悔的'},
-    ].map(o => `<option value="${o.v}"${o.v === (defSpendingType||'') ? ' selected' : ''}>${o.l}</option>`).join('');
-    const row = document.createElement('div');
-    row.className = 'd-flex gap-1 mb-1 align-items-center extra-item-row';
-    row.innerHTML = `
-        <select class="form-select compact-form-control extra-row-cat" style="flex:1.5;min-width:0;" onchange="refreshInlineTotal()">${catOpts}</select>
-        <input type="number" step="0.01" min="0.01" class="form-control compact-form-control extra-row-amt" style="flex:1;min-width:0;" placeholder="金额" value="${defAmt !== undefined && defAmt !== '' ? defAmt : ''}" oninput="refreshInlineTotal()">
-        <select class="form-select compact-form-control extra-row-st" style="flex:1.2;min-width:0;font-size:0.78rem;">${stOpts}</select>
-        <button type="button" class="btn btn-outline-danger btn-sm" style="padding:2px 4px;font-size:0.72rem;flex-shrink:0;" onclick="removeInlineItemRow(this)"><i class="bi bi-x"></i></button>`;
-    return row;
+// 当前拆分数据（确认前暂存在此，不直接写 DOM 以外的地方）
+let _splitItems = []; // [{category, amount, spendingType, tags, desc}, ...]
+
+function _stOpts(selected) {
+    return [
+        {v:'', l:'未标记'}, {v:'need', l:'必须的'},
+        {v:'want', l:'非必须'}, {v:'regret', l:'后悔的'},
+    ].map(o => `<option value="${o.v}"${o.v === (selected||'') ? ' selected' : ''}>${o.l}</option>`).join('');
 }
 
-function addInlineItemRow(category, amount) {
-    const type = $('edit-trans-type').value;
-    if (type === 'income') return; // 收入不支持多笔
-    const cats = type === 'expense' ? categories.expense : categories.income;
-    const container = $('extra-items-container');
-    const defCat = category || cats[0] || '';
-    const defAmt = amount !== undefined ? amount : '';
-    container.appendChild(_buildItemRow(defCat, defAmt, cats));
-    refreshInlineTotal();
+function _buildSplitRow(item, idx) {
+    const cats = categories.expense || [];
+    const catOpts = cats.map(c => `<option value="${c}"${c === item.category ? ' selected' : ''}>${c}</option>`).join('');
+    const tr = document.createElement('tr');
+    tr.dataset.idx = idx;
+    tr.style.verticalAlign = 'middle';
+    tr.innerHTML = `
+        <td style="padding:4px 6px;">
+            <select class="form-select form-select-sm sp-cat" onchange="updateSplitRow(${idx},'cat',this.value);refreshSplitTotal()">${catOpts}</select>
+        </td>
+        <td style="padding:4px 6px;">
+            <input type="number" step="0.01" min="0.01" class="form-control form-control-sm sp-amt" placeholder="金额"
+                   value="${item.amount > 0 ? item.amount : ''}" oninput="updateSplitRow(${idx},'amt',this.value);refreshSplitTotal()">
+        </td>
+        <td style="padding:4px 6px;">
+            <select class="form-select form-select-sm sp-st" onchange="updateSplitRow(${idx},'st',this.value)">${_stOpts(item.spendingType)}</select>
+        </td>
+        <td style="padding:4px 6px;">
+            <input type="text" class="form-control form-control-sm sp-tags" placeholder="标签" value="${item.tags||''}" oninput="updateSplitRow(${idx},'tags',this.value)">
+        </td>
+        <td style="padding:4px 6px;">
+            <input type="text" class="form-control form-control-sm sp-desc" placeholder="备注" value="${item.desc||''}" oninput="updateSplitRow(${idx},'desc',this.value)">
+        </td>
+        <td style="padding:4px 2px;">
+            <button type="button" class="btn btn-link text-danger btn-sm p-0" onclick="removeSplitRow(${idx})" title="删除"><i class="bi bi-x-lg"></i></button>
+        </td>`;
+    return tr;
 }
 
-function removeInlineItemRow(btn) {
-    btn.closest('.extra-item-row').remove();
-    refreshInlineTotal();
+function renderSplitTable() {
+    const tbody = $('split-items-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    _splitItems.forEach((item, idx) => tbody.appendChild(_buildSplitRow(item, idx)));
+    refreshSplitTotal();
 }
 
-function refreshInlineTotal() {
-    const rows = $('extra-items-container').querySelectorAll('.extra-item-row');
-    const catSel    = $('edit-trans-category');
-    const catMulti  = $('edit-trans-category-multi');
-    const amtInput  = $('edit-trans-amount');
-    const totalHint = $('amount-total-hint');
-    const addBtn    = $('add-inline-item-btn');
+function updateSplitRow(idx, field, val) {
+    if (!_splitItems[idx]) return;
+    if (field === 'cat') _splitItems[idx].category = val;
+    else if (field === 'amt') _splitItems[idx].amount = parseFloat(val) || 0;
+    else if (field === 'st')  _splitItems[idx].spendingType = val;
+    else if (field === 'tags') _splitItems[idx].tags = val;
+    else if (field === 'desc') _splitItems[idx].desc = val;
+}
 
-    if (rows.length === 0) {
+function refreshSplitTotal() {
+    const total = _splitItems.reduce((s, it) => s + (it.amount || 0), 0);
+    const el = $('split-total-display');
+    if (el) el.textContent = total.toFixed(2);
+}
+
+function addSplitRow(item) {
+    const cats = categories.expense || [];
+    _splitItems.push(item || { category: cats[0] || '', amount: 0, spendingType: '', tags: '', desc: '' });
+    renderSplitTable();
+    // 滚动到底部
+    const wrapper = $('split-items-wrapper');
+    if (wrapper) setTimeout(() => { wrapper.scrollTop = wrapper.scrollHeight; }, 50);
+}
+
+function removeSplitRow(idx) {
+    _splitItems.splice(idx, 1);
+    renderSplitTable();
+}
+
+function openSplitModal() {
+    // 如果已有拆分数据就沿用，否则从主表单读入第一行作为初始项
+    if (_splitItems.length === 0) {
+        const cat = $('edit-trans-category').value || (categories.expense[0] || '');
+        const amt = parseFloat($('edit-trans-amount').value) || 0;
+        const st  = $('edit-trans-spending-type').value || '';
+        const tags = $('edit-trans-tags').value || '';
+        const desc = $('edit-trans-desc').value || '';
+        _splitItems = [
+            { category: cat, amount: amt, spendingType: st, tags, desc },
+            { category: categories.expense[0] || '', amount: 0, spendingType: '', tags: '', desc: '' },
+        ];
+    }
+    renderSplitTable();
+    const backdrop = document.querySelectorAll('.modal-backdrop');
+    // 把拆分弹窗的 z-index 设高于当前弹窗
+    const el = $('splitModal');
+    el.style.zIndex = '2060';
+    new bootstrap.Modal(el, { backdrop: 'static' }).show();
+    // backdrop 跟随
+    setTimeout(() => {
+        const bds = document.querySelectorAll('.modal-backdrop');
+        if (bds.length > 0) bds[bds.length - 1].style.zIndex = '2055';
+    }, 50);
+}
+
+function closeSplitModal() {
+    const inst = bootstrap.Modal.getInstance($('splitModal'));
+    if (inst) inst.hide();
+}
+
+function clearSplitAndClose() {
+    _splitItems = [];
+    closeSplitModal();
+    applySplitToMainForm(null);
+}
+
+function confirmSplit() {
+    // 验证：至少一行，且每行金额 > 0
+    const valid = _splitItems.filter(it => it.amount > 0);
+    if (valid.length === 0) { alert('请至少填写一条有效金额'); return; }
+    if (valid.length === 1) {
+        // 只有一条时退化为单笔
+        _splitItems = valid;
+        const it = valid[0];
+        closeSplitModal();
+        applySplitToMainForm(null);
+        // 把值填回主表单
+        $('edit-trans-category').value = it.category;
+        $('edit-trans-amount').value = it.amount.toFixed(2);
+        $('edit-trans-spending-type').value = it.spendingType || '';
+        $('edit-trans-tags').value = it.tags || '';
+        $('edit-trans-desc').value = it.desc || '';
+        _splitItems = [];
+        return;
+    }
+    _splitItems = valid;
+    closeSplitModal();
+    applySplitToMainForm(_splitItems);
+}
+
+/** 将拆分结果同步到主表单显示 */
+function applySplitToMainForm(items) {
+    const singleRow   = $('single-item-row');
+    const summaryRow  = $('split-summary-row');
+    const splitBtn    = $('split-btn');
+    const splitBtnWrap = $('split-btn-wrap');
+    const amtInput    = $('edit-trans-amount');
+    const catSel      = $('edit-trans-category');
+
+    if (!items || items.length === 0) {
         // 单笔模式
-        catSel.classList.remove('d-none');
-        catMulti.classList.add('d-none');
+        if (singleRow)  singleRow.classList.remove('d-none');
+        if (summaryRow) summaryRow.classList.add('d-none');
+        if (splitBtn)   { splitBtn.innerHTML = '<i class="bi bi-scissors"></i> 拆分账单'; splitBtn.classList.remove('btn-warning'); splitBtn.classList.add('btn-outline-secondary'); }
         amtInput.readOnly = false;
         amtInput.style.background = '';
         amtInput.style.color = '';
         amtInput.setAttribute('required', '');
-        if (totalHint) totalHint.classList.add('d-none');
-        // 收入 tab 时始终隐藏添加按钮
-        if (addBtn) addBtn.style.display = $('edit-trans-type').value === 'income' ? 'none' : '';
-        // 恢复主行消费类型可选
-        const mainSt = $('edit-trans-spending-type');
-        if (mainSt) { mainSt.disabled = false; mainSt.style.background = ''; mainSt.style.color = ''; }
+        catSel.removeAttribute('disabled');
         return;
     }
 
-    // 多笔模式：主行变灰色汇总
-    catSel.classList.add('d-none');
-    catMulti.classList.remove('d-none');
+    // 拆分模式
+    const total = items.reduce((s, it) => s + it.amount, 0);
+    const firstCat = items[0].category;
+    const moreCount = items.length - 1;
+    if (singleRow)  singleRow.classList.add('d-none');
+    if (summaryRow) summaryRow.classList.remove('d-none');
+    $('split-summary-text').textContent = moreCount > 0 ? `${firstCat} 等 ${items.length} 项` : firstCat;
+    $('split-summary-total').textContent = total.toFixed(2);
+    if (splitBtn) { splitBtn.innerHTML = `<i class="bi bi-pencil-square"></i> 编辑拆分（${items.length} 项）`; splitBtn.classList.remove('btn-outline-secondary'); splitBtn.classList.add('btn-warning'); }
+    // 主表单数据也要有值，供 submit 读取
+    amtInput.value = total.toFixed(2);
     amtInput.readOnly = true;
     amtInput.style.background = 'var(--bs-secondary-bg)';
     amtInput.style.color = 'var(--bs-secondary)';
     amtInput.removeAttribute('required');
-    if (totalHint) totalHint.classList.remove('d-none');
-    if (addBtn) addBtn.style.display = '';
-    // 主行消费类型变灰不可选
-    const mainSt = $('edit-trans-spending-type');
-    if (mainSt) { mainSt.disabled = true; mainSt.style.background = 'var(--bs-secondary-bg)'; mainSt.style.color = 'var(--bs-secondary)'; }
-
-    // 合计金额 = 所有分录行之和（主行仅显示汇总，不参与计算）
-    let total = 0;
-    rows.forEach(r => { const v = parseFloat(r.querySelector('.extra-row-amt').value); if (!isNaN(v)) total += v; });
-    amtInput.value = total > 0 ? total.toFixed(2) : '';
-
-    // 类别汇总：第一条分录类别 + 等N项
-    const firstCat = rows[0].querySelector('.extra-row-cat').value || '';
-    catMulti.textContent = firstCat + (rows.length > 1 ? `等${rows.length - 1}项` : '');
+    catSel.setAttribute('disabled', '');
 }
 
+// 收入 tab 隐藏拆分按钮
+function hideSplitForIncome(hide) {
+    const wrap = $('split-btn-wrap');
+    if (wrap) wrap.style.display = hide ? 'none' : '';
+}
+
+/** 从保存的 items 恢复拆分状态（编辑已有拆分交易时） */
+function loadInlineItems(items, type) {
+    if (!items || items.length <= 1) {
+        _splitItems = [];
+        applySplitToMainForm(null);
+        return;
+    }
+    _splitItems = items.map(it => ({
+        category: it.category || '',
+        amount: Math.abs(it.amount),
+        spendingType: it.spendingType || '',
+        tags: it.tags || '',
+        desc: it.desc || '',
+    }));
+    applySplitToMainForm(_splitItems);
+}
+
+/** 清空拆分状态（新增/切换 tab 时） */
+function resetInlineItems() {
+    _splitItems = [];
+    applySplitToMainForm(null);
+}
+
+/** 读取当前拆分数据供 submit 使用 */
 function getInlineItems() {
-    // 有分录行时，items 来自分录行；否则返回 null（单笔用主行）
+    if (_splitItems.length === 0) return null;
     const type = $('edit-trans-type').value;
     const sign = type === 'expense' ? -1 : 1;
-    const extraRows = $('extra-items-container').querySelectorAll('.extra-item-row');
-    if (extraRows.length === 0) return null;
-
-    const items = [];
-    extraRows.forEach(r => {
-        const amt = parseFloat(r.querySelector('.extra-row-amt').value);
-        const cat = r.querySelector('.extra-row-cat').value;
-        const st  = r.querySelector('.extra-row-st')?.value || '';
-        if (!isNaN(amt) && amt > 0) items.push({ category: cat, amount: sign * Math.abs(amt), ...(st ? { spendingType: st } : {}) });
-    });
-    if (items.length === 0) { alert('请至少填写一条有效金额'); return null; }
+    const items = _splitItems.filter(it => it.amount > 0).map(it => ({
+        category: it.category,
+        amount: sign * Math.abs(it.amount),
+        ...(it.spendingType ? { spendingType: it.spendingType } : {}),
+        ...(it.tags ? { tags: it.tags } : {}),
+        ...(it.desc ? { desc: it.desc } : {}),
+    }));
+    if (items.length === 0) return null;
     return items.length > 1 ? items : null;
 }
 
-function resetInlineItems() {
-    $('extra-items-container').innerHTML = '';
-    const amtInput = $('edit-trans-amount');
-    amtInput.readOnly = false;
-    amtInput.style.background = '';
-    amtInput.style.color = '';
-    amtInput.setAttribute('required', '');
-    amtInput.value = '';
-    refreshInlineTotal();
-}
+// 兼容旧调用（不再需要，保留空函数防报错）
+function refreshInlineTotal() {}
+function addInlineItemRow() {}
 
-function loadInlineItems(items, type) {
-    // 从已保存的 items 恢复：全部放入分录行，主行显示汇总
-    $('extra-items-container').innerHTML = '';
-    if (!items || items.length <= 1) { resetInlineItems(); return; }
-    const cats = type === 'expense' ? categories.expense : categories.income;
-    items.forEach(it => {
-        $('extra-items-container').appendChild(_buildItemRow(it.category, Math.abs(it.amount), cats, it.spendingType || ''));
-    });
-    refreshInlineTotal();
-}
-
-// ==================== 内联多笔分录 END ====================
+// ==================== 拆分账单 END ====================
 
 // ==================== 消费类型 ====================
 const SPENDING_TYPE_CONFIG = {
@@ -4378,6 +4532,8 @@ function renderSpendingAnalysis() {
                     amount: it.amount,
                     category: it.category,
                     spendingType: it.spendingType || t.spendingType || '',
+                    tags: it.tags !== undefined ? it.tags : (t.tags || ''),
+                    desc: it.desc !== undefined ? it.desc : (t.desc || ''),
                     _parentId: t.id,
                 });
             });
@@ -4556,6 +4712,8 @@ function onSubModalHide() {
     // 重置只读状态（转账表单）
     $('edit-transfer-form').querySelectorAll('input,select').forEach(el => { el.disabled = false; });
     $('edit-transfer-submit-btn').style.display = '';
+    // 重置拆分状态
+    _splitItems = [];
     maybeReturnToDetail();
 }
 $('editTransactionModal').addEventListener('hidden.bs.modal', onSubModalHide);
@@ -4579,7 +4737,9 @@ $('edit-transaction-form').addEventListener('submit', (e) => {
         finalAmount = itemsData.reduce((s, it) => s + it.amount, 0);
         category = itemsData[0].category;
     } else {
-        category = $('edit-trans-category').value;
+        const catEl2 = $('edit-trans-category');
+        catEl2.removeAttribute('disabled'); // ensure value readable
+        category = catEl2.value;
         const amount = parseFloat($('edit-trans-amount').value);
         if (isNaN(amount) || amount <= 0) { alert('请输入有效金额'); return; }
         finalAmount = type === 'expense' ? -Math.abs(amount) : Math.abs(amount);
@@ -5048,8 +5208,8 @@ function updateDescHint(descId, hintId, typeId, catId, accId) {
     const hint = $(hintId);
     if (!hint) return;
     if (desc.trim().length < 2) { hint.style.display = 'none'; return; }
-    // 多笔模式下不推荐分类（一备注对多分类，推荐无意义）
-    if ($('extra-items-container')?.children.length > 0) { hint.style.display = 'none'; return; }
+    // 拆分模式下不推荐分类
+    if (typeof _splitItems !== 'undefined' && _splitItems.length > 0) { hint.style.display = 'none'; return; }
 
     const result = findBestCategoryFromHistory(desc, type);
     if (!result) { hint.style.display = 'none'; return; }
