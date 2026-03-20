@@ -640,7 +640,7 @@ select.compact-form-control { height: 2.1rem; }
                 </button>
             </div>
             <div class="text-end mt-2">
-                <span class="text-muted" style="font-size:0.7rem;">v1.3.7</span>
+                <span class="text-muted" style="font-size:0.7rem;">v1.3.8</span>
             </div>
         </div>
 
@@ -1286,6 +1286,12 @@ select.compact-form-control { height: 2.1rem; }
             <button class="btn btn-sm btn-outline-secondary" onclick="closeSpendingAnalysis()"><i class="bi bi-arrow-left"></i></button>
             <h5 class="mb-0">消费类型分析</h5>
         </div>
+        <!-- 用户筛选 -->
+        <div class="d-flex gap-2 mb-2 align-items-center">
+            <select class="form-select form-select-sm" id="sa-user-filter" style="width:120px;" onchange="renderSpendingAnalysis()">
+                <option value="">所有用户</option>
+            </select>
+        </div>
         <!-- 日期筛选 -->
         <div class="d-flex gap-2 mb-3 align-items-center" style="overflow-x:auto;white-space:nowrap;flex-wrap:nowrap;">
             <input type="date" class="form-control form-control-sm flex-shrink-0" id="sa-start-date" style="width:130px;min-width:130px;" onchange="renderSpendingAnalysis()">
@@ -1314,6 +1320,7 @@ select.compact-form-control { height: 2.1rem; }
         </div>
         <!-- 明细列表 -->
         <div class="d-flex gap-2 mb-2 flex-wrap align-items-center">
+            <h6 class="mb-0 me-1">支出明细</h6>
             <select class="form-select form-select-sm" id="sa-filter-type" style="width:110px;" onchange="renderSaDetailList()">
                 <option value="">全部类型</option>
                 <option value="need">必须的</option>
@@ -1321,10 +1328,10 @@ select.compact-form-control { height: 2.1rem; }
                 <option value="regret">后悔的</option>
                 <option value="none">未标记</option>
             </select>
-            <input type="text" class="form-control form-control-sm" id="sa-filter-search" style="width:160px;" placeholder="搜索类别/备注..." oninput="renderSaDetailList()">
+            <input type="text" class="form-control form-control-sm" id="sa-filter-search" style="width:150px;" placeholder="搜索类别/备注..." oninput="renderSaDetailList()">
             <span class="text-muted small ms-auto" id="sa-detail-count"></span>
         </div>
-        <div id="sa-detail-list"></div>
+        <div id="sa-detail-list" class="mb-4"></div>
     </div>
 </div>
 
@@ -3966,14 +3973,19 @@ function deleteTransaction(id) {
 
 function openEditTransaction(id) {
     const t = transactions.find(x => x.id === id);
-    if (!t || t.ownerName !== currentUserName) { alert('无法编辑此交易'); return; }
+    if (!t) { alert('找不到此交易'); return; }
     if (t.isTransfer) { openEditTransfer(id); return; }
 
+    const isOwner = t.ownerName === currentUserName;
+    const readOnly = !isOwner || t._isArchived;
+
     $('edit-trans-id').value = t.id;
-    $('edit-trans-mode').value = 'edit';
-    $('editTransactionModalTitle').textContent = '编辑交易';
+    $('edit-trans-mode').value = readOnly ? 'view' : 'edit';
+    $('editTransactionModalTitle').textContent = readOnly ? `查看交易（${t.ownerName}）` : '编辑交易';
     $('edit-trans-submit-btn').textContent = '保存修改';
-    $('edit-trans-delete-btn').style.removeProperty('display');
+    $('edit-trans-submit-btn').style.display = readOnly ? 'none' : '';
+    $('edit-trans-delete-btn').style.display = 'none';
+    if (!readOnly) $('edit-trans-delete-btn').style.removeProperty('display');
     $('edit-trans-date').value = t.date;
     $('edit-trans-account').value = t.accountId;
     $('edit-trans-tags').value = t.tags || '';
@@ -3997,6 +4009,12 @@ function openEditTransaction(id) {
         const ids = t.attachmentId.split(',').filter(id => id.trim());
         renderAttachmentThumbs(ids);
     }
+    // 只读模式：禁用所有表单控件
+    const form = $('edit-transaction-form');
+    form.querySelectorAll('input,select,textarea,button[type="button"]:not([data-bs-dismiss])').forEach(el => {
+        if (el.id === 'edit-trans-submit-btn' || el.id === 'edit-trans-delete-btn') return;
+        el.disabled = readOnly;
+    });
     new bootstrap.Modal($('editTransactionModal')).show();
 }
 
@@ -4252,6 +4270,14 @@ function openSpendingAnalysis() {
     const ed = $('stats-end-date')?.value || '';
     $('sa-start-date').value = sd;
     $('sa-end-date').value = ed;
+    // populate user filter
+    const sel = $('sa-user-filter');
+    if (sel) {
+        const cur = sel.value;
+        sel.innerHTML = '<option value="">所有用户</option>';
+        dataUsers.forEach(u => { sel.add(new Option(u, u)); });
+        if (cur) sel.value = cur;
+    }
     renderSpendingAnalysis();
 }
 
@@ -4273,10 +4299,12 @@ function saQuickDate(p) {
 function renderSpendingAnalysis() {
     const start = $('sa-start-date').value;
     const end   = $('sa-end-date').value;
+    const saUser = $('sa-user-filter')?.value || '';
     const rawData = transactions.filter(t => {
         if (t.isTransfer || t._isBaseline || t.amount >= 0) return false;
         if (start && t.date < start) return false;
         if (end   && t.date > end)   return false;
+        if (saUser && t.ownerName !== saUser) return false;
         return true;
     });
 
@@ -4399,42 +4427,46 @@ function renderSaDetailList() {
 
     const listEl = $('sa-detail-list');
     listEl.innerHTML = '';
+
     filtered.slice(0, 100).forEach(t => {
         const acc = accounts.find(a => a.id == t.accountId);
-        const cfg = SPENDING_TYPE_CONFIG[t.spendingType] || { label:'未标记', color:'#6c757d' };
-        const sym = acc ? CURRENCY_SYMBOLS[acc.currency] : '';
-        // 点击时打开父交易（多笔展开后用 _parentId 找回原始交易）
+        if (!acc) return;
+        const sym = CURRENCY_SYMBOLS[acc.currency] || '';
+        const accDisplayName = getAccountDisplayName(acc);
+        const cfg = SPENDING_TYPE_CONFIG[t.spendingType] || { label:'未标记', color:'#6c757d', bg:'rgba(108,117,125,0.12)' };
         const editId = t._parentId || t.id;
-        const canEdit = t.ownerName === currentUserName && !t._isArchived;
         const isExpanded = !!t._parentId;
-        const div = document.createElement('div');
-        div.className = 'd-flex align-items-center gap-2 py-2 border-bottom';
-        div.style.cssText = `font-size:0.85rem;${canEdit ? 'cursor:pointer;' : ''}`;
-        div.innerHTML = `
-            <span class="badge flex-shrink-0" style="background:${cfg.color};min-width:50px;text-align:center;">${cfg.label}</span>
-            <div class="flex-grow-1 overflow-hidden">
-                <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.category || ''}${isExpanded ? ' <span style="font-size:0.7rem;color:var(--bs-secondary);font-weight:normal;">[分录]</span>' : ''}${t.desc ? ' · <span style="font-weight:normal;color:var(--bs-secondary);">' + t.desc + '</span>' : ''}</div>
-                <div style="font-size:0.75rem;color:var(--bs-secondary);">${t.date} · ${acc?.name || ''}</div>
+        const descClean = t.desc || '';
+        const tagsHtml = t.tags ? `<span style="color:var(--bs-secondary);"> @${t.tags}</span>` : '';
+        const noteHtml = descClean ? `<span style="color:var(--bs-secondary);"> · ${descClean}</span>` : '';
+        const stBadge = `<span style="font-size:0.62rem;background:${cfg.bg || cfg.color};color:${cfg.color};border-radius:3px;padding:0 4px;margin-left:4px;border:1px solid ${cfg.color};vertical-align:middle;">${cfg.label}</span>`;
+
+        const card = document.createElement('div');
+        card.className = 'mobile-transaction-card';
+        card.style.cursor = 'pointer';
+        card.innerHTML = `
+            <div class="card-line-1">
+                <span class="category-text">${t.category || ''}${stBadge}${isExpanded ? '' : ''}${tagsHtml}</span>
+                <div class="amount-expense fw-bold">${sym}${formatAmount(Math.abs(t.amount), acc.currency)}</div>
             </div>
-            <span class="text-danger fw-bold flex-shrink-0">${sym}${formatAmount(Math.abs(t.amount), acc?.currency||'RMB')}</span>`;
-        if (canEdit) {
-            div.addEventListener('click', () => {
-                const modalEl = $('editTransactionModal');
-                modalEl.style.zIndex = '2100';
-                const backdrop = () => { document.querySelectorAll('.modal-backdrop').forEach(b => b.style.zIndex = '2050'); };
-                const onHide = () => {
-                    modalEl.style.zIndex = '';
-                    document.querySelectorAll('.modal-backdrop').forEach(b => b.style.zIndex = '');
-                    modalEl.removeEventListener('hidden.bs.modal', onHide);
-                };
-                modalEl.addEventListener('hidden.bs.modal', onHide);
-                openEditTransaction(editId);
-                setTimeout(backdrop, 50);
-            });
-            div.addEventListener('mouseenter', () => div.style.background = 'rgba(var(--bs-primary-rgb),0.06)');
-            div.addEventListener('mouseleave', () => div.style.background = '');
-        }
-        listEl.appendChild(div);
+            <div class="card-line-2">
+                <span class="text-muted small">${t.date} · ${accDisplayName}${noteHtml}</span>
+            </div>`;
+
+        card.addEventListener('click', () => {
+            const modalEl = $('editTransactionModal');
+            modalEl.style.zIndex = '2100';
+            const backdrop = () => { document.querySelectorAll('.modal-backdrop').forEach(b => b.style.zIndex = '2050'); };
+            const onHide = () => {
+                modalEl.style.zIndex = '';
+                document.querySelectorAll('.modal-backdrop').forEach(b => b.style.zIndex = '');
+                modalEl.removeEventListener('hidden.bs.modal', onHide);
+            };
+            modalEl.addEventListener('hidden.bs.modal', onHide);
+            openEditTransaction(editId);
+            setTimeout(backdrop, 50);
+        });
+        listEl.appendChild(card);
     });
 }
 
@@ -4458,14 +4490,18 @@ function onSubModalHide() {
     const hintEl = $('edit-trans-desc-hint');
     if (hintEl) hintEl.style.display = 'none';
     resetAttachmentUI();
+    // 重置只读状态
+    const form = $('edit-transaction-form');
+    form.querySelectorAll('input,select,textarea,button[type="button"]').forEach(el => { el.disabled = false; });
+    $('edit-trans-submit-btn').style.display = '';
     maybeReturnToDetail();
-
 }
 $('editTransactionModal').addEventListener('hidden.bs.modal', onSubModalHide);
 
 $('edit-transaction-form').addEventListener('submit', (e) => {
     e.preventDefault();
     const mode = $('edit-trans-mode').value;
+    if (mode === 'view') return; // 只读模式不保存
     const date = $('edit-trans-date').value;
     const type = $('edit-trans-type').value;
     const accountId = $('edit-trans-account').value;
