@@ -308,6 +308,19 @@ body {
     gap: 7px;
 }
 #app-toast.show { opacity: 0.7; pointer-events: auto; }
+#app-toast.minimized {
+    left: 14px !important;
+    transform: translateX(0) !important;
+    top: 10px !important;
+    padding: 5px 12px 5px 10px !important;
+    border-radius: 20px !important;
+    font-size: 0.75rem !important;
+    cursor: pointer !important;
+    max-width: 130px;
+    white-space: nowrap;
+    overflow: hidden;
+    transition: left 0.4s ease, transform 0.4s ease, padding 0.3s ease, max-width 0.3s ease;
+}
 
 .amount-hidden { filter: blur(8px); user-select: none; }
 
@@ -574,7 +587,7 @@ select.compact-form-control { height: 2.1rem; }
 
         <!-- 标题栏 + 齿轮 -->
         <div class="d-flex align-items-center justify-content-between mb-3">
-            <h4 class="mb-0 text-primary"><i class="bi bi-wallet2"></i>记一笔</h4>
+            <h4 class="mb-0 text-primary"><i class="bi bi-wallet2"></i> 记一笔</h4>
             <button class="btn btn-sm btn-outline-secondary" onclick="toggleLoginSettings()" title="连接设置">
                 <i class="bi bi-gear" id="login-settings-gear"></i>
             </button>
@@ -640,7 +653,7 @@ select.compact-form-control { height: 2.1rem; }
                 </button>
             </div>
             <div class="text-end mt-2">
-                <span class="text-muted" style="font-size:0.7rem;">v1.3.9</span>
+                <span class="text-muted" style="font-size:0.7rem;">v1.5.0</span>
             </div>
         </div>
 
@@ -1289,6 +1302,9 @@ select.compact-form-control { height: 2.1rem; }
         </div>
         <!-- 日期 + 快速筛选 + 用户按钮 同一行 -->
         <div class="d-flex gap-2 align-items-center" style="overflow-x:auto;white-space:nowrap;flex-wrap:nowrap;">
+            <button class="btn btn-sm btn-outline-secondary flex-shrink-0" id="sa-user-filter-btn" onclick="saCycleUser()">
+                <i class="bi bi-person"></i> <span id="sa-user-filter-text">所有用户</span>
+            </button>
             <input type="date" class="form-control form-control-sm flex-shrink-0" id="sa-start-date" style="width:130px;min-width:130px;" onchange="renderSpendingAnalysis()">
             <input type="date" class="form-control form-control-sm flex-shrink-0" id="sa-end-date" style="width:130px;min-width:130px;" onchange="renderSpendingAnalysis()">
             <div class="btn-group btn-group-sm flex-shrink-0">
@@ -1297,9 +1313,6 @@ select.compact-form-control { height: 2.1rem; }
                 <button class="btn btn-outline-secondary" onclick="saQuickDate('year')">本年</button>
                 <button class="btn btn-outline-secondary" onclick="saQuickDate('all')">全部</button>
             </div>
-            <button class="btn btn-sm btn-outline-secondary flex-shrink-0" id="sa-user-filter-btn" onclick="saCycleUser()">
-                <i class="bi bi-person"></i> <span id="sa-user-filter-text">所有用户</span>
-            </button>
         </div>
     </div>
     <!-- 可滚动内容区 -->
@@ -1325,7 +1338,7 @@ select.compact-form-control { height: 2.1rem; }
             <select class="form-select form-select-sm" id="sa-filter-type" style="width:110px;" onchange="renderSaDetailList()">
                 <option value="">全部类型</option>
                 <option value="need">必须的</option>
-                <option value="want">想要的</option>
+                <option value="want">非必须</option>
                 <option value="regret">后悔的</option>
                 <option value="none">未标记</option>
             </select>
@@ -1542,7 +1555,7 @@ select.compact-form-control { height: 2.1rem; }
                             <select class="form-select compact-form-control" id="edit-trans-spending-type" style="font-size:0.8rem;">
                                 <option value="">未标记</option>
                                 <option value="need">必须的</option>
-                                <option value="want">想要的</option>
+                                <option value="want">非必须</option>
                                 <option value="regret">后悔的</option>
                             </select>
                         </div>
@@ -1701,6 +1714,7 @@ let hasUnsavedChanges = false;
 let driveAutoSaveTimer = null;   // 防抖计时器
 let _lastTransPrefs = {};        // 上次新增交易的选项（仅本次会话有效）
 let _toastTimer = null;          // toast 自动消失计时器
+let _toastMinimizeTimer = null;  // toast 缩小为角标的计时器
 let driveIsSyncing = false;      // 防并发
 let offlineMode = localStorage.getItem('APP_offline_mode') === 'true'; // 离线模式
 
@@ -2747,13 +2761,38 @@ function showUnsavedToast() {
     const el = $('app-toast');
     if (!el) return;
     clearTimeout(_toastTimer);
+    clearTimeout(_toastMinimizeTimer);
+    el.classList.remove('minimized');
+    el.onmouseenter = null;
+    el.onmouseleave = null;
     applyToastStyle(el, 'warning');
     el.innerHTML = `${toastIcons.warning} 有未保存的修改 <button onclick="syncToDrive(true)" style="margin-left:8px;padding:1px 10px;font-size:0.78rem;border-radius:12px;border:1px solid #664d03;background:transparent;color:#664d03;cursor:pointer;font-weight:600;">立即同步</button>`;
     el.classList.add('show');
+    _toastMinimizeTimer = setTimeout(() => minimizeUnsavedToast(), 4000);
+}
+
+function minimizeUnsavedToast() {
+    const el = $('app-toast');
+    if (!el || !hasUnsavedChanges) return;
+    applyToastStyle(el, 'warning');
+    el.classList.add('minimized');
+    el.innerHTML = `<span style="color:#e67e00;font-size:1.1rem;line-height:1;flex-shrink:0;">●</span><span style="margin-left:5px;font-weight:600;">未保存</span>`;
+    el.onmouseenter = () => {
+        clearTimeout(_toastMinimizeTimer);
+        el.classList.remove('minimized');
+        applyToastStyle(el, 'warning');
+        el.innerHTML = `${toastIcons.warning} 有未保存的修改 <button onclick="syncToDrive(true)" style="margin-left:8px;padding:1px 10px;font-size:0.78rem;border-radius:12px;border:1px solid #664d03;background:transparent;color:#664d03;cursor:pointer;font-weight:600;">立即同步</button>`;
+    };
+    el.onmouseleave = () => {
+        _toastMinimizeTimer = setTimeout(() => minimizeUnsavedToast(), 2000);
+    };
 }
 
 function clearUnsavedFlag() {
     hasUnsavedChanges = false;
+    clearTimeout(_toastMinimizeTimer);
+    const el = $('app-toast');
+    if (el) { el.classList.remove('minimized'); el.onmouseenter = null; el.onmouseleave = null; }
     // 同步成功后清掉本地草稿
     if (currentUserName) {
         localStorage.removeItem(`APP_local_draft_${currentUserName}`);
@@ -4039,11 +4078,18 @@ function openEditTransfer(id) {
     }
     if (!tOut || !tIn) { alert('找不到配对的转账记录'); return; }
 
+    const isTransferOwner = tOut.ownerName === currentUserName && !tOut._isArchived;
+
     $('edit-transfer-id').value = tOut.id;
-    $('edit-transfer-mode').value = 'edit';
-    $('editTransactionModalTitle').textContent = '编辑转账';
+    $('edit-transfer-mode').value = isTransferOwner ? 'edit' : 'view';
+    $('editTransactionModalTitle').textContent = isTransferOwner ? '编辑转账' : `查看转账（${tOut.ownerName}）`;
     $('edit-transfer-submit-btn').textContent = '保存修改';
-    $('edit-transfer-delete-btn').style.removeProperty('display');
+    $('edit-transfer-submit-btn').style.display = isTransferOwner ? '' : 'none';
+    if (isTransferOwner) {
+        $('edit-transfer-delete-btn').style.removeProperty('display');
+    } else {
+        $('edit-transfer-delete-btn').style.display = 'none';
+    }
     $('edit-transfer-date').value = tOut.date;
     $('trans-tab-bar').style.display = 'none';
     switchTransTab('transfer', true);
@@ -4051,6 +4097,9 @@ function openEditTransfer(id) {
     $('edit-transfer-amount-out').value = Math.abs(tOut.amount);
     $('edit-transfer-amount-in').value = Math.abs(tIn.amount);
     $('edit-transfer-desc').value = tOut.desc || '';
+    if (!isTransferOwner) {
+        $('edit-transfer-form').querySelectorAll('input,select').forEach(el => { el.disabled = true; });
+    }
     new bootstrap.Modal($('editTransactionModal')).show();
 }
 
@@ -4118,7 +4167,7 @@ function _buildItemRow(defCat, defAmt, cats, defSpendingType) {
     const stOpts = [
         {v:'',     l:'未标记'},
         {v:'need', l:'必须的'},
-        {v:'want', l:'想要的'},
+        {v:'want', l:'非必须'},
         {v:'regret',l:'后悔的'},
     ].map(o => `<option value="${o.v}"${o.v === (defSpendingType||'') ? ' selected' : ''}>${o.l}</option>`).join('');
     const row = document.createElement('div');
@@ -4240,7 +4289,7 @@ function loadInlineItems(items, type) {
 // ==================== 消费类型 ====================
 const SPENDING_TYPE_CONFIG = {
     need:   { label: '必须的', color: '#0d6efd', bg: 'rgba(13,110,253,0.12)' },
-    want:   { label: '想要的', color: '#fd7e14', bg: 'rgba(253,126,20,0.12)' },
+    want:   { label: '非必须', color: '#fd7e14', bg: 'rgba(253,126,20,0.12)' },
     regret: { label: '后悔的', color: '#dc3545', bg: 'rgba(220,53,69,0.12)' },
 };
 
@@ -4351,7 +4400,7 @@ function renderSpendingAnalysis() {
     cardsEl.innerHTML = '';
     const types = [
         { key: 'need', label: '必须的', icon: 'bi-shield-check', color: '#0d6efd' },
-        { key: 'want', label: '想要的', icon: 'bi-star', color: '#fd7e14' },
+        { key: 'want', label: '非必须', icon: 'bi-star', color: '#fd7e14' },
         { key: 'regret', label: '后悔的', icon: 'bi-emoji-frown', color: '#dc3545' },
         { key: '',     label: '未标记', icon: 'bi-question-circle', color: '#6c757d' },
     ];
@@ -4400,7 +4449,7 @@ function renderSpendingAnalysis() {
             labels: mLabels,
             datasets: [
                 { label:'必须', data: mLabels.map(m => months[m].need), backgroundColor:'#0d6efd' },
-                { label:'想要', data: mLabels.map(m => months[m].want), backgroundColor:'#fd7e14' },
+                { label:'非必须', data: mLabels.map(m => months[m].want), backgroundColor:'#fd7e14' },
                 { label:'后悔的', data: mLabels.map(m => months[m].regret), backgroundColor:'#dc3545', stack:'s' },
                 { label:'未标记', data: mLabels.map(m => months[m]['']), backgroundColor:'#adb5bd' },
             ]
@@ -4499,10 +4548,13 @@ function onSubModalHide() {
     const hintEl = $('edit-trans-desc-hint');
     if (hintEl) hintEl.style.display = 'none';
     resetAttachmentUI();
-    // 重置只读状态
+    // 重置只读状态（收支表单）
     const form = $('edit-transaction-form');
     form.querySelectorAll('input,select,textarea,button[type="button"]').forEach(el => { el.disabled = false; });
     $('edit-trans-submit-btn').style.display = '';
+    // 重置只读状态（转账表单）
+    $('edit-transfer-form').querySelectorAll('input,select').forEach(el => { el.disabled = false; });
+    $('edit-transfer-submit-btn').style.display = '';
     maybeReturnToDetail();
 }
 $('editTransactionModal').addEventListener('hidden.bs.modal', onSubModalHide);
@@ -4584,6 +4636,7 @@ $('edit-transaction-form').addEventListener('submit', (e) => {
 $('edit-transfer-form').addEventListener('submit', (e) => {
     e.preventDefault();
     const mode = $('edit-transfer-mode').value;
+    if (mode === 'view') return;
     const newDate = $('edit-transfer-date').value;
     const newFromId = $('edit-transfer-from').value;
     const newToId = $('edit-transfer-to').value;
@@ -4824,7 +4877,10 @@ function renderAllTransactions() {
         const editBtns = canEdit ? (t.isTransfer ?
             `<i class="bi bi-pencil text-primary cursor-pointer me-2" style="cursor:pointer;" onclick="openEditTransfer(${t.id})"></i><i class="bi bi-trash text-danger cursor-pointer" style="cursor:pointer;" onclick="deleteTransaction(${t.id})"></i>` :
             `<i class="bi bi-pencil text-primary cursor-pointer me-2" style="cursor:pointer;" onclick="openEditTransaction(${t.id})"></i><i class="bi bi-trash text-danger cursor-pointer" style="cursor:pointer;" onclick="deleteTransaction(${t.id})"></i>`) :
-            (t._isArchived ? '<span class="badge bg-secondary" style="font-size:0.6rem;">存档</span>' : '');
+            (t._isArchived ? '<span class="badge bg-secondary" style="font-size:0.6rem;">存档</span>' :
+             (t.isTransfer
+               ? `<i class="bi bi-eye text-secondary" style="cursor:pointer;font-size:1rem;" title="查看转账（${t.ownerName}）" onclick="openEditTransfer(${t.id})"></i>`
+               : `<i class="bi bi-eye text-secondary" style="cursor:pointer;font-size:1rem;" title="查看交易（${t.ownerName}）" onclick="openEditTransaction(${t.id})"></i>`));
 
         const tr = document.createElement('tr');
         const tDescDisplay = t.desc||'';
@@ -4891,7 +4947,17 @@ function renderAllTransactions() {
                     </div>`;
             }
 
-            if (t.ownerName === currentUserName) { initMobileSwipeGestures(card, t.id); }
+            if (t.ownerName === currentUserName) {
+                initMobileSwipeGestures(card, t.id);
+            } else {
+                // 其他用户流水：点击查看
+                card.style.cursor = 'pointer';
+                card.style.opacity = '0.82';
+                card.addEventListener('click', () => {
+                    if (t.isTransfer) openEditTransfer(t.id);
+                    else openEditTransaction(t.id);
+                });
+            }
             mobileContainer.appendChild(card);
         });
     }
