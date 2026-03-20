@@ -307,7 +307,7 @@ body {
     align-items: center;
     gap: 7px;
 }
-#app-toast.show { opacity: 0.7; pointer-events: auto; }
+#app-toast.show { opacity: 1; pointer-events: auto; }
 #app-toast.minimized {
     left: 14px !important;
     transform: translateX(0) !important;
@@ -587,7 +587,7 @@ select.compact-form-control { height: 2.1rem; }
 
         <!-- 标题栏 + 齿轮 -->
         <div class="d-flex align-items-center justify-content-between mb-3">
-            <h4 class="mb-0 text-primary"><i class="bi bi-wallet2"></i> 记一笔</h4>
+            <h4 class="mb-0 text-primary"><i class="bi bi-wallet2"></i>记一笔</h4>
             <button class="btn btn-sm btn-outline-secondary" onclick="toggleLoginSettings()" title="连接设置">
                 <i class="bi bi-gear" id="login-settings-gear"></i>
             </button>
@@ -653,7 +653,7 @@ select.compact-form-control { height: 2.1rem; }
                 </button>
             </div>
             <div class="text-end mt-2">
-                <span class="text-muted" style="font-size:0.7rem;">v1.5.0</span>
+                <span class="text-muted" style="font-size:0.7rem;">v1.3.9</span>
             </div>
         </div>
 
@@ -2763,8 +2763,7 @@ function showUnsavedToast() {
     clearTimeout(_toastTimer);
     clearTimeout(_toastMinimizeTimer);
     el.classList.remove('minimized');
-    el.onmouseenter = null;
-    el.onmouseleave = null;
+    el.onclick = null;
     applyToastStyle(el, 'warning');
     el.innerHTML = `${toastIcons.warning} 有未保存的修改 <button onclick="syncToDrive(true)" style="margin-left:8px;padding:1px 10px;font-size:0.78rem;border-radius:12px;border:1px solid #664d03;background:transparent;color:#664d03;cursor:pointer;font-weight:600;">立即同步</button>`;
     el.classList.add('show');
@@ -2774,17 +2773,19 @@ function showUnsavedToast() {
 function minimizeUnsavedToast() {
     const el = $('app-toast');
     if (!el || !hasUnsavedChanges) return;
+    clearTimeout(_toastMinimizeTimer);
     applyToastStyle(el, 'warning');
     el.classList.add('minimized');
     el.innerHTML = `<span style="color:#e67e00;font-size:1.1rem;line-height:1;flex-shrink:0;">●</span><span style="margin-left:5px;font-weight:600;">未保存</span>`;
-    el.onmouseenter = () => {
+    // 点击角标展开完整 Toast，5秒后再次缩小
+    el.onclick = (e) => {
+        e.stopPropagation();
         clearTimeout(_toastMinimizeTimer);
         el.classList.remove('minimized');
+        el.onclick = null;
         applyToastStyle(el, 'warning');
         el.innerHTML = `${toastIcons.warning} 有未保存的修改 <button onclick="syncToDrive(true)" style="margin-left:8px;padding:1px 10px;font-size:0.78rem;border-radius:12px;border:1px solid #664d03;background:transparent;color:#664d03;cursor:pointer;font-weight:600;">立即同步</button>`;
-    };
-    el.onmouseleave = () => {
-        _toastMinimizeTimer = setTimeout(() => minimizeUnsavedToast(), 2000);
+        _toastMinimizeTimer = setTimeout(() => minimizeUnsavedToast(), 5000);
     };
 }
 
@@ -2792,7 +2793,7 @@ function clearUnsavedFlag() {
     hasUnsavedChanges = false;
     clearTimeout(_toastMinimizeTimer);
     const el = $('app-toast');
-    if (el) { el.classList.remove('minimized'); el.onmouseenter = null; el.onmouseleave = null; }
+    if (el) { el.classList.remove('minimized'); el.onclick = null; }
     // 同步成功后清掉本地草稿
     if (currentUserName) {
         localStorage.removeItem(`APP_local_draft_${currentUserName}`);
