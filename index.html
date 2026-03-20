@@ -169,12 +169,6 @@ body {
 .active-view { display: block; }
 #view-transactions.active-view,
 #view-account-detail.active-view { display: flex; flex-direction: column; overflow-y: hidden; }
-#view-accounts.active-view,
-#view-stats.active-view,
-#view-planned.active-view,
-#view-settings.active-view { display: flex; flex-direction: column; overflow-y: hidden; padding-right: 0; }
-.view-sticky-header { flex-shrink: 0; background: var(--bs-body-bg); border-bottom: 1px solid var(--bs-border-color); padding: 12px 0 10px; margin-bottom: 0; }
-.view-scroll-body { flex: 1; overflow-y: auto; padding-right: 5px; padding-top: 12px; padding-bottom: 10px; }
 
 /* 账户详情视图：桌面表格撑满，手机列表滚动 */
 #view-account-detail .excel-table-container { flex: 1; min-height: 0; }
@@ -646,7 +640,7 @@ select.compact-form-control { height: 2.1rem; }
                 </button>
             </div>
             <div class="text-end mt-2">
-                <span class="text-muted" style="font-size:0.7rem;">v1.4.0</span>
+                <span class="text-muted" style="font-size:0.7rem;">v1.3.9</span>
             </div>
         </div>
 
@@ -757,21 +751,17 @@ select.compact-form-control { height: 2.1rem; }
         </div>
         <!-- ==================== 账户视图 ==================== -->
         <div id="view-accounts" class="view-section">
-            <div class="view-sticky-header px-0">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h4 class="mb-0">我的资产</h4>
-                    <button class="btn btn-primary" onclick="openNewAccount()">
-                        <i class="bi bi-plus-lg"></i>
-                    </button>
-                </div>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="mb-0">我的资产</h4>
+                <button class="btn btn-primary" onclick="openNewAccount()">
+                    <i class="bi bi-plus-lg"></i>
+                </button>
             </div>
-            <div class="view-scroll-body">
-                <div class="alert alert-light border shadow-sm mb-4 clickable-amount" onclick="toggleAmountVisibility()">
-                    <div id="net-worth-display"></div>
-                </div>
-                <div id="account-list-container"></div>
-                <div id="other-users-accounts-container" class="mt-5 opacity-75"></div>
+            <div class="alert alert-light border shadow-sm mb-4 clickable-amount" onclick="toggleAmountVisibility()">
+                <div id="net-worth-display"></div>
             </div>
+            <div id="account-list-container"></div>
+            <div id="other-users-accounts-container" class="mt-5 opacity-75"></div>
         </div>
 
         <!-- ==================== 账户详情视图 ==================== -->
@@ -952,39 +942,36 @@ select.compact-form-control { height: 2.1rem; }
 
         <!-- ==================== 统计视图 ==================== -->
         <div id="view-stats" class="view-section">
-            <!-- 固定顶部 -->
-            <div class="view-sticky-header px-0">
-                <div class="d-flex align-items-center mb-2 gap-2">
-                    <h4 class="mb-0 flex-shrink-0">数据分析</h4>
-                    <button class="btn btn-sm btn-outline-secondary ms-auto flex-shrink-0" onclick="openSpendingAnalysis()">
-                        <i class="bi bi-pie-chart-fill"></i> 消费类型
-                    </button>
-                    <div style="overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex:1;min-width:0;">
-                        <div class="btn-group flex-nowrap" id="stats-currency-btns" style="white-space:nowrap;">
-                            <!-- dynamically rendered based on account currencies -->
-                        </div>
-                    </div>
-                </div>
-                <div class="filter-bar-row">
-                    <div style="width: 120px;">
-                        <input type="date" class="form-control form-control-sm" id="stats-start-date" onchange="applyStatsFilter()">
-                    </div>
-                    <div style="width: 120px;">
-                        <input type="date" class="form-control form-control-sm" id="stats-end-date" onchange="applyStatsFilter()">
-                    </div>
-                    <div>
-                        <div class="btn-group btn-group-sm">
-                            <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter('30days')">近30天</button>
-                            <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter('month')">本月</button>
-                            <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter('lastmonth')">上月</button>
-                            <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter('year')">本年</button>
-                            <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter('all')">全部</button>
-                        </div>
+            <div class="d-flex align-items-center mb-3 gap-2">
+                <h4 class="mb-0 flex-shrink-0">数据分析</h4>
+                <button class="btn btn-sm btn-outline-secondary ms-auto" onclick="openSpendingAnalysis()">
+                    <i class="bi bi-pie-chart-fill"></i> 消费类型
+                </button>
+                <div style="overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex:1;min-width:0;">
+                    <div class="btn-group flex-nowrap" id="stats-currency-btns" style="white-space:nowrap;">
+                        <!-- dynamically rendered based on account currencies -->
                     </div>
                 </div>
             </div>
-            <!-- 可滚动内容区 -->
-            <div class="view-scroll-body">
+
+            <div class="filter-bar-row mb-4">
+                <div style="width: 120px;">
+                    <input type="date" class="form-control form-control-sm" id="stats-start-date" onchange="applyStatsFilter()">
+                </div>
+                <div style="width: 120px;">
+                    <input type="date" class="form-control form-control-sm" id="stats-end-date" onchange="applyStatsFilter()">
+                </div>
+                <div>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter('30days')">近30天</button>
+                        <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter('month')">本月</button>
+                        <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter('lastmonth')">上月</button>
+                        <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter('year')">本年</button>
+                        <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter('all')">全部</button>
+                    </div>
+                </div>
+            </div>
+
             <div class="alert alert-light border shadow-sm mb-4 clickable-amount" onclick="toggleAmountVisibility()">
                 <div class="row text-center">
                     <div class="col-4">期间收入: <b class="text-success" id="stat-income-display">0.00</b></div>
@@ -1086,41 +1073,32 @@ select.compact-form-control { height: 2.1rem; }
                 </div>
 
             </div>
-            </div><!-- end view-scroll-body -->
         </div>
 
         <!-- ==================== 计划交易视图 ==================== -->
         <div id="view-planned" class="view-section">
-            <div class="view-sticky-header px-0">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h4 class="mb-0">计划交易</h4>
-                    <button class="btn btn-primary" onclick="openNewPlanned()">
-                        <i class="bi bi-plus-lg"></i>
-                    </button>
-                </div>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="mb-0">计划交易</h4>
+                <button class="btn btn-primary" onclick="openNewPlanned()">
+                    <i class="bi bi-plus-lg"></i>
+                </button>
             </div>
-            <div class="view-scroll-body">
-                <div id="planned-list-container"></div>
-            </div>
+
+            <div id="planned-list-container"></div>
         </div>
 
         <!-- ==================== 设置视图 ==================== -->
         <div id="view-settings" class="view-section">
-            <div class="view-sticky-header px-0">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h4 class="mb-0">系统设置</h4>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-sm btn-outline-secondary" onclick="switchUser()">
-                            <i class="bi bi-arrow-left-right"></i> <span class="d-none d-md-inline">切换用户</span>
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="logout()">
-                            <i class="bi bi-box-arrow-left"></i> <span class="d-none d-md-inline">退出</span>
-                        </button>
-                    </div>
-                </div>
+            <h4 class="mb-4">系统设置</h4>
+
+            <div class="d-md-none mb-4">
+                <button class="btn btn-outline-secondary w-100 mb-2" onclick="switchUser()">
+                    <i class="bi bi-arrow-left-right"></i> 切换用户
+                </button>
+                <button class="btn btn-outline-danger w-100" onclick="logout()">
+                    <i class="bi bi-box-arrow-left"></i> 退出登录 (<span id="mobile-current-user"></span>)
+                </button>
             </div>
-            <div class="view-scroll-body">
-            <div class="d-md-none mb-3 d-none"><!-- mobile buttons moved to header --></div>
 
             <div class="row g-4">
                 <div class="col-12 col-md-6">
@@ -1296,7 +1274,6 @@ select.compact-form-control { height: 2.1rem; }
                     </div>
                 </div>
             </div>
-            </div><!-- end view-scroll-body -->
         </div>
     </div>
 </div>
