@@ -530,17 +530,61 @@ select.compact-form-control { height: 2.1rem; }
     .user-name-full { display: none; }
     .user-name-short { display: inline; }
 
-    .modal-dialog { min-height: 40vh; max-height: 90vh; margin: auto; display: flex; align-items: center; }
-    .modal-content { max-height: 90vh; display: flex; flex-direction: column; }
-    .modal-body { overflow-y: auto; flex: 1; max-height: calc(90vh - 120px); }
-    .modal-body form { display: flex; flex-direction: column; }
-
-    /* 编辑交易模态框：手机贴顶 */
-    #editTransactionModal .modal-dialog {
-        margin: 0 auto !important;
-        align-self: flex-start;
-        max-height: 90vh;
+    /* ── 所有模态框在手机上以底部抽屉形式展现 ── */
+    /* Bootstrap modal 本身是 display:block，用 fixed+bottom 定位到底部 */
+    .modal-dialog {
+        position: fixed !important;
+        bottom: 0 !important; left: 0 !important; right: 0 !important;
+        top: auto !important;
+        margin: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        max-height: 92vh;
+        border-radius: 20px 20px 0 0;
+        transform: translateY(100%);
+        transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1) !important;
     }
+    .modal.show .modal-dialog {
+        transform: translateY(0) !important;
+    }
+    /* 取消 Bootstrap 的 translateY 默认动画，改用我们的 */
+    .modal.fade .modal-dialog { transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1) !important; }
+    .modal-content {
+        border-radius: 20px 20px 0 0 !important;
+        border-left: none !important;
+        border-right: none !important;
+        border-bottom: none !important;
+        max-height: 92vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 -4px 24px rgba(0,0,0,0.15);
+    }
+    /* 顶部拖拽手柄（所有模态框统一） */
+    .modal-content::before {
+        content: '';
+        display: block;
+        width: 40px; height: 4px;
+        background: var(--bs-border-color);
+        border-radius: 2px;
+        margin: 10px auto 0;
+        flex-shrink: 0;
+        opacity: 0.6;
+    }
+    .modal-header {
+        border-radius: 0 !important;
+        padding-top: 8px !important;
+        border-bottom: 1px solid var(--bs-border-color);
+    }
+    .modal-body { overflow-y: auto; flex: 1; }
+    .modal-body form { display: flex; flex-direction: column; }
+    /* 底部安全区 */
+    .modal-footer, .modal-body:last-child {
+        padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px)) !important;
+    }
+    /* 大 / 小 modal 也贴底 */
+    .modal-dialog.modal-lg, .modal-dialog.modal-sm { max-width: 100% !important; }
+    /* 拖拽时关闭过渡动画 */
+    .modal-dialog.bs-dragging { transition: none !important; }
 }
 
 /* ==================== 底部抽屉 Bottom Sheet ==================== */
@@ -774,7 +818,7 @@ select.compact-form-control { height: 2.1rem; }
                 </button>
             </div>
             <div class="text-end mt-2">
-                <span class="text-muted" style="font-size:0.7rem;">v1.4.1</span>
+                <span class="text-muted" style="font-size:0.7rem;">v1.4.2</span>
             </div>
         </div>
 
@@ -3882,12 +3926,12 @@ function renderDetailContent(id) {
                 item.addEventListener('mouseenter', () => item.style.background = 'rgba(var(--bs-primary-rgb),0.06)');
                 item.addEventListener('mouseleave', () => item.style.background = 'var(--bs-body-bg)');
                 item.addEventListener('click', () => {
-                    if (isTransfer) {
-                        openedFromDetail = true;
-                        openEditTransfer(t.id);
-                    } else {
-                        openedFromDetail = true;
+                    openedFromDetail = true;
+                    if (window.innerWidth <= 768) {
                         showTransDetail(t);
+                    } else {
+                        if (isTransfer) openEditTransfer(t.id);
+                        else showTransDetail(t);
                     }
                 });
             } else if (!isTransfer) {
@@ -4353,9 +4397,16 @@ let _bsCurrentTrans = null; // 当前展示的交易
 /** 构建底部抽屉内容并打开 */
 function showTransDetail(t, extraZIndex) {
     if (!t) return;
-    if (t.isTransfer) { openEditTransfer(t.id); return; }
-
     const isMobile = window.innerWidth <= 768;
+
+    if (t.isTransfer) {
+        if (isMobile) {
+            openBottomSheet(t, extraZIndex);
+        } else {
+            openEditTransfer(t.id);
+        }
+        return;
+    }
 
     if (isMobile) {
         openBottomSheet(t, extraZIndex);
@@ -4366,12 +4417,58 @@ function showTransDetail(t, extraZIndex) {
 
 function _buildTransDetailHtml(t) {
     const acc = accounts.find(a => a.id == t.accountId);
+    const isOwn = t.ownerName === currentUserName && !t._isArchived;
+
+    // ── 转账类型 ──
+    if (t.isTransfer) {
+        let tOut, tIn;
+        if (t.transferPairId) {
+            const pair = transactions.filter(x => x.transferPairId === t.transferPairId);
+            tOut = pair.find(x => x.type === 'expense');
+            tIn  = pair.find(x => x.type === 'income');
+        } else {
+            tOut = t.type === 'expense' ? t : transactions.find(x => x.isTransfer && x.type === 'expense' && x.date === t.date && x.relatedAccountId === t.accountId);
+            tIn  = t.type === 'income'  ? t : transactions.find(x => x.isTransfer && x.type === 'income'  && x.date === t.date && x.relatedAccountId === t.accountId);
+        }
+        if (!tOut) return '';
+        const accFrom = accounts.find(a => a.id == tOut.accountId);
+        const accTo   = tIn ? accounts.find(a => a.id == tIn.accountId) : null;
+        const symOut  = accFrom ? (CURRENCY_SYMBOLS[accFrom.currency] || '') : '';
+        const symIn   = accTo   ? (CURRENCY_SYMBOLS[accTo.currency]   || '') : symOut;
+        const isCross = accFrom && accTo && accFrom.currency !== accTo.currency;
+        const descClean = tOut.desc || '';
+        let html = `<div style="text-align:center;padding:8px 0 14px;">
+            <div class="fw-bold text-warning" style="font-size:2rem;letter-spacing:-0.5px;">${symOut}${formatAmount(Math.abs(tOut.amount), accFrom?.currency||'')}</div>
+            ${isCross ? `<div style="font-size:0.85rem;color:var(--bs-secondary);margin-top:2px;">→ ${symIn}${tIn ? formatAmount(Math.abs(tIn.amount), accTo?.currency||'') : ''}</div>` : ''}
+            <div class="text-muted" style="font-size:0.82rem;margin-top:4px;">${tOut.date}</div>
+        </div>`;
+        html += `<div class="bs-amount-row">
+            <div style="flex:1;">
+                <div class="bs-cat" style="color:var(--bs-secondary);font-size:0.78rem;font-weight:500;margin-bottom:3px;">转出</div>
+                <div style="font-weight:600;">${accFrom ? getAccountDisplayName(accFrom) : '?'}</div>
+            </div>
+            <div style="font-size:0.85rem;font-weight:700;color:var(--bs-warning);">−${symOut}${formatAmount(Math.abs(tOut.amount), accFrom?.currency||'')}</div>
+        </div>`;
+        if (accTo) {
+            html += `<div class="bs-amount-row">
+                <div style="flex:1;">
+                    <div class="bs-cat" style="color:var(--bs-secondary);font-size:0.78rem;font-weight:500;margin-bottom:3px;">转入</div>
+                    <div style="font-weight:600;">${getAccountDisplayName(accTo)}</div>
+                </div>
+                <div style="font-size:0.85rem;font-weight:700;color:var(--bs-success);">+${symIn}${tIn ? formatAmount(Math.abs(tIn.amount), accTo?.currency||'') : ''}</div>
+            </div>`;
+        }
+        if (descClean) html += `<div style="padding-top:8px;"><span class="bs-meta-chip"><i class="bi bi-chat-left-text" style="font-size:0.7rem;"></i>${descClean}</span></div>`;
+        if (!isOwn) html += `<div class="mt-2"><span class="badge bg-secondary" style="font-size:0.7rem;">${tOut.ownerName}</span></div>`;
+        return html;
+    }
+
+    // ── 收支类型 ──
     const sym = acc ? (CURRENCY_SYMBOLS[acc.currency] || '') : '';
     const cur = acc ? acc.currency : '';
     const isExpense = t.type === 'expense';
     const colorClass = isExpense ? 'text-danger' : 'text-success';
     const isSplit = t.items && t.items.length > 1;
-    const isOwn = t.ownerName === currentUserName && !t._isArchived;
 
     let html = '';
 
@@ -4440,9 +4537,13 @@ function openBottomSheet(t, extraZIndex) {
     _bsCurrentTrans = t;
     const isOwn = t.ownerName === currentUserName && !t._isArchived;
     const isSplit = t.items && t.items.length > 1;
+    const isTransfer = t.isTransfer;
 
     // 标题
-    $('bs-title').textContent = isSplit ? `${t.items.length} 项拆分` : '交易详情';
+    let titleText = '交易详情';
+    if (isTransfer) titleText = '转账详情';
+    else if (isSplit) titleText = `${t.items.length} 项拆分`;
+    $('bs-title').textContent = titleText;
 
     // 内容
     $('bs-content').innerHTML = _buildTransDetailHtml(t);
@@ -4490,7 +4591,8 @@ function bsEditCurrent() {
     closeBottomSheet();
     setTimeout(() => {
         openedFromDetail = true;
-        openEditTransaction(t.id);
+        if (t.isTransfer) openEditTransfer(t.id);
+        else openEditTransaction(t.id);
     }, 80);
 }
 
@@ -4541,6 +4643,7 @@ function _bsInitDrag() {
 
 /** 桌面端：保持原有 modal 行为 */
 function _showTransDetailModal(t, extraZIndex) {
+    if (t.isTransfer) { openEditTransfer(t.id); return; }
     const acc = accounts.find(a => a.id == t.accountId);
     const isOwn = t.ownerName === currentUserName && !t._isArchived;
     const isSplit = t.items && t.items.length > 1;
@@ -5408,8 +5511,16 @@ function getFilteredTransactions() {
 function initMobileSwipeGestures(card, transactionId) {
     card.addEventListener('click', (e) => {
         const t = transactions.find(x => x.id === transactionId);
-        if (!t || t.ownerName !== currentUserName || t._isArchived) return;
-        showTransDetail(t);
+        if (!t) return;
+        // 移动端：所有交易（含转账）统一走 showTransDetail → 底部抽屉
+        if (window.innerWidth <= 768) {
+            showTransDetail(t);
+            return;
+        }
+        // 桌面端
+        if (t.ownerName !== currentUserName || t._isArchived) return;
+        if (t.isTransfer) openEditTransfer(t.id);
+        else showTransDetail(t);
     });
 }
 
@@ -5552,8 +5663,7 @@ function renderAllTransactions() {
                 card.style.cursor = 'pointer';
                 card.style.opacity = '0.82';
                 card.addEventListener('click', () => {
-                    if (t.isTransfer) openEditTransfer(t.id);
-                    else showTransDetail(t);
+                    showTransDetail(t);
                 });
             }
             mobileContainer.appendChild(card);
@@ -5740,7 +5850,65 @@ window.addEventListener('load', () => {
         }
     });
     updateTransferModeButton();
+
+    // ── Bootstrap modal 拖拽关闭（手机端） ──
+    if (window.innerWidth <= 768) {
+        _initAllModalDragDismiss();
+    }
 });
+
+// ── Bootstrap modal 拖拽关闭实现 ──
+function _initAllModalDragDismiss() {
+    // 监听所有 modal 显示事件，动态绑定拖拽
+    document.addEventListener('shown.bs.modal', (e) => {
+        _initModalDrag(e.target);
+    });
+}
+
+function _initModalDrag(modalEl) {
+    if (!modalEl || modalEl._bsDragInited) return;
+    modalEl._bsDragInited = true;
+
+    const dialog = modalEl.querySelector('.modal-dialog');
+    const handle = modalEl.querySelector('.modal-header, .modal-content::before');
+    // 在 modal-content 顶部区域（手柄 + header）绑定拖拽
+    const dragTarget = modalEl.querySelector('.modal-content');
+    if (!dialog || !dragTarget) return;
+
+    let startY = 0, curY = 0, isDragging = false;
+
+    const onTouchStart = (e) => {
+        // 只响应顶部 60px 区域（手柄 + header）
+        const rect = dragTarget.getBoundingClientRect();
+        if (e.touches[0].clientY - rect.top > 60) return;
+        startY = e.touches[0].clientY;
+        curY = startY;
+        isDragging = true;
+        dialog.classList.add('bs-dragging');
+    };
+
+    const onTouchMove = (e) => {
+        if (!isDragging) return;
+        curY = e.touches[0].clientY;
+        const dy = Math.max(0, curY - startY);
+        dialog.style.transform = `translateY(${dy}px)`;
+    };
+
+    const onTouchEnd = () => {
+        if (!isDragging) return;
+        isDragging = false;
+        dialog.classList.remove('bs-dragging');
+        dialog.style.transform = '';
+        const dy = curY - startY;
+        if (dy > 90) {
+            bootstrap.Modal.getInstance(modalEl)?.hide();
+        }
+    };
+
+    dragTarget.addEventListener('touchstart', onTouchStart, { passive: true });
+    document.addEventListener('touchmove', onTouchMove, { passive: true });
+    document.addEventListener('touchend', onTouchEnd);
+}
 
 // 3. 处理文件选择与上传
 async function handleAttachmentSelected(input) {
