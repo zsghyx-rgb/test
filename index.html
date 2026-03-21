@@ -664,7 +664,7 @@ select.compact-form-control { height: 2.1rem; }
                 </button>
             </div>
             <div class="text-end mt-2">
-                <span class="text-muted" style="font-size:0.7rem;">v1.4.0</span>
+                <span class="text-muted" style="font-size:0.7rem;">v1.4.1</span>
             </div>
         </div>
 
@@ -978,22 +978,21 @@ select.compact-form-control { height: 2.1rem; }
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <div class="filter-bar-row mb-4 mt-3">
-                <div style="width: 120px;">
-                    <input type="date" class="form-control form-control-sm" id="stats-start-date" onchange="applyStatsFilter()">
-                </div>
-                <div style="width: 120px;">
-                    <input type="date" class="form-control form-control-sm" id="stats-end-date" onchange="applyStatsFilter()">
-                </div>
-                <div>
-                    <div class="btn-group btn-group-sm">
-                        <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter('30days')">近30天</button>
-                        <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter('month')">本月</button>
-                        <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter('lastmonth')">上月</button>
-                        <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter('year')">本年</button>
-                        <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter('all')">全部</button>
+                <div class="filter-bar-row">
+                    <div style="width: 120px;">
+                        <input type="date" class="form-control form-control-sm" id="stats-start-date" onchange="applyStatsFilter()">
+                    </div>
+                    <div style="width: 120px;">
+                        <input type="date" class="form-control form-control-sm" id="stats-end-date" onchange="applyStatsFilter()">
+                    </div>
+                    <div>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter('30days')">近30天</button>
+                            <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter('month')">本月</button>
+                            <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter('lastmonth')">上月</button>
+                            <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter('year')">本年</button>
+                            <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter('all')">全部</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1150,6 +1149,18 @@ select.compact-form-control { height: 2.1rem; }
                         <div class="card-body">
                             <div id="exchange-rate-inputs"></div>
                             <p class="text-muted small mt-2">当前: <span id="current-exchange-rate"></span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-transparent fw-bold">
+                            <i class="bi bi-tags"></i> 消费类型设置
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small mb-3">自定义各消费类型的名称和颜色。</p>
+                            <div id="spending-type-settings-list"></div>
                         </div>
                     </div>
                 </div>
@@ -1350,13 +1361,8 @@ select.compact-form-control { height: 2.1rem; }
         <!-- 明细列表 -->
         <div class="d-flex gap-2 mb-2 flex-wrap align-items-center">
             <h6 class="mb-0 me-1">支出明细</h6>
-            <select class="form-select form-select-sm" id="sa-filter-type" style="width:110px;" onchange="renderSaDetailList()">
-                <option value="">全部类型</option>
-                <option value="need">必须的</option>
-                <option value="want">非必须</option>
-                <option value="regret">后悔的</option>
-                <option value="none">未标记</option>
-            </select>
+            <button class="btn btn-sm btn-outline-secondary" id="sa-filter-type-btn" onclick="cycleSaFilterType()" style="font-size:0.78rem;min-width:68px;">全部类型</button>
+            <input type="hidden" id="sa-filter-type" value="">
             <input type="text" class="form-control form-control-sm" id="sa-filter-search" style="width:150px;" placeholder="搜索类别/备注..." oninput="renderSaDetailList()">
             <span class="text-muted small ms-auto" id="sa-detail-count"></span>
         </div>
@@ -1758,6 +1764,34 @@ let userTransactions = [];
 let userPlannedTransactions = [];
 let categories = {};
 let exchangeRates = {};
+let spendingTypes = {}; // 消费类型配置，从数据文件加载
+
+const DEFAULT_SPENDING_TYPES = {
+    need:   { label: '必须的', color: '#0d6efd' },
+    want:   { label: '非必须', color: '#fd7e14' },
+    regret: { label: '后悔的', color: '#dc3545' },
+};
+
+/** 计算颜色的淡背景版本（给 badge bg 用） */
+function colorToBg(hex) {
+    try {
+        const r = parseInt(hex.slice(1,3),16);
+        const g = parseInt(hex.slice(3,5),16);
+        const b = parseInt(hex.slice(5,7),16);
+        return `rgba(${r},${g},${b},0.13)`;
+    } catch(e) { return 'rgba(128,128,128,0.13)'; }
+}
+
+/** 返回当前生效的消费类型配置（含 key='' 的未标记） */
+function getSpendingTypeConfig() {
+    const base = Object.assign({}, DEFAULT_SPENDING_TYPES, spendingTypes);
+    return {
+        need:   { label: base.need?.label   || '必须的', color: base.need?.color   || '#0d6efd', bg: colorToBg(base.need?.color   || '#0d6efd'), icon: 'bi-shield-check' },
+        want:   { label: base.want?.label   || '非必须', color: base.want?.color   || '#fd7e14', bg: colorToBg(base.want?.color   || '#fd7e14'), icon: 'bi-star' },
+        regret: { label: base.regret?.label || '后悔的', color: base.regret?.color || '#dc3545', bg: colorToBg(base.regret?.color || '#dc3545'), icon: 'bi-emoji-frown' },
+        '':     { label: '未标记', color: '#6c757d', bg: 'rgba(108,117,125,0.12)', icon: 'bi-question-circle' },
+    };
+}
 
 // ==================== 用户状态变量 ====================
 let currentUser = null;
@@ -2088,6 +2122,7 @@ function onFileSelected() {
                 inMemoryLoadedData = data;
                 categories = data.categories || DEFAULT_CATEGORIES;
                 exchangeRates = data.exchangeRates || DEFAULT_RATES;
+                spendingTypes = data.spendingTypes || {};
                 onDataLoaded();
                 $('password-section').style.display = 'none';
             } catch(err) {
@@ -2131,6 +2166,7 @@ function decryptAndLoadData() {
             inMemoryLoadedData = data;
             categories = data.categories || DEFAULT_CATEGORIES;
             exchangeRates = data.exchangeRates || DEFAULT_RATES;
+            spendingTypes = data.spendingTypes || {};
             $('password-error').classList.add('d-none');
             showToast('Drive 数据解密成功，请选择用户', 'success', 3000);
             window._driveMode = false;
@@ -2173,6 +2209,7 @@ function decryptAndLoadData() {
             inMemoryLoadedData = data;
             categories = data.categories || DEFAULT_CATEGORIES;
             exchangeRates = data.exchangeRates || DEFAULT_RATES;
+            spendingTypes = data.spendingTypes || {};
             $('password-error').classList.add('d-none');
             onDataLoaded();
         } catch(e) {
@@ -2252,10 +2289,12 @@ function createNewDataFile() {
         allUserData: allUserData,
         categories: DEFAULT_CATEGORIES,
         exchangeRates: {...DEFAULT_RATES},
+        spendingTypes: {},
     };
 
     categories = DEFAULT_CATEGORIES;
     exchangeRates = DEFAULT_RATES;
+    spendingTypes = {};
     userPassword = pwd;
     dataUsers = users;
 
@@ -2730,6 +2769,7 @@ function initAppUI() {
     renderStats();
 
     renderExchangeRateSettings();
+    refreshSpendingTypeOptions();
 }
 
 // ==================== 数据加载与保存 ====================
@@ -2763,6 +2803,7 @@ function saveUserData() {
     inMemoryLoadedData.users = dataUsers;
     inMemoryLoadedData.categories = categories;
     inMemoryLoadedData.exchangeRates = exchangeRates;
+    inMemoryLoadedData.spendingTypes = spendingTypes;
 }
 
 function filterUserData() {
@@ -4163,7 +4204,7 @@ function showTransItemsDetail(t) {
     let html = `<div class="mb-2 small text-muted">${t.date} · ${acc ? acc.name : ''}</div>`;
     html += '<table class="table table-sm mb-2"><tbody>';
     t.items.forEach(it => {
-        const stCfg = it.spendingType ? (SPENDING_TYPE_CONFIG[it.spendingType] || null) : null;
+        const stCfg = it.spendingType ? (getSpendingTypeConfig()[it.spendingType] || null) : null;
         const stBadge = stCfg ? `<span style="font-size:0.65rem;padding:0 4px;border-radius:3px;color:${stCfg.color};border:1px solid ${stCfg.color};margin-left:4px;">${stCfg.label}</span>` : '';
         const subMeta = [it.tags ? `@${it.tags}` : '', it.desc || ''].filter(Boolean).join(' · ');
         html += `<tr>
@@ -4220,9 +4261,12 @@ function deleteCurrentTransfer() {
 let _splitItems = []; // [{category, amount, spendingType, tags, desc}, ...]
 
 function _stOpts(selected) {
+    const cfg = getSpendingTypeConfig();
     return [
-        {v:'', l:'未标记'}, {v:'need', l:'必须的'},
-        {v:'want', l:'非必须'}, {v:'regret', l:'后悔的'},
+        {v:'', l:'未标记'},
+        {v:'need',   l: cfg.need.label},
+        {v:'want',   l: cfg.want.label},
+        {v:'regret', l: cfg.regret.label},
     ].map(o => `<option value="${o.v}"${o.v === (selected||'') ? ' selected' : ''}>${o.l}</option>`).join('');
 }
 
@@ -4451,11 +4495,9 @@ function addInlineItemRow() {}
 // ==================== 拆分账单 END ====================
 
 // ==================== 消费类型 ====================
-const SPENDING_TYPE_CONFIG = {
-    need:   { label: '必须的', color: '#0d6efd', bg: 'rgba(13,110,253,0.12)' },
-    want:   { label: '非必须', color: '#fd7e14', bg: 'rgba(253,126,20,0.12)' },
-    regret: { label: '后悔的', color: '#dc3545', bg: 'rgba(220,53,69,0.12)' },
-};
+// SPENDING_TYPE_CONFIG is now dynamic – use getSpendingTypeConfig() everywhere
+// Alias kept for backward compat in case any inline call remains
+const SPENDING_TYPE_CONFIG = null; // intentionally null – use getSpendingTypeConfig()
 
 function setSpendingType(val) {
     const sel = $('edit-trans-spending-type');
@@ -4564,11 +4606,12 @@ function renderSpendingAnalysis() {
     // Summary cards
     const cardsEl = $('sa-summary-cards');
     cardsEl.innerHTML = '';
+    const _stCfg = getSpendingTypeConfig();
     const types = [
-        { key: 'need', label: '必须的', icon: 'bi-shield-check', color: '#0d6efd' },
-        { key: 'want', label: '非必须', icon: 'bi-star', color: '#fd7e14' },
-        { key: 'regret', label: '后悔的', icon: 'bi-emoji-frown', color: '#dc3545' },
-        { key: '',     label: '未标记', icon: 'bi-question-circle', color: '#6c757d' },
+        { key: 'need',   label: _stCfg.need.label,   icon: _stCfg.need.icon,   color: _stCfg.need.color },
+        { key: 'want',   label: _stCfg.want.label,   icon: _stCfg.want.icon,   color: _stCfg.want.color },
+        { key: 'regret', label: _stCfg.regret.label, icon: _stCfg.regret.icon, color: _stCfg.regret.color },
+        { key: '',       label: '未标记',              icon: 'bi-question-circle', color: '#6c757d' },
     ];
     types.forEach(tp => {
         const amt = groups[tp.key] || 0;
@@ -4614,10 +4657,10 @@ function renderSpendingAnalysis() {
         data: {
             labels: mLabels,
             datasets: [
-                { label:'必须', data: mLabels.map(m => months[m].need), backgroundColor:'#0d6efd' },
-                { label:'非必须', data: mLabels.map(m => months[m].want), backgroundColor:'#fd7e14' },
-                { label:'后悔的', data: mLabels.map(m => months[m].regret), backgroundColor:'#dc3545', stack:'s' },
-                { label:'未标记', data: mLabels.map(m => months[m]['']), backgroundColor:'#adb5bd' },
+                { label: _stCfg.need.label,   data: mLabels.map(m => months[m].need),   backgroundColor: _stCfg.need.color },
+                { label: _stCfg.want.label,   data: mLabels.map(m => months[m].want),   backgroundColor: _stCfg.want.color },
+                { label: _stCfg.regret.label, data: mLabels.map(m => months[m].regret), backgroundColor: _stCfg.regret.color, stack:'s' },
+                { label: '未标记',             data: mLabels.map(m => months[m]['']),    backgroundColor: '#adb5bd' },
             ]
         },
         options: { maintainAspectRatio: false, scales:{ x:{ stacked:true }, y:{ stacked:true, beginAtZero:true } }, plugins:{ legend:{ position:'bottom' } }, animation:{ duration:400 } }
@@ -4628,9 +4671,39 @@ function renderSpendingAnalysis() {
     renderSaDetailList();
 }
 
+let _saFilterTypeValue = ''; // '' = 全部
+
+function cycleSaFilterType() {
+    const cfg = getSpendingTypeConfig();
+    // cycle: '' → need → want → regret → none → ''
+    const cycle = ['', 'need', 'want', 'regret', 'none'];
+    const idx = cycle.indexOf(_saFilterTypeValue);
+    _saFilterTypeValue = cycle[(idx + 1) % cycle.length];
+    const btn = $('sa-filter-type-btn');
+    const hidden = $('sa-filter-type');
+    if (hidden) hidden.value = _saFilterTypeValue;
+    if (btn) {
+        if (_saFilterTypeValue === '') {
+            btn.textContent = '全部类型';
+            btn.className = 'btn btn-sm btn-outline-secondary';
+        } else if (_saFilterTypeValue === 'none') {
+            btn.textContent = '未标记';
+            btn.className = 'btn btn-sm btn-secondary';
+        } else {
+            const c = cfg[_saFilterTypeValue];
+            btn.textContent = c ? c.label : _saFilterTypeValue;
+            btn.style.setProperty('--sa-btn-color', c?.color || '#666');
+            btn.className = 'btn btn-sm btn-outline-secondary';
+            btn.style.borderColor = c?.color || '';
+            btn.style.color = c?.color || '';
+        }
+    }
+    renderSaDetailList();
+}
+
 function renderSaDetailList() {
     const data = window._saCurrentData || [];
-    const filterType   = $('sa-filter-type')?.value || '';
+    const filterType   = _saFilterTypeValue;
     const filterSearch = ($('sa-filter-search')?.value || '').toLowerCase();
 
     let filtered = [...data].sort((a,b) => b.date.localeCompare(a.date));
@@ -4657,7 +4730,7 @@ function renderSaDetailList() {
         if (!acc) return;
         const sym = CURRENCY_SYMBOLS[acc.currency] || '';
         const accDisplayName = getAccountDisplayName(acc);
-        const cfg = SPENDING_TYPE_CONFIG[t.spendingType] || { label:'未标记', color:'#6c757d', bg:'rgba(108,117,125,0.12)' };
+        const cfg = getSpendingTypeConfig()[t.spendingType || ''] || { label:'未标记', color:'#6c757d', bg:'rgba(108,117,125,0.12)' };
         const editId = t._parentId || t.id;
         const isExpanded = !!t._parentId;
         const descClean = t.desc || '';
@@ -5819,7 +5892,7 @@ function switchTab(t, el) {
     if (fab) fab.classList.toggle('d-none', t !== 'transactions');
     if (t === 'stats') renderStats();
     if (t === 'planned') renderPlannedTransactions();
-    if (t === 'settings') { renderExchangeRateSettings(); initPasswordHint(); renderUserManagement(); renderArchiveManagementUI(); }
+    if (t === 'settings') { renderExchangeRateSettings(); initPasswordHint(); renderUserManagement(); renderArchiveManagementUI(); renderSpendingTypeSettings(); }
 }
 
 // ==================== 状态提示 ====================
@@ -5998,6 +6071,66 @@ function setExchangeRate(from, to, rate) {
     saveUserData(); triggerAutoSave();
     renderExchangeRateSettings();
     showToast('汇率已更新', 'success');
+}
+
+// ==================== 消费类型设置 ====================
+
+function renderSpendingTypeSettings() {
+    const container = $('spending-type-settings-list');
+    if (!container) return;
+    const cfg = getSpendingTypeConfig();
+    const keys = ['need', 'want', 'regret'];
+    container.innerHTML = '';
+    keys.forEach(key => {
+        const c = cfg[key];
+        const row = document.createElement('div');
+        row.className = 'd-flex align-items-center gap-2 mb-2';
+        row.innerHTML = `
+            <input type="color" class="form-control form-control-color flex-shrink-0" style="width:36px;height:36px;padding:2px;"
+                   value="${c.color}" id="st-color-${key}" title="颜色">
+            <input type="text" class="form-control form-control-sm" id="st-label-${key}"
+                   value="${c.label}" placeholder="类型名称" maxlength="8" style="flex:1;">
+            <button class="btn btn-outline-primary btn-sm flex-shrink-0"
+                    onclick="saveSpendingType('${key}')">保存</button>`;
+        container.appendChild(row);
+    });
+    // 刷新所有依赖消费类型配置的下拉框
+    refreshSpendingTypeOptions();
+}
+
+function saveSpendingType(key) {
+    const label = ($(`st-label-${key}`)?.value || '').trim();
+    const color = $(`st-color-${key}`)?.value || '';
+    if (!label) { showToast('名称不能为空', 'error'); return; }
+    if (!spendingTypes[key]) spendingTypes[key] = {};
+    spendingTypes[key].label = label;
+    spendingTypes[key].color = color;
+    saveUserData(); triggerAutoSave();
+    renderSpendingTypeSettings();
+    showToast('消费类型已更新', 'success');
+}
+
+/** 刷新所有静态写死的消费类型 <select> 选项 */
+function refreshSpendingTypeOptions() {
+    const cfg = getSpendingTypeConfig();
+    const selects = ['edit-trans-spending-type'];
+    selects.forEach(id => {
+        const sel = $(id);
+        if (!sel) return;
+        const cur = sel.value;
+        sel.innerHTML = `
+            <option value="">未标记</option>
+            <option value="need">${cfg.need.label}</option>
+            <option value="want">${cfg.want.label}</option>
+            <option value="regret">${cfg.regret.label}</option>`;
+        sel.value = cur; // restore selection
+    });
+    // Also update sa cycle button label if active
+    const btn = $('sa-filter-type-btn');
+    if (btn && _saFilterTypeValue && _saFilterTypeValue !== 'none') {
+        const c = cfg[_saFilterTypeValue];
+        if (c) { btn.textContent = c.label; btn.style.color = c.color; btn.style.borderColor = c.color; }
+    }
 }
 
 // ==================== 类别管理 ====================
