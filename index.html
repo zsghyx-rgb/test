@@ -543,6 +543,110 @@ select.compact-form-control { height: 2.1rem; }
     }
 }
 
+/* ==================== 底部抽屉 Bottom Sheet ==================== */
+#bs-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 1200;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+#bs-backdrop.show { opacity: 1; pointer-events: auto; }
+
+#bottom-sheet {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--bs-body-bg);
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.18);
+    z-index: 1201;
+    transform: translateY(102%);
+    transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1);
+    display: flex; flex-direction: column;
+    max-height: 88vh;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    will-change: transform;
+    touch-action: none;
+}
+#bottom-sheet.show { transform: translateY(0); }
+#bottom-sheet.dragging { transition: none; }
+
+#bs-handle-wrap {
+    padding: 12px 0 6px;
+    display: flex; justify-content: center;
+    cursor: grab; flex-shrink: 0;
+}
+#bs-handle {
+    width: 40px; height: 4px;
+    background: var(--bs-border-color);
+    border-radius: 2px;
+}
+
+#bs-header {
+    padding: 0 18px 10px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+#bs-title { font-size: 1rem; font-weight: 700; }
+#bs-close-btn {
+    background: var(--bs-secondary-bg);
+    border: none; border-radius: 50%;
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem; color: var(--bs-secondary);
+    cursor: pointer; flex-shrink: 0;
+}
+
+#bs-content {
+    overflow-y: auto;
+    flex: 1;
+    padding: 14px 18px;
+    -webkit-overflow-scrolling: touch;
+}
+
+#bs-footer {
+    padding: 10px 18px;
+    border-top: 1px solid var(--bs-border-color);
+    display: flex; gap: 10px; flex-shrink: 0;
+}
+#bs-edit-btn {
+    flex: 1;
+    padding: 12px;
+    border-radius: 12px;
+    border: none;
+    background: var(--bs-primary);
+    color: #fff;
+    font-size: 0.95rem; font-weight: 600;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+#bs-edit-btn:active { opacity: 0.85; transform: scale(0.98); }
+
+/* 底部抽屉内交易明细样式 */
+.bs-amount-row {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+.bs-amount-row:last-child { border-bottom: none; }
+.bs-cat { font-size: 0.92rem; font-weight: 600; flex: 1; min-width: 0; }
+.bs-sub { font-size: 0.75rem; color: var(--bs-secondary); margin-top: 2px; }
+.bs-amt { font-size: 1rem; font-weight: 700; text-align: right; flex-shrink: 0; margin-left: 12px; }
+.bs-total-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 0 2px;
+    margin-top: 4px;
+}
+.bs-meta-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: var(--bs-tertiary-bg);
+    border-radius: 8px; padding: 4px 10px;
+    font-size: 0.78rem; color: var(--bs-secondary);
+    margin-right: 6px; margin-bottom: 6px;
+}
+
+
 @media (min-width: 769px) {
     #mobile-transaction-list { display: none !important; }
     .user-name-short { display: none; }
@@ -1365,6 +1469,24 @@ select.compact-form-control { height: 2.1rem; }
     </div>
 </div>
 
+<!-- ==================== 底部抽屉 (手机端) ==================== -->
+<div id="bs-backdrop" onclick="closeBottomSheet()"></div>
+<div id="bottom-sheet">
+    <div id="bs-handle-wrap" id="bs-drag-handle">
+        <div id="bs-handle"></div>
+    </div>
+    <div id="bs-header">
+        <span id="bs-title">交易详情</span>
+        <button id="bs-close-btn" onclick="closeBottomSheet()"><i class="bi bi-x"></i></button>
+    </div>
+    <div id="bs-content"></div>
+    <div id="bs-footer">
+        <button id="bs-edit-btn" style="display:none;" onclick="bsEditCurrent()">
+            <i class="bi bi-pencil"></i> 编辑
+        </button>
+    </div>
+</div>
+
 <!-- ==================== 多笔明细查看弹窗 ==================== -->
 <div class="modal fade" id="transItemsDetailModal" tabindex="-1">
     <div class="modal-dialog modal-sm">
@@ -1612,6 +1734,11 @@ select.compact-form-control { height: 2.1rem; }
 
                     <!-- 附件（拆分模式也保留） -->
                     <div class="mb-2" id="attachment-section" style="display:none;">
+                        <!-- 拆分模式下显示独立的添加附件按钮（单笔模式时隐藏，用备注行的按钮代替） -->
+                        <button type="button" id="attachment-trigger-split" class="btn btn-outline-secondary btn-sm mb-2 d-none"
+                                style="font-size:0.78rem;" onclick="document.getElementById('attachment-file-input').click()">
+                            <i class="bi bi-image"></i> 添加附件
+                        </button>
                         <input type="file" id="attachment-file-input" accept="image/*,image/heic,image/heif,application/pdf" class="d-none" onchange="handleAttachmentSelected(this)">
                         <div id="attachment-preview-container" class="d-flex flex-wrap gap-2 mt-2" style="display:none !important;"></div>
                         <div id="attachment-upload-status" class="small text-muted mt-1" style="display:none;">
@@ -4219,63 +4346,206 @@ function openEditTransfer(id) {
     new bootstrap.Modal($('editTransactionModal')).show();
 }
 
-/**
- * 统一交易预览弹窗 —— 单笔和拆分都走这里
- * extraZIndex: 从高层页面（如消费分析）打开时传入更高的 z-index
- */
+// ==================== 底部抽屉 JS ====================
+
+let _bsCurrentTrans = null; // 当前展示的交易
+
+/** 构建底部抽屉内容并打开 */
 function showTransDetail(t, extraZIndex) {
     if (!t) return;
-    // 转账类型不走明细弹窗，直接编辑/查看
     if (t.isTransfer) { openEditTransfer(t.id); return; }
 
+    const isMobile = window.innerWidth <= 768;
+
+    if (isMobile) {
+        openBottomSheet(t, extraZIndex);
+    } else {
+        _showTransDetailModal(t, extraZIndex);
+    }
+}
+
+function _buildTransDetailHtml(t) {
     const acc = accounts.find(a => a.id == t.accountId);
     const sym = acc ? (CURRENCY_SYMBOLS[acc.currency] || '') : '';
     const cur = acc ? acc.currency : '';
-    const colorClass = t.type === 'expense' ? 'text-danger' : 'text-success';
+    const isExpense = t.type === 'expense';
+    const colorClass = isExpense ? 'text-danger' : 'text-success';
+    const isSplit = t.items && t.items.length > 1;
+    const isOwn = t.ownerName === currentUserName && !t._isArchived;
+
+    let html = '';
+
+    // 总金额大标题
+    const totalAmt = formatAmount(Math.abs(t.amount), cur);
+    html += `<div style="text-align:center;padding:8px 0 16px;">
+        <div class="fw-bold ${colorClass}" style="font-size:2rem;letter-spacing:-0.5px;">${sym}${totalAmt}</div>
+        <div class="text-muted" style="font-size:0.82rem;margin-top:2px;">
+            ${t.date} · ${acc ? getAccountDisplayName(acc) : ''}
+            ${!isOwn ? `<span class="badge bg-secondary ms-1" style="font-size:0.65rem;">${t.ownerName}</span>` : ''}
+        </div>
+    </div>`;
+
+    if (isSplit) {
+        // 拆分明细列表
+        t.items.forEach(it => {
+            const stCfg = it.spendingType ? (getSpendingTypeConfig()[it.spendingType] || null) : null;
+            const stColor = stCfg ? stCfg.color : null;
+            const subParts = [it.tags ? `@${it.tags}` : '', it.desc || ''].filter(Boolean);
+            html += `<div class="bs-amount-row">
+                <div style="flex:1;min-width:0;">
+                    <div class="bs-cat">${it.category}
+                        ${stCfg ? `<span style="font-size:0.62rem;margin-left:4px;padding:1px 5px;border-radius:4px;background:${stCfg.bg};color:${stCfg.color};border:1px solid ${stCfg.color};">${stCfg.label}</span>` : ''}
+                    </div>
+                    ${subParts.length ? `<div class="bs-sub">${subParts.join(' · ')}</div>` : ''}
+                </div>
+                <div class="bs-amt ${colorClass}">${sym}${formatAmount(Math.abs(it.amount), cur)}</div>
+            </div>`;
+        });
+        html += `<div class="bs-total-row">
+            <span class="fw-bold text-muted" style="font-size:0.85rem;">合计</span>
+            <span class="fw-bold ${colorClass}" style="font-size:1.05rem;">${sym}${totalAmt}</span>
+        </div>`;
+    } else {
+        // 单笔：显示类别 + 消费类型 + 标签 + 备注
+        const stCfg = t.spendingType ? (getSpendingTypeConfig()[t.spendingType] || null) : null;
+        html += `<div class="bs-amount-row">
+            <div style="flex:1;min-width:0;">
+                <div class="bs-cat">${t.category || '—'}
+                    ${stCfg ? `<span style="font-size:0.62rem;margin-left:4px;padding:1px 5px;border-radius:4px;background:${stCfg.bg};color:${stCfg.color};border:1px solid ${stCfg.color};">${stCfg.label}</span>` : ''}
+                </div>
+            </div>
+            <div class="bs-amt ${colorClass}">${sym}${totalAmt}</div>
+        </div>`;
+        // 标签、备注 chips
+        const chips = [];
+        if (t.tags)  chips.push(`<span class="bs-meta-chip"><i class="bi bi-tag" style="font-size:0.7rem;"></i>${t.tags}</span>`);
+        if (t.desc)  chips.push(`<span class="bs-meta-chip"><i class="bi bi-chat-left-text" style="font-size:0.7rem;"></i>${t.desc}</span>`);
+        if (chips.length) html += `<div style="padding-top:10px;">${chips.join('')}</div>`;
+    }
+
+    // 附件
+    if (t.attachmentId) {
+        html += `<div style="margin-top:10px;">
+            <a href="${getDriveAttachmentUrl(t.attachmentId)}" target="_blank"
+               style="display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;color:var(--bs-primary);">
+                <i class="bi bi-paperclip"></i> 查看附件
+            </a>
+        </div>`;
+    }
+
+    return html;
+}
+
+function openBottomSheet(t, extraZIndex) {
+    _bsCurrentTrans = t;
     const isOwn = t.ownerName === currentUserName && !t._isArchived;
     const isSplit = t.items && t.items.length > 1;
 
-    // ── 头部：日期 / 账户 / 用户标签 ──
-    let html = `<div class="mb-2 small text-muted">${t.date} · ${acc ? getAccountDisplayName(acc) : ''}`;
-    if (!isOwn) html += ` <span class="badge bg-secondary" style="font-size:0.65rem;">${t.ownerName}</span>`;
-    html += '</div>';
+    // 标题
+    $('bs-title').textContent = isSplit ? `${t.items.length} 项拆分` : '交易详情';
 
-    html += '<table class="table table-sm mb-2"><tbody>';
+    // 内容
+    $('bs-content').innerHTML = _buildTransDetailHtml(t);
 
-    if (isSplit) {
-        // 拆分：每子项一行
-        t.items.forEach(it => {
-            const stCfg = it.spendingType ? (getSpendingTypeConfig()[it.spendingType] || null) : null;
-            const stBadge = stCfg ? `<span style="font-size:0.65rem;padding:0 4px;border-radius:3px;color:${stCfg.color};border:1px solid ${stCfg.color};margin-left:4px;">${stCfg.label}</span>` : '';
-            const subMeta = [it.tags ? `@${it.tags}` : '', it.desc || ''].filter(Boolean).join(' · ');
-            html += `<tr>
-                <td class="ps-0 py-1" style="white-space:normal;">${it.category}${stBadge}${subMeta ? `<div style="font-size:0.7rem;color:var(--bs-secondary);">${subMeta}</div>` : ''}</td>
-                <td class="text-end fw-bold ${colorClass} pe-0 py-1 text-nowrap">${sym}${formatAmount(Math.abs(it.amount), cur)}</td>
-            </tr>`;
-        });
-        html += `</tbody><tfoot><tr class="border-top">
-            <td class="ps-0 fw-bold py-1">合计</td>
-            <td class="text-end fw-bold ${colorClass} pe-0 py-1 text-nowrap">${sym}${formatAmount(Math.abs(t.amount), cur)}</td>
-        </tr></tfoot>`;
-    } else {
-        // 单笔：一行显示
-        const stCfg = t.spendingType ? (getSpendingTypeConfig()[t.spendingType] || null) : null;
-        const stBadge = stCfg ? `<span style="font-size:0.65rem;padding:0 4px;border-radius:3px;color:${stCfg.color};border:1px solid ${stCfg.color};margin-left:4px;">${stCfg.label}</span>` : '';
-        const meta = [t.tags ? `@${t.tags}` : '', t.desc || ''].filter(Boolean).join(' · ');
-        html += `<tr>
-            <td class="ps-0 py-1" style="white-space:normal;">${t.category || ''}${stBadge}${meta ? `<div style="font-size:0.7rem;color:var(--bs-secondary);">${meta}</div>` : ''}</td>
-            <td class="text-end fw-bold ${colorClass} pe-0 py-1 text-nowrap">${sym}${formatAmount(Math.abs(t.amount), cur)}</td>
-        </tr>`;
-        html += '</tbody>';
-    }
+    // 编辑按钮
+    const editBtn = $('bs-edit-btn');
+    editBtn.style.display = isOwn ? '' : 'none';
 
-    html += '</table>';
-    if (t.attachmentId) html += `<div class="small text-muted mb-1"><i class="bi bi-paperclip"></i> <a href="${getDriveAttachmentUrl(t.attachmentId)}" target="_blank">查看附件</a></div>`;
+    // 底部有无按钮决定 footer 显示
+    $('bs-footer').style.display = isOwn ? '' : 'none';
 
-    $('transItemsDetailBody').innerHTML = html;
+    // z-index（消费分析页叠加时）
+    const sheet = $('bottom-sheet');
+    const backdrop = $('bs-backdrop');
+    const zBase = extraZIndex ? extraZIndex : 1201;
+    sheet.style.zIndex = String(zBase);
+    backdrop.style.zIndex = String(zBase - 1);
+
+    // 显示
+    backdrop.classList.add('show');
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => sheet.classList.add('show'));
+    });
+
+    // 防止 body 滚动
+    document.body.style.overflow = 'hidden';
+
+    // 绑定拖拽关闭
+    _bsInitDrag();
+}
+
+function closeBottomSheet() {
+    const sheet = $('bottom-sheet');
+    const backdrop = $('bs-backdrop');
+    if (!sheet) return;
+    sheet.classList.remove('show');
+    backdrop.classList.remove('show');
+    document.body.style.overflow = '';
+    _bsCurrentTrans = null;
+}
+
+function bsEditCurrent() {
+    if (!_bsCurrentTrans) return;
+    const t = _bsCurrentTrans;
+    closeBottomSheet();
+    setTimeout(() => {
+        openedFromDetail = true;
+        openEditTransaction(t.id);
+    }, 80);
+}
+
+// ── 拖拽关闭 ──
+function _bsInitDrag() {
+    const sheet = $('bottom-sheet');
+    const handleWrap = $('bs-handle-wrap');
+    if (!handleWrap || !sheet) return;
+    let startY = 0, curY = 0, isDragging = false;
+
+    const onTouchStart = (e) => {
+        startY = e.touches[0].clientY;
+        curY = startY;
+        isDragging = true;
+        sheet.classList.add('dragging');
+    };
+    const onTouchMove = (e) => {
+        if (!isDragging) return;
+        curY = e.touches[0].clientY;
+        const dy = Math.max(0, curY - startY); // 只允许向下拖
+        sheet.style.transform = `translateY(${dy}px)`;
+    };
+    const onTouchEnd = () => {
+        if (!isDragging) return;
+        isDragging = false;
+        sheet.classList.remove('dragging');
+        sheet.style.transform = '';
+        const dy = curY - startY;
+        if (dy > 80) {
+            closeBottomSheet();
+        }
+        // else: 弹回原位（移除 transform，transition 接管）
+    };
+
+    // 先移除旧监听器
+    handleWrap.removeEventListener('touchstart', handleWrap._bsTS);
+    document.removeEventListener('touchmove', document._bsTM);
+    document.removeEventListener('touchend', document._bsTE);
+
+    handleWrap._bsTS = onTouchStart;
+    document._bsTM = onTouchMove;
+    document._bsTE = onTouchEnd;
+
+    handleWrap.addEventListener('touchstart', onTouchStart, { passive: true });
+    document.addEventListener('touchmove', onTouchMove, { passive: true });
+    document.addEventListener('touchend', onTouchEnd);
+}
+
+/** 桌面端：保持原有 modal 行为 */
+function _showTransDetailModal(t, extraZIndex) {
+    const acc = accounts.find(a => a.id == t.accountId);
+    const isOwn = t.ownerName === currentUserName && !t._isArchived;
+    const isSplit = t.items && t.items.length > 1;
+    $('transItemsDetailBody').innerHTML = _buildTransDetailHtml(t);
     $('transItemsDetailTitle').textContent = isSplit ? `${t.items.length} 项明细` : '交易详情';
-
-    // ── 编辑按钮：仅自己的交易显示 ──
     const editBtn = $('transItemsEditBtn');
     if (isOwn) {
         editBtn.style.display = '';
@@ -4287,8 +4557,6 @@ function showTransDetail(t, extraZIndex) {
     } else {
         editBtn.style.display = 'none';
     }
-
-    // ── z-index（从高层页面打开时） ──
     const modalEl = $('transItemsDetailModal');
     if (extraZIndex) {
         modalEl.style.zIndex = String(extraZIndex);
@@ -4302,7 +4570,7 @@ function showTransDetail(t, extraZIndex) {
     new bootstrap.Modal(modalEl).show();
 }
 
-// 旧名称兼容（保留，部分地方仍用旧名）
+// 旧名称兼容
 function showTransItemsDetail(t, extraZIndex) { showTransDetail(t, extraZIndex); }
 
 function maybeReturnToDetail() {
@@ -4491,10 +4759,12 @@ function applySplitToMainForm(items) {
     const metaSection = $('single-trans-meta');
 
     if (!items || items.length === 0) {
-        // 单笔模式：显示标签/备注/附件
+        // 单笔模式：显示标签/备注/附件，隐藏独立附件按钮
         if (singleRow)   singleRow.classList.remove('d-none');
         if (summaryRow)  summaryRow.classList.add('d-none');
         if (metaSection) metaSection.style.display = '';
+        const splitAttachBtn = $('attachment-trigger-split');
+        if (splitAttachBtn) splitAttachBtn.classList.add('d-none');
         if (splitBtn)   { splitBtn.innerHTML = '<i class="bi bi-scissors"></i> 拆分账单'; splitBtn.classList.remove('btn-warning'); splitBtn.classList.add('btn-outline-secondary'); }
         amtInput.readOnly = false;
         amtInput.style.background = '';
@@ -4504,13 +4774,15 @@ function applySplitToMainForm(items) {
         return;
     }
 
-    // 拆分模式：隐藏总体标签/备注/附件（每项有自己的）
+    // 拆分模式：隐藏总体标签/备注，显示独立附件按钮
     const total = items.reduce((s, it) => s + it.amount, 0);
     const firstCat = items[0].category;
     const moreCount = items.length - 1;
     if (singleRow)   singleRow.classList.add('d-none');
     if (summaryRow)  summaryRow.classList.remove('d-none');
     if (metaSection) metaSection.style.display = 'none';
+    const splitAttachBtn = $('attachment-trigger-split');
+    if (splitAttachBtn) splitAttachBtn.classList.remove('d-none');
     $('split-summary-text').textContent = moreCount > 0 ? `${firstCat} 等 ${items.length} 项` : firstCat;
     $('split-summary-total').textContent = total.toFixed(2);
     if (splitBtn) { splitBtn.innerHTML = `<i class="bi bi-pencil-square"></i> 编辑拆分（${items.length} 项）`; splitBtn.classList.remove('btn-outline-secondary'); splitBtn.classList.add('btn-warning'); }
