@@ -324,6 +324,17 @@ body {
 
 .amount-hidden { filter: blur(8px); user-select: none; }
 
+/* 各页面固定顶部标题栏 */
+.page-sticky-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: var(--bs-body-bg);
+    padding-bottom: 10px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
 .clickable-amount { cursor: pointer; transition: all 0.2s; }
 .clickable-amount:hover { opacity: 0.8; }
 
@@ -764,7 +775,7 @@ select.compact-form-control { height: 2.1rem; }
         </div>
         <!-- ==================== 账户视图 ==================== -->
         <div id="view-accounts" class="view-section">
-            <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="page-sticky-header d-flex justify-content-between align-items-center pt-1">
                 <h4 class="mb-0">我的资产</h4>
                 <button class="btn btn-primary" onclick="openNewAccount()">
                     <i class="bi bi-plus-lg"></i>
@@ -955,19 +966,21 @@ select.compact-form-control { height: 2.1rem; }
 
         <!-- ==================== 统计视图 ==================== -->
         <div id="view-stats" class="view-section">
-            <div class="d-flex align-items-center mb-3 gap-2">
-                <h4 class="mb-0 flex-shrink-0">数据分析</h4>
-                <button class="btn btn-sm btn-outline-secondary ms-auto" onclick="openSpendingAnalysis()">
-                    <i class="bi bi-pie-chart-fill"></i> 消费类型
-                </button>
-                <div style="overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex:1;min-width:0;">
-                    <div class="btn-group flex-nowrap" id="stats-currency-btns" style="white-space:nowrap;">
-                        <!-- dynamically rendered based on account currencies -->
+            <div class="page-sticky-header pt-1">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <h4 class="mb-0 flex-shrink-0">数据分析</h4>
+                    <button class="btn btn-sm btn-outline-secondary ms-auto" onclick="openSpendingAnalysis()">
+                        <i class="bi bi-pie-chart-fill"></i> 消费类型
+                    </button>
+                    <div style="overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex:1;min-width:0;">
+                        <div class="btn-group flex-nowrap" id="stats-currency-btns" style="white-space:nowrap;">
+                            <!-- dynamically rendered based on account currencies -->
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="filter-bar-row mb-4">
+            <div class="filter-bar-row mb-4 mt-3">
                 <div style="width: 120px;">
                     <input type="date" class="form-control form-control-sm" id="stats-start-date" onchange="applyStatsFilter()">
                 </div>
@@ -1090,21 +1103,23 @@ select.compact-form-control { height: 2.1rem; }
 
         <!-- ==================== 计划交易视图 ==================== -->
         <div id="view-planned" class="view-section">
-            <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="page-sticky-header d-flex justify-content-between align-items-center pt-1">
                 <h4 class="mb-0">计划交易</h4>
                 <button class="btn btn-primary" onclick="openNewPlanned()">
                     <i class="bi bi-plus-lg"></i>
                 </button>
             </div>
 
-            <div id="planned-list-container"></div>
+            <div id="planned-list-container" class="mt-3"></div>
         </div>
 
         <!-- ==================== 设置视图 ==================== -->
         <div id="view-settings" class="view-section">
-            <h4 class="mb-4">系统设置</h4>
+            <div class="page-sticky-header pt-1">
+                <h4 class="mb-0">系统设置</h4>
+            </div>
 
-            <div class="d-md-none mb-4">
+            <div class="d-md-none mb-4 mt-3">
                 <button class="btn btn-outline-secondary w-100 mb-2" onclick="switchUser()">
                     <i class="bi bi-arrow-left-right"></i> 切换用户
                 </button>
@@ -1681,7 +1696,7 @@ select.compact-form-control { height: 2.1rem; }
 
 
 <!-- ==================== 拆分账单弹窗 ==================== -->
-<div class="modal fade" id="splitModal" tabindex="-1" style="z-index:2060;">
+<div class="modal fade" id="splitModal" tabindex="-1" style="z-index:2200;">
     <div class="modal-dialog modal-lg" style="max-width:680px;">
         <div class="modal-content">
             <div class="modal-header py-2">
@@ -1690,20 +1705,8 @@ select.compact-form-control { height: 2.1rem; }
             </div>
             <div class="modal-body p-0">
                 <!-- 拆分行列表 -->
-                <div id="split-items-wrapper" style="max-height:55vh;overflow-y:auto;">
-                    <table class="table table-sm mb-0" id="split-items-table" style="font-size:0.85rem;">
-                        <thead style="position:sticky;top:0;z-index:1;background:var(--bs-tertiary-bg);">
-                            <tr>
-                                <th style="width:22%;padding:6px 8px;">类别</th>
-                                <th style="width:14%;padding:6px 8px;">金额</th>
-                                <th style="width:16%;padding:6px 8px;">消费类型</th>
-                                <th style="width:16%;padding:6px 8px;">标签</th>
-                                <th style="padding:6px 8px;">备注</th>
-                                <th style="width:32px;padding:6px 4px;"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="split-items-body"></tbody>
-                    </table>
+                <div id="split-items-wrapper" style="max-height:58vh;overflow-y:auto;padding:8px 12px 4px;">
+                    <div id="split-items-body"></div>
                 </div>
                 <!-- 合计 + 添加按钮 -->
                 <div class="d-flex align-items-center gap-2 px-3 py-2 border-top" style="background:var(--bs-tertiary-bg);">
@@ -4226,30 +4229,36 @@ function _stOpts(selected) {
 function _buildSplitRow(item, idx) {
     const cats = categories.expense || [];
     const catOpts = cats.map(c => `<option value="${c}"${c === item.category ? ' selected' : ''}>${c}</option>`).join('');
-    const tr = document.createElement('tr');
-    tr.dataset.idx = idx;
-    tr.style.verticalAlign = 'middle';
-    tr.innerHTML = `
-        <td style="padding:4px 6px;">
-            <select class="form-select form-select-sm sp-cat" onchange="updateSplitRow(${idx},'cat',this.value);refreshSplitTotal()">${catOpts}</select>
-        </td>
-        <td style="padding:4px 6px;">
-            <input type="number" step="0.01" min="0.01" class="form-control form-control-sm sp-amt" placeholder="金额"
-                   value="${item.amount > 0 ? item.amount : ''}" oninput="updateSplitRow(${idx},'amt',this.value);refreshSplitTotal()">
-        </td>
-        <td style="padding:4px 6px;">
-            <select class="form-select form-select-sm sp-st" onchange="updateSplitRow(${idx},'st',this.value)">${_stOpts(item.spendingType)}</select>
-        </td>
-        <td style="padding:4px 6px;">
-            <input type="text" class="form-control form-control-sm sp-tags" placeholder="标签" value="${item.tags||''}" oninput="updateSplitRow(${idx},'tags',this.value)">
-        </td>
-        <td style="padding:4px 6px;">
-            <input type="text" class="form-control form-control-sm sp-desc" placeholder="备注" value="${item.desc||''}" oninput="updateSplitRow(${idx},'desc',this.value)">
-        </td>
-        <td style="padding:4px 2px;">
-            <button type="button" class="btn btn-link text-danger btn-sm p-0" onclick="removeSplitRow(${idx})" title="删除"><i class="bi bi-x-lg"></i></button>
-        </td>`;
-    return tr;
+    const card = document.createElement('div');
+    card.className = 'split-item-card border rounded mb-2 p-2';
+    card.dataset.idx = idx;
+    card.style.background = 'var(--bs-body-bg)';
+    card.innerHTML = `
+        <!-- 第一行：类别 + 金额 + 消费类型 + 删除 -->
+        <div class="d-flex gap-1 align-items-center mb-1">
+            <select class="form-select form-select-sm sp-cat" style="flex:2;min-width:0;"
+                    onchange="updateSplitRow(${idx},'cat',this.value);refreshSplitTotal()">${catOpts}</select>
+            <input type="number" step="0.01" min="0.01" class="form-control form-control-sm sp-amt"
+                   style="flex:1.2;min-width:0;" placeholder="金额"
+                   value="${item.amount > 0 ? item.amount : ''}"
+                   oninput="updateSplitRow(${idx},'amt',this.value);refreshSplitTotal()">
+            <select class="form-select form-select-sm sp-st" style="flex:1.5;min-width:0;font-size:0.78rem;"
+                    onchange="updateSplitRow(${idx},'st',this.value)">${_stOpts(item.spendingType)}</select>
+            <button type="button" class="btn btn-link text-danger btn-sm p-0 flex-shrink-0"
+                    style="line-height:1;" onclick="removeSplitRow(${idx})" title="删除">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        <!-- 第二行：标签 + 备注 -->
+        <div class="d-flex gap-1 align-items-center">
+            <input type="text" class="form-control form-control-sm sp-tags"
+                   style="flex:1;min-width:0;" placeholder="标签"
+                   value="${item.tags||''}" oninput="updateSplitRow(${idx},'tags',this.value)">
+            <input type="text" class="form-control form-control-sm sp-desc"
+                   style="flex:2;min-width:0;" placeholder="备注"
+                   value="${item.desc||''}" oninput="updateSplitRow(${idx},'desc',this.value)">
+        </div>`;
+    return card;
 }
 
 function renderSplitTable() {
@@ -4306,12 +4315,12 @@ function openSplitModal() {
     const backdrop = document.querySelectorAll('.modal-backdrop');
     // 把拆分弹窗的 z-index 设高于当前弹窗
     const el = $('splitModal');
-    el.style.zIndex = '2060';
+    el.style.zIndex = '2200';
     new bootstrap.Modal(el, { backdrop: 'static' }).show();
-    // backdrop 跟随
+    // backdrop 跟随，确保高于所有已打开的 modal
     setTimeout(() => {
         const bds = document.querySelectorAll('.modal-backdrop');
-        if (bds.length > 0) bds[bds.length - 1].style.zIndex = '2055';
+        if (bds.length > 0) bds[bds.length - 1].style.zIndex = '2190';
     }, 50);
 }
 
