@@ -3755,17 +3755,18 @@ function renderDetailContent(id) {
                 item.addEventListener('mouseenter', () => item.style.background = 'rgba(var(--bs-primary-rgb),0.06)');
                 item.addEventListener('mouseleave', () => item.style.background = 'var(--bs-body-bg)');
                 item.addEventListener('click', () => {
-                    if (!isTransfer && t.items && t.items.length > 1) {
-                        showTransItemsDetail(t);
+                    if (isTransfer) {
+                        openedFromDetail = true;
+                        openEditTransfer(t.id);
                     } else {
                         openedFromDetail = true;
-                        isTransfer ? openEditTransfer(t.id) : openEditTransaction(t.id);
+                        showTransDetail(t);
                     }
                 });
-            } else if (!isTransfer && t.items && t.items.length > 1) {
-                // 其他用户的拆分交易也可点击查看明细
+            } else if (!isTransfer) {
+                // 其他用户的交易（含单笔和拆分）也可点击查看
                 item.style.cursor = 'pointer';
-                item.addEventListener('click', () => showTransItemsDetail(t));
+                item.addEventListener('click', () => showTransDetail(t));
             }
             item.innerHTML = `
                 <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
@@ -4218,31 +4219,63 @@ function openEditTransfer(id) {
     new bootstrap.Modal($('editTransactionModal')).show();
 }
 
-function showTransItemsDetail(t, extraZIndex) {
+/**
+ * 统一交易预览弹窗 —— 单笔和拆分都走这里
+ * extraZIndex: 从高层页面（如消费分析）打开时传入更高的 z-index
+ */
+function showTransDetail(t, extraZIndex) {
+    if (!t) return;
+    // 转账类型不走明细弹窗，直接编辑/查看
+    if (t.isTransfer) { openEditTransfer(t.id); return; }
+
     const acc = accounts.find(a => a.id == t.accountId);
     const sym = acc ? (CURRENCY_SYMBOLS[acc.currency] || '') : '';
     const cur = acc ? acc.currency : '';
     const colorClass = t.type === 'expense' ? 'text-danger' : 'text-success';
     const isOwn = t.ownerName === currentUserName && !t._isArchived;
-    let html = `<div class="mb-2 small text-muted">${t.date} · ${acc ? getAccountDisplayName(acc) : ''}${!isOwn ? ` <span class="badge bg-secondary" style="font-size:0.65rem;">${t.ownerName}</span>` : ''}</div>`;
+    const isSplit = t.items && t.items.length > 1;
+
+    // ── 头部：日期 / 账户 / 用户标签 ──
+    let html = `<div class="mb-2 small text-muted">${t.date} · ${acc ? getAccountDisplayName(acc) : ''}`;
+    if (!isOwn) html += ` <span class="badge bg-secondary" style="font-size:0.65rem;">${t.ownerName}</span>`;
+    html += '</div>';
+
     html += '<table class="table table-sm mb-2"><tbody>';
-    t.items.forEach(it => {
-        const stCfg = it.spendingType ? (getSpendingTypeConfig()[it.spendingType] || null) : null;
+
+    if (isSplit) {
+        // 拆分：每子项一行
+        t.items.forEach(it => {
+            const stCfg = it.spendingType ? (getSpendingTypeConfig()[it.spendingType] || null) : null;
+            const stBadge = stCfg ? `<span style="font-size:0.65rem;padding:0 4px;border-radius:3px;color:${stCfg.color};border:1px solid ${stCfg.color};margin-left:4px;">${stCfg.label}</span>` : '';
+            const subMeta = [it.tags ? `@${it.tags}` : '', it.desc || ''].filter(Boolean).join(' · ');
+            html += `<tr>
+                <td class="ps-0 py-1" style="white-space:normal;">${it.category}${stBadge}${subMeta ? `<div style="font-size:0.7rem;color:var(--bs-secondary);">${subMeta}</div>` : ''}</td>
+                <td class="text-end fw-bold ${colorClass} pe-0 py-1 text-nowrap">${sym}${formatAmount(Math.abs(it.amount), cur)}</td>
+            </tr>`;
+        });
+        html += `</tbody><tfoot><tr class="border-top">
+            <td class="ps-0 fw-bold py-1">合计</td>
+            <td class="text-end fw-bold ${colorClass} pe-0 py-1 text-nowrap">${sym}${formatAmount(Math.abs(t.amount), cur)}</td>
+        </tr></tfoot>`;
+    } else {
+        // 单笔：一行显示
+        const stCfg = t.spendingType ? (getSpendingTypeConfig()[t.spendingType] || null) : null;
         const stBadge = stCfg ? `<span style="font-size:0.65rem;padding:0 4px;border-radius:3px;color:${stCfg.color};border:1px solid ${stCfg.color};margin-left:4px;">${stCfg.label}</span>` : '';
-        const subMeta = [it.tags ? `@${it.tags}` : '', it.desc || ''].filter(Boolean).join(' · ');
+        const meta = [t.tags ? `@${t.tags}` : '', t.desc || ''].filter(Boolean).join(' · ');
         html += `<tr>
-            <td class="ps-0 py-1" style="white-space:normal;">${it.category}${stBadge}${subMeta ? `<div style="font-size:0.7rem;color:var(--bs-secondary);">${subMeta}</div>` : ''}</td>
-            <td class="text-end fw-bold ${colorClass} pe-0 py-1">${sym}${formatAmount(Math.abs(it.amount), cur)}</td>
+            <td class="ps-0 py-1" style="white-space:normal;">${t.category || ''}${stBadge}${meta ? `<div style="font-size:0.7rem;color:var(--bs-secondary);">${meta}</div>` : ''}</td>
+            <td class="text-end fw-bold ${colorClass} pe-0 py-1 text-nowrap">${sym}${formatAmount(Math.abs(t.amount), cur)}</td>
         </tr>`;
-    });
-    html += `</tbody><tfoot><tr class="border-top">
-        <td class="ps-0 fw-bold py-1">合计</td>
-        <td class="text-end fw-bold ${colorClass} pe-0 py-1">${sym}${formatAmount(Math.abs(t.amount), cur)}</td>
-    </tr></tfoot></table>`;
+        html += '</tbody>';
+    }
+
+    html += '</table>';
     if (t.attachmentId) html += `<div class="small text-muted mb-1"><i class="bi bi-paperclip"></i> <a href="${getDriveAttachmentUrl(t.attachmentId)}" target="_blank">查看附件</a></div>`;
+
     $('transItemsDetailBody').innerHTML = html;
-    $('transItemsDetailTitle').textContent = `${t.items.length} 项明细`;
-    // 编辑按钮：仅自己的交易显示
+    $('transItemsDetailTitle').textContent = isSplit ? `${t.items.length} 项明细` : '交易详情';
+
+    // ── 编辑按钮：仅自己的交易显示 ──
     const editBtn = $('transItemsEditBtn');
     if (isOwn) {
         editBtn.style.display = '';
@@ -4254,6 +4287,8 @@ function showTransItemsDetail(t, extraZIndex) {
     } else {
         editBtn.style.display = 'none';
     }
+
+    // ── z-index（从高层页面打开时） ──
     const modalEl = $('transItemsDetailModal');
     if (extraZIndex) {
         modalEl.style.zIndex = String(extraZIndex);
@@ -4266,6 +4301,9 @@ function showTransItemsDetail(t, extraZIndex) {
     }
     new bootstrap.Modal(modalEl).show();
 }
+
+// 旧名称兼容（保留，部分地方仍用旧名）
+function showTransItemsDetail(t, extraZIndex) { showTransDetail(t, extraZIndex); }
 
 function maybeReturnToDetail() {
     if (openedFromDetail && currentDetailAccountId) {
@@ -4792,26 +4830,9 @@ function renderSaDetailList() {
             </div>`;
 
         card.addEventListener('click', () => {
-            // 找到父交易（无论自己还是别人，拆分的都先看明细）
             const parentId = t._parentId || t.id;
             const parentTrans = transactions.find(x => x.id === parentId);
-            if (parentTrans && parentTrans.items && parentTrans.items.length > 1) {
-                // 从消费分析页（z-index:2000）打开，弹窗需更高层级
-                showTransItemsDetail(parentTrans, 2150);
-            } else {
-                // 单笔交易：直接编辑/查看
-                const modalEl = $('editTransactionModal');
-                modalEl.style.zIndex = '2100';
-                const backdrop = () => { document.querySelectorAll('.modal-backdrop').forEach(b => b.style.zIndex = '2050'); };
-                const onHide = () => {
-                    modalEl.style.zIndex = '';
-                    document.querySelectorAll('.modal-backdrop').forEach(b => b.style.zIndex = '');
-                    modalEl.removeEventListener('hidden.bs.modal', onHide);
-                };
-                modalEl.addEventListener('hidden.bs.modal', onHide);
-                openEditTransaction(parentId);
-                setTimeout(backdrop, 50);
-            }
+            if (parentTrans) showTransDetail(parentTrans, 2150);
         });
         listEl.appendChild(card);
     });
@@ -5116,11 +5137,7 @@ function initMobileSwipeGestures(card, transactionId) {
     card.addEventListener('click', (e) => {
         const t = transactions.find(x => x.id === transactionId);
         if (!t || t.ownerName !== currentUserName || t._isArchived) return;
-        if (t.items && t.items.length > 1) {
-            showTransItemsDetail(t);
-        } else {
-            openEditTransaction(transactionId);
-        }
+        showTransDetail(t);
     });
 }
 
@@ -5178,9 +5195,7 @@ function renderAllTransactions() {
             (t._isArchived ? '<span class="badge bg-secondary" style="font-size:0.6rem;">存档</span>' :
              (t.isTransfer
                ? `<i class="bi bi-eye text-secondary" style="cursor:pointer;font-size:1rem;" title="查看转账（${t.ownerName}）" onclick="openEditTransfer(${t.id})"></i>`
-               : (t.items && t.items.length > 1
-                   ? `<i class="bi bi-eye text-secondary" style="cursor:pointer;font-size:1rem;" title="查看拆分（${t.ownerName}）" onclick="showTransItemsDetail(transactions.find(x=>x.id==${t.id}))"></i>`
-                   : `<i class="bi bi-eye text-secondary" style="cursor:pointer;font-size:1rem;" title="查看交易（${t.ownerName}）" onclick="openEditTransaction(${t.id})"></i>`)));
+               : `<i class="bi bi-eye text-secondary" style="cursor:pointer;font-size:1rem;" title="查看（${t.ownerName}）" onclick="showTransDetail(transactions.find(x=>x.id==${t.id}))"></i>`));
 
         const tr = document.createElement('tr');
         const tDescDisplay = t.desc||'';
@@ -5266,8 +5281,7 @@ function renderAllTransactions() {
                 card.style.opacity = '0.82';
                 card.addEventListener('click', () => {
                     if (t.isTransfer) openEditTransfer(t.id);
-                    else if (t.items && t.items.length > 1) showTransItemsDetail(t);
-                    else openEditTransaction(t.id);
+                    else showTransDetail(t);
                 });
             }
             mobileContainer.appendChild(card);
