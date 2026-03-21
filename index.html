@@ -308,6 +308,11 @@ body {
     gap: 7px;
 }
 #app-toast.show { opacity: 1; pointer-events: auto; }
+@keyframes toastBreath {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.15; }
+}
+
 #app-toast.minimized {
     left: 14px !important;
     transform: translateX(0) !important;
@@ -320,6 +325,7 @@ body {
     white-space: nowrap;
     overflow: hidden;
     transition: left 0.4s ease, transform 0.4s ease, padding 0.3s ease, max-width 0.3s ease;
+    animation: toastBreath 2s ease-in-out infinite;
 }
 
 .amount-hidden { filter: blur(8px); user-select: none; }
@@ -1583,6 +1589,8 @@ select.compact-form-control { height: 2.1rem; }
                         </button>
                     </div>
 
+                    <!-- 标签/备注/附件（拆分模式时隐藏） -->
+                    <div id="single-trans-meta">
                     <div class="mb-2">
                         <label class="compact-form-label">标签</label>
                         <input type="text" class="form-control compact-form-control" id="edit-trans-tags">
@@ -1610,6 +1618,7 @@ select.compact-form-control { height: 2.1rem; }
                         </div>
                         <input type="hidden" id="edit-trans-attachment-id" value="">
                     </div>
+                    </div><!-- /single-trans-meta -->
 
                     <button type="submit" class="btn btn-primary btn-sm w-100 mt-2" id="edit-trans-submit-btn">保存</button>
                     <button type="button" class="btn btn-outline-danger btn-sm w-100 mt-2 d-md-none" id="edit-trans-delete-btn" onclick="deleteCurrentTransaction()" style="display:none!important;">删除交易</button>
@@ -2873,6 +2882,9 @@ function minimizeUnsavedToast() {
     if (!el || !hasUnsavedChanges) return;
     clearTimeout(_toastMinimizeTimer);
     applyToastStyle(el, 'warning');
+    // 先移除再添加，强制重启呼吸动画
+    el.classList.remove('minimized');
+    void el.offsetWidth; // reflow trigger
     el.classList.add('minimized');
     el.innerHTML = `<span style="color:#e67e00;font-size:1.1rem;line-height:1;flex-shrink:0;">●</span><span style="margin-left:5px;font-weight:600;">未保存</span>`;
     // 点击角标展开完整 Toast，5秒后再次缩小
@@ -4416,11 +4428,13 @@ function applySplitToMainForm(items) {
     const splitBtnWrap = $('split-btn-wrap');
     const amtInput    = $('edit-trans-amount');
     const catSel      = $('edit-trans-category');
+    const metaSection = $('single-trans-meta');
 
     if (!items || items.length === 0) {
-        // 单笔模式
-        if (singleRow)  singleRow.classList.remove('d-none');
-        if (summaryRow) summaryRow.classList.add('d-none');
+        // 单笔模式：显示标签/备注/附件
+        if (singleRow)   singleRow.classList.remove('d-none');
+        if (summaryRow)  summaryRow.classList.add('d-none');
+        if (metaSection) metaSection.style.display = '';
         if (splitBtn)   { splitBtn.innerHTML = '<i class="bi bi-scissors"></i> 拆分账单'; splitBtn.classList.remove('btn-warning'); splitBtn.classList.add('btn-outline-secondary'); }
         amtInput.readOnly = false;
         amtInput.style.background = '';
@@ -4430,16 +4444,16 @@ function applySplitToMainForm(items) {
         return;
     }
 
-    // 拆分模式
+    // 拆分模式：隐藏总体标签/备注/附件（每项有自己的）
     const total = items.reduce((s, it) => s + it.amount, 0);
     const firstCat = items[0].category;
     const moreCount = items.length - 1;
-    if (singleRow)  singleRow.classList.add('d-none');
-    if (summaryRow) summaryRow.classList.remove('d-none');
+    if (singleRow)   singleRow.classList.add('d-none');
+    if (summaryRow)  summaryRow.classList.remove('d-none');
+    if (metaSection) metaSection.style.display = 'none';
     $('split-summary-text').textContent = moreCount > 0 ? `${firstCat} 等 ${items.length} 项` : firstCat;
     $('split-summary-total').textContent = total.toFixed(2);
     if (splitBtn) { splitBtn.innerHTML = `<i class="bi bi-pencil-square"></i> 编辑拆分（${items.length} 项）`; splitBtn.classList.remove('btn-outline-secondary'); splitBtn.classList.add('btn-warning'); }
-    // 主表单数据也要有值，供 submit 读取
     amtInput.value = total.toFixed(2);
     amtInput.readOnly = true;
     amtInput.style.background = 'var(--bs-secondary-bg)';
