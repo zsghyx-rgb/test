@@ -1155,18 +1155,6 @@ select.compact-form-control { height: 2.1rem; }
 
                 <div class="col-12 col-md-6">
                     <div class="card shadow-sm h-100">
-                        <div class="card-header bg-transparent fw-bold">
-                            <i class="bi bi-tags"></i> 消费类型设置
-                        </div>
-                        <div class="card-body">
-                            <p class="text-muted small mb-3">自定义各消费类型的名称和颜色。</p>
-                            <div id="spending-type-settings-list"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-12 col-md-6">
-                    <div class="card shadow-sm h-100">
                         <div class="card-header bg-transparent fw-bold">数据导出 &amp; 同步</div>
                         <div class="card-body">
                             <p class="text-muted small mb-3">
@@ -1325,6 +1313,7 @@ select.compact-form-control { height: 2.1rem; }
         <div class="d-flex align-items-center gap-2 mb-2">
             <button class="btn btn-sm btn-outline-secondary" onclick="closeSpendingAnalysis()"><i class="bi bi-arrow-left"></i></button>
             <h5 class="mb-0">消费类型分析</h5>
+            <button class="btn btn-sm btn-outline-secondary ms-auto" onclick="openSpendingTypeSettings()" title="消费类型设置"><i class="bi bi-gear"></i></button>
         </div>
         <!-- 日期 + 快速筛选 + 用户按钮 同一行 -->
         <div class="d-flex gap-2 align-items-center" style="overflow-x:auto;white-space:nowrap;flex-wrap:nowrap;">
@@ -1730,6 +1719,22 @@ select.compact-form-control { height: 2.1rem; }
                 <button type="button" class="btn btn-primary btn-sm" onclick="confirmSplit()">
                     <i class="bi bi-check-lg"></i> 确认拆分
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== 消费类型设置弹窗 ==================== -->
+<div class="modal fade" id="spendingTypeSettingsModal" tabindex="-1" style="z-index:2100;">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h5 class="modal-title fs-6"><i class="bi bi-tags"></i> 消费类型设置</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body py-3">
+                <p class="text-muted small mb-3">自定义各消费类型的名称和标识颜色。</p>
+                <div id="spending-type-settings-list"></div>
             </div>
         </div>
     </div>
@@ -5892,7 +5897,7 @@ function switchTab(t, el) {
     if (fab) fab.classList.toggle('d-none', t !== 'transactions');
     if (t === 'stats') renderStats();
     if (t === 'planned') renderPlannedTransactions();
-    if (t === 'settings') { renderExchangeRateSettings(); initPasswordHint(); renderUserManagement(); renderArchiveManagementUI(); renderSpendingTypeSettings(); }
+    if (t === 'settings') { renderExchangeRateSettings(); initPasswordHint(); renderUserManagement(); renderArchiveManagementUI(); }
 }
 
 // ==================== 状态提示 ====================
@@ -6074,6 +6079,17 @@ function setExchangeRate(from, to, rate) {
 }
 
 // ==================== 消费类型设置 ====================
+
+function openSpendingTypeSettings() {
+    renderSpendingTypeSettings();
+    const el = $('spendingTypeSettingsModal');
+    el.style.zIndex = '2100';
+    new bootstrap.Modal(el).show();
+    setTimeout(() => {
+        const bds = document.querySelectorAll('.modal-backdrop');
+        if (bds.length > 0) bds[bds.length - 1].style.zIndex = '2090';
+    }, 50);
+}
 
 function renderSpendingTypeSettings() {
     const container = $('spending-type-settings-list');
