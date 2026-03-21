@@ -5990,6 +5990,12 @@ function showToast(msg, type = 'success', duration = 3000) {
     const el = $('app-toast');
     if (!el) return;
     clearTimeout(_toastTimer);
+    // 同步中：清除未保存角标的计时器，防止在同步期间被缩小覆盖
+    if (type === 'syncing') {
+        clearTimeout(_toastMinimizeTimer);
+        el.classList.remove('minimized');
+        el.onclick = null;
+    }
     applyToastStyle(el, type);
     el.innerHTML = `${toastIcons[type] || ''} ${msg}`;
     el.classList.add('show');
