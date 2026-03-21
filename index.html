@@ -1375,7 +1375,7 @@ select.compact-form-control { height: 2.1rem; }
             </div>
             <div class="modal-body p-2" id="transItemsDetailBody"></div>
             <div class="modal-footer py-2 gap-2">
-                <button type="button" class="btn btn-outline-primary btn-sm flex-grow-1" id="transItemsEditBtn">编辑</button>
+                <button type="button" class="btn btn-outline-primary btn-sm flex-grow-1" id="transItemsEditBtn" style="display:none;">编辑</button>
                 <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">关闭</button>
             </div>
         </div>
@@ -4218,12 +4218,13 @@ function openEditTransfer(id) {
     new bootstrap.Modal($('editTransactionModal')).show();
 }
 
-function showTransItemsDetail(t) {
+function showTransItemsDetail(t, extraZIndex) {
     const acc = accounts.find(a => a.id == t.accountId);
     const sym = acc ? (CURRENCY_SYMBOLS[acc.currency] || '') : '';
     const cur = acc ? acc.currency : '';
     const colorClass = t.type === 'expense' ? 'text-danger' : 'text-success';
-    let html = `<div class="mb-2 small text-muted">${t.date} · ${acc ? acc.name : ''}</div>`;
+    const isOwn = t.ownerName === currentUserName && !t._isArchived;
+    let html = `<div class="mb-2 small text-muted">${t.date} · ${acc ? getAccountDisplayName(acc) : ''}${!isOwn ? ` <span class="badge bg-secondary" style="font-size:0.65rem;">${t.ownerName}</span>` : ''}</div>`;
     html += '<table class="table table-sm mb-2"><tbody>';
     t.items.forEach(it => {
         const stCfg = it.spendingType ? (getSpendingTypeConfig()[it.spendingType] || null) : null;
@@ -4238,16 +4239,32 @@ function showTransItemsDetail(t) {
         <td class="ps-0 fw-bold py-1">合计</td>
         <td class="text-end fw-bold ${colorClass} pe-0 py-1">${sym}${formatAmount(Math.abs(t.amount), cur)}</td>
     </tr></tfoot></table>`;
-    if (t.desc) html += `<div class="small text-muted mb-1">备注：${t.desc}</div>`;
-    if (t.tags) html += `<div class="small text-muted">标签：${t.tags}</div>`;
+    if (t.attachmentId) html += `<div class="small text-muted mb-1"><i class="bi bi-paperclip"></i> <a href="${getDriveAttachmentUrl(t.attachmentId)}" target="_blank">查看附件</a></div>`;
     $('transItemsDetailBody').innerHTML = html;
-    $('transItemsDetailTitle').textContent = `${t.items.length} 条分录明细`;
-    $('transItemsEditBtn').onclick = () => {
-        bootstrap.Modal.getInstance($('transItemsDetailModal')).hide();
-        openedFromDetail = true;
-        openEditTransaction(t.id);
-    };
-    new bootstrap.Modal($('transItemsDetailModal')).show();
+    $('transItemsDetailTitle').textContent = `${t.items.length} 项明细`;
+    // 编辑按钮：仅自己的交易显示
+    const editBtn = $('transItemsEditBtn');
+    if (isOwn) {
+        editBtn.style.display = '';
+        editBtn.onclick = () => {
+            bootstrap.Modal.getInstance($('transItemsDetailModal')).hide();
+            openedFromDetail = true;
+            openEditTransaction(t.id);
+        };
+    } else {
+        editBtn.style.display = 'none';
+    }
+    const modalEl = $('transItemsDetailModal');
+    if (extraZIndex) {
+        modalEl.style.zIndex = String(extraZIndex);
+        setTimeout(() => {
+            const bds = document.querySelectorAll('.modal-backdrop');
+            if (bds.length > 0) bds[bds.length - 1].style.zIndex = String(extraZIndex - 10);
+        }, 50);
+        const cleanup = () => { modalEl.style.zIndex = ''; modalEl.removeEventListener('hidden.bs.modal', cleanup); };
+        modalEl.addEventListener('hidden.bs.modal', cleanup);
+    }
+    new bootstrap.Modal(modalEl).show();
 }
 
 function maybeReturnToDetail() {
@@ -4775,17 +4792,26 @@ function renderSaDetailList() {
             </div>`;
 
         card.addEventListener('click', () => {
-            const modalEl = $('editTransactionModal');
-            modalEl.style.zIndex = '2100';
-            const backdrop = () => { document.querySelectorAll('.modal-backdrop').forEach(b => b.style.zIndex = '2050'); };
-            const onHide = () => {
-                modalEl.style.zIndex = '';
-                document.querySelectorAll('.modal-backdrop').forEach(b => b.style.zIndex = '');
-                modalEl.removeEventListener('hidden.bs.modal', onHide);
-            };
-            modalEl.addEventListener('hidden.bs.modal', onHide);
-            openEditTransaction(editId);
-            setTimeout(backdrop, 50);
+            // 找到父交易（无论自己还是别人，拆分的都先看明细）
+            const parentId = t._parentId || t.id;
+            const parentTrans = transactions.find(x => x.id === parentId);
+            if (parentTrans && parentTrans.items && parentTrans.items.length > 1) {
+                // 从消费分析页（z-index:2000）打开，弹窗需更高层级
+                showTransItemsDetail(parentTrans, 2150);
+            } else {
+                // 单笔交易：直接编辑/查看
+                const modalEl = $('editTransactionModal');
+                modalEl.style.zIndex = '2100';
+                const backdrop = () => { document.querySelectorAll('.modal-backdrop').forEach(b => b.style.zIndex = '2050'); };
+                const onHide = () => {
+                    modalEl.style.zIndex = '';
+                    document.querySelectorAll('.modal-backdrop').forEach(b => b.style.zIndex = '');
+                    modalEl.removeEventListener('hidden.bs.modal', onHide);
+                };
+                modalEl.addEventListener('hidden.bs.modal', onHide);
+                openEditTransaction(parentId);
+                setTimeout(backdrop, 50);
+            }
         });
         listEl.appendChild(card);
     });
@@ -5089,7 +5115,12 @@ function getFilteredTransactions() {
 function initMobileSwipeGestures(card, transactionId) {
     card.addEventListener('click', (e) => {
         const t = transactions.find(x => x.id === transactionId);
-        if (t && t.ownerName === currentUserName && !t._isArchived) { openEditTransaction(transactionId); }
+        if (!t || t.ownerName !== currentUserName || t._isArchived) return;
+        if (t.items && t.items.length > 1) {
+            showTransItemsDetail(t);
+        } else {
+            openEditTransaction(transactionId);
+        }
     });
 }
 
