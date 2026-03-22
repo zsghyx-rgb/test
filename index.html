@@ -751,7 +751,7 @@ select.compact-form-control { height: 2.1rem; }
                 </button>
             </div>
             <div class="text-end mt-2">
-                <span class="text-muted" style="font-size:0.7rem;">v1.4.3</span>
+                <span class="text-muted" style="font-size:0.7rem;">v1.5.0</span>
             </div>
         </div>
 
@@ -5028,27 +5028,35 @@ function renderAllTransactions() {
     </div>`;
             } else {
                 const amountClass = t.amount < 0 ? 'amount-expense' : 'amount-income';
-                const tagsHtml = t.tags ? `<span style="color:var(--bs-secondary);"> @${t.tags}</span>` : '';
-                const noteHtml = descClean ? `<span style="color:var(--bs-secondary);"> · ${descClean}</span>` : '';
                 const attachIconHtml = t.attachmentId ? ` <i class="bi bi-paperclip" style="color:var(--bs-secondary);font-size:0.72rem;"></i>` : '';
-                // 拆分交易：聚合各分录的标签和备注
-                let splitMetaHtml = '';
+
+                let tagsHtml, noteHtml;
                 if (t.items && t.items.length > 1) {
-                    const parts = t.items.filter(it => it.tags || it.desc).slice(0, 3).map(it => {
-                        const p = [];
-                        if (it.tags) p.push(`@${it.tags}`);
-                        if (it.desc) p.push(it.desc);
-                        return p.join(' ');
-                    });
-                    if (parts.length) splitMetaHtml = `<span style="color:var(--bs-secondary);"> · ${parts.join(' / ')}</span>`;
+                    // 拆分交易：聚合各分录标签（第一行）和备注（第二行），/ 分隔
+                    const allTags = t.items.map(it => it.tags).filter(Boolean);
+                    const allDesc = t.items.map(it => it.desc).filter(Boolean);
+                    tagsHtml = allTags.length
+                        ? `<span style="color:var(--bs-secondary);font-size:0.78rem;"> ${allTags.map(tag => `@${tag}`).join(' / ')}</span>`
+                        : '';
+                    noteHtml = allDesc.length
+                        ? `<span style="color:var(--bs-secondary);"> · ${allDesc.join(' / ')}</span>`
+                        : '';
+                } else {
+                    tagsHtml = t.tags ? `<span style="color:var(--bs-secondary);"> @${t.tags}</span>` : '';
+                    noteHtml = descClean ? `<span style="color:var(--bs-secondary);"> · ${descClean}</span>` : '';
                 }
+
+                const catDisplay = t.items && t.items.length > 1
+                    ? t.items[0].category + '等' + (t.items.length - 1) + '项'
+                    : (t.category || '');
+
                 card.innerHTML = `
                     <div class="card-line-1">
-                        <span class="category-text">${(t.items && t.items.length > 1 ? t.items[0].category + '等' + (t.items.length-1) + '项' : (t.category || ''))}${tagsHtml}${attachIconHtml}</span>
+                        <span class="category-text">${catDisplay}${tagsHtml}${attachIconHtml}</span>
                         <div class="${amountClass} fw-bold">${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}</div>
                     </div>
                     <div class="card-line-2">
-                        <span class="text-muted small">${t.date} · ${accDisplayName}${noteHtml}${splitMetaHtml}</span>
+                        <span class="text-muted small">${t.date} · ${accDisplayName}${noteHtml}</span>
                     </div>`;
             }
 
