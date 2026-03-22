@@ -614,6 +614,17 @@ select.compact-form-control { height: 2.1rem; }
 .split-card-tags { grid-column: 1; }
 .split-card-desc { grid-column: 2 / 4; }
 .split-card-del  { grid-column: 4; display: flex; justify-content: center; }
+
+/* 分录条目高亮：左侧彩色竖线 + 极淡底色 */
+.split-item-card {
+    border-left-width: 3px !important;
+    border-left-style: solid !important;
+    transition: background 0.15s;
+}
+.split-item-card[data-accent="0"] { border-left-color: #0d6efd; background: rgba(13,110,253,0.05) !important; }
+.split-item-card[data-accent="1"] { border-left-color: #fd7e14; background: rgba(253,126,20,0.05) !important; }
+.split-item-card[data-accent="2"] { border-left-color: #198754; background: rgba(25,135,84,0.05) !important; }
+.split-item-card[data-accent="3"] { border-left-color: #9c27b0; background: rgba(156,39,176,0.05) !important; }
 </style>
     <!-- 鸿蒙HarmonyOS 3.0 兼容补丁 -->
     <script>
@@ -1586,6 +1597,15 @@ select.compact-form-control { height: 2.1rem; }
                                     <option value="regret">后悔的</option>
                                 </select>
                             </div>
+                            <!-- 拆分按钮：内联小图标，仅支出时显示 -->
+                            <div id="split-btn-wrap" style="flex-shrink:0;align-self:flex-end;">
+                                <button type="button" id="split-toggle-btn"
+                                        class="btn btn-outline-secondary btn-sm"
+                                        style="width:34px;height:34px;padding:0;font-size:0.85rem;"
+                                        title="拆分账单" onclick="toggleSplitMode()">
+                                    <i class="bi bi-scissors"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -1599,14 +1619,6 @@ select.compact-form-control { height: 2.1rem; }
                             <span class="ms-auto small text-muted">合计：</span>
                             <span id="split-total-amt" class="fw-bold text-danger" style="font-size:1rem;">0.00</span>
                         </div>
-                    </div>
-
-                    <!-- 拆分按钮（仅支出时显示） -->
-                    <div class="mb-2" id="split-btn-wrap">
-                        <button type="button" id="split-toggle-btn" class="btn btn-outline-secondary btn-sm w-100"
-                                style="font-size:0.78rem;" onclick="toggleSplitMode()">
-                            <i class="bi bi-scissors"></i> 拆分账单
-                        </button>
                     </div>
 
                     <!-- 单笔时的标签/备注（拆分时隐藏） -->
@@ -4123,7 +4135,7 @@ function _buildSplitItemCard(item, idx) {
     const catOpts = cats.map(c => `<option value="${c}"${c===item.category?' selected':''}>${c}</option>`).join('');
     const div = document.createElement('div');
     div.className = 'split-item-card border rounded mb-2 p-2';
-    div.style.background = 'var(--bs-body-bg)';
+    div.dataset.accent = idx % 4;
     div.dataset.idx = idx;
     div.innerHTML = `
         <div class="split-card-grid">
@@ -4210,7 +4222,7 @@ function enterSplitMode() {
     if (singleRow)   singleRow.style.display = 'none';
     if (metaSection) metaSection.style.display = 'none';
     if (splitSec)    splitSec.classList.add('split-active');
-    if (splitBtn)    { splitBtn.innerHTML = '<i class="bi bi-x-circle"></i> 退出拆分'; splitBtn.classList.replace('btn-outline-secondary','btn-warning'); }
+    if (splitBtn)    { splitBtn.innerHTML = '<i class="bi bi-x-lg"></i>'; splitBtn.classList.replace('btn-outline-secondary','btn-warning'); splitBtn.title = '退出拆分'; }
     if (attachBtn)   attachBtn.style.display = 'none';
     if (attachTrig)  attachTrig.classList.remove('d-none');
     // ensure attachment section is visible for split too
@@ -4235,7 +4247,7 @@ function exitSplitMode() {
     if (singleRow)   singleRow.style.display = '';
     if (metaSection) metaSection.style.display = '';
     if (splitSec)    splitSec.classList.remove('split-active');
-    if (splitBtn)    { splitBtn.innerHTML = '<i class="bi bi-scissors"></i> 拆分账单'; splitBtn.classList.replace('btn-warning','btn-outline-secondary'); }
+    if (splitBtn)    { splitBtn.innerHTML = '<i class="bi bi-scissors"></i>'; splitBtn.classList.replace('btn-warning','btn-outline-secondary'); splitBtn.title = '拆分账单'; }
     if (attachBtn)   attachBtn.style.display = '';
     if (attachTrig)  attachTrig.classList.add('d-none');
     // restore required
