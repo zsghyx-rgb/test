@@ -1597,14 +1597,23 @@ select.compact-form-control { height: 2.1rem; }
                     <input type="hidden" id="edit-trans-mode" value="edit">
                     <input type="hidden" id="edit-trans-type" value="expense">
 
-                    <div class="row g-2 mb-2">
-                        <div class="col-6">
+                    <div class="d-flex gap-1 mb-2 align-items-end">
+                        <div style="flex:1;min-width:0;">
                             <label class="compact-form-label">日期</label>
                             <input type="date" class="form-control compact-form-control" id="edit-trans-date" required="">
                         </div>
-                        <div class="col-6">
+                        <div style="flex:1;min-width:0;">
                             <label class="compact-form-label">账户</label>
                             <select class="form-select compact-form-control" id="edit-trans-account" required=""></select>
+                        </div>
+                        <!-- 拆分切换按钮：普通模式=剪刀，拆分模式=加号添加行 -->
+                        <div id="split-btn-wrap" style="flex-shrink:0;align-self:flex-end;">
+                            <button type="button" id="split-toggle-btn"
+                                    class="btn btn-outline-secondary btn-sm"
+                                    style="width:34px;height:34px;padding:0;font-size:0.85rem;"
+                                    title="拆分账单" onclick="handleSplitBtn()">
+                                <i class="bi bi-scissors"></i>
+                            </button>
                         </div>
                     </div>
 
@@ -1628,15 +1637,6 @@ select.compact-form-control { height: 2.1rem; }
                                     <option value="regret">后悔的</option>
                                 </select>
                             </div>
-                            <!-- 拆分按钮：内联小图标，仅支出时显示 -->
-                            <div id="split-btn-wrap" style="flex-shrink:0;align-self:flex-end;">
-                                <button type="button" id="split-toggle-btn"
-                                        class="btn btn-outline-secondary btn-sm"
-                                        style="width:34px;height:34px;padding:0;font-size:0.85rem;"
-                                        title="拆分账单" onclick="toggleSplitMode()">
-                                    <i class="bi bi-scissors"></i>
-                                </button>
-                            </div>
                         </div>
                     </div>
 
@@ -1644,8 +1644,9 @@ select.compact-form-control { height: 2.1rem; }
                     <div id="split-items-section">
                         <div id="split-items-list"></div>
                         <div class="d-flex align-items-center gap-2 py-2 border-top">
-                            <button type="button" class="btn btn-outline-success btn-sm" onclick="addSplitItemRow()">
-                                <i class="bi bi-plus-lg"></i> 添加一项
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="split-attach-btn"
+                                    onclick="document.getElementById('attachment-file-input').click()">
+                                <i class="bi bi-image"></i> 添加附件
                             </button>
                             <span class="ms-auto small text-muted">合计：</span>
                             <span id="split-total-amt" class="fw-bold text-danger" style="font-size:1rem;">0.00</span>
@@ -1674,10 +1675,7 @@ select.compact-form-control { height: 2.1rem; }
 
                     <!-- 附件（单笔和拆分都保留） -->
                     <div class="mb-2" id="attachment-section" style="display:none;">
-                        <button type="button" id="attachment-trigger-split" class="btn btn-outline-secondary btn-sm mb-2 d-none"
-                                style="font-size:0.78rem;" onclick="document.getElementById('attachment-file-input').click()">
-                            <i class="bi bi-image"></i> 添加附件
-                        </button>
+
                         <input type="file" id="attachment-file-input" accept="image/*,image/heic,image/heif,application/pdf" class="d-none" onchange="handleAttachmentSelected(this)">
                         <div id="attachment-preview-container" class="d-flex flex-wrap gap-2 mt-2" style="display:none !important;"></div>
                         <div id="attachment-upload-status" class="small text-muted mt-1" style="display:none;">
@@ -4256,6 +4254,15 @@ function toggleSplitMode() {
     }
 }
 
+/** 拆分按钮点击：普通模式→进入拆分；拆分模式→添加一行 */
+function handleSplitBtn() {
+    if (_inSplitMode) {
+        addSplitItemRow();
+    } else {
+        enterSplitMode();
+    }
+}
+
 function enterSplitMode() {
     _inSplitMode = true;
     // 如果还没有拆分数据，从主表单读入第一行
@@ -4276,15 +4283,11 @@ function enterSplitMode() {
     const metaSection = $('single-meta-section');
     const splitSec    = $('split-items-section');
     const splitBtn    = $('split-toggle-btn');
-    const attachBtn   = $('attachment-btn');
-    const attachTrig  = $('attachment-trigger-split');
     if (singleRow)   singleRow.style.display = 'none';
     if (metaSection) metaSection.style.display = 'none';
     if (splitSec)    splitSec.classList.add('split-active');
-    if (splitBtn)    { splitBtn.innerHTML = '<i class="bi bi-x-lg"></i>'; splitBtn.classList.replace('btn-outline-secondary','btn-warning'); splitBtn.title = '退出拆分'; }
-    if (attachBtn)   attachBtn.style.display = 'none';
-    if (attachTrig)  attachTrig.classList.remove('d-none');
-    // ensure attachment section is visible for split too
+    if (splitBtn)    { splitBtn.innerHTML = '<i class="bi bi-plus-lg"></i>'; splitBtn.classList.replace('btn-outline-secondary','btn-success'); splitBtn.title = '添加分录'; }
+    // attachment-section stays visible (footer has its own attach button)
     const attachSec = $('attachment-section');
     if (attachSec) attachSec.style.display = '';
     // disable main amount/category (not used in split)
@@ -4301,14 +4304,10 @@ function exitSplitMode() {
     const metaSection = $('single-meta-section');
     const splitSec    = $('split-items-section');
     const splitBtn    = $('split-toggle-btn');
-    const attachBtn   = $('attachment-btn');
-    const attachTrig  = $('attachment-trigger-split');
     if (singleRow)   singleRow.style.display = '';
     if (metaSection) metaSection.style.display = '';
     if (splitSec)    splitSec.classList.remove('split-active');
-    if (splitBtn)    { splitBtn.innerHTML = '<i class="bi bi-scissors"></i>'; splitBtn.classList.replace('btn-warning','btn-outline-secondary'); splitBtn.title = '拆分账单'; }
-    if (attachBtn)   attachBtn.style.display = '';
-    if (attachTrig)  attachTrig.classList.add('d-none');
+    if (splitBtn)    { splitBtn.innerHTML = '<i class="bi bi-scissors"></i>'; splitBtn.classList.replace('btn-success','btn-outline-secondary'); splitBtn.title = '拆分账单'; }
     // restore required
     const amtInput = $('edit-trans-amount');
     if (amtInput) { amtInput.setAttribute('required',''); amtInput.value = ''; }
@@ -4329,7 +4328,8 @@ function getInlineItems() {
         ...(it.desc ? { desc: it.desc } : {}),
     }));
     if (items.length === 0) { alert('请至少填写一条有效金额'); return null; }
-    return items.length > 1 ? items : null;
+    if (items.length === 1) { alert('拆分至少需要两条分录，请补充或退出拆分'); return null; }
+    return items;
 }
 
 /** 清空拆分状态（新增/切换 tab 时调用） */
@@ -4363,6 +4363,15 @@ const SPENDING_TYPE_CONFIG = {
     want:   { label: '想要的', color: '#fd7e14', bg: 'rgba(253,126,20,0.12)' },
     regret: { label: '后悔的', color: '#dc3545', bg: 'rgba(220,53,69,0.12)' },
 };
+
+function getSpendingTypeConfig() {
+    return {
+        need:   { label: SPENDING_TYPE_CONFIG.need.label,   color: SPENDING_TYPE_CONFIG.need.color,   bg: SPENDING_TYPE_CONFIG.need.bg },
+        want:   { label: SPENDING_TYPE_CONFIG.want.label,   color: SPENDING_TYPE_CONFIG.want.color,   bg: SPENDING_TYPE_CONFIG.want.bg },
+        regret: { label: SPENDING_TYPE_CONFIG.regret.label, color: SPENDING_TYPE_CONFIG.regret.color, bg: SPENDING_TYPE_CONFIG.regret.bg },
+        '':     { label: '未标记', color: '#6c757d', bg: 'rgba(108,117,125,0.12)' },
+    };
+}
 
 function setSpendingType(val) {
     const sel = $('edit-trans-spending-type');
@@ -4655,6 +4664,8 @@ $('edit-transaction-form').addEventListener('submit', (e) => {
 
     // 取分录（内联多笔）
     const itemsData = getInlineItems();
+    // 拆分模式下如果 getInlineItems 返回 null，说明验证未通过（alert已弹），直接停止
+    if (_inSplitMode && itemsData === null) return;
     let category, finalAmount;
     if (itemsData) {
         finalAmount = itemsData.reduce((s, it) => s + it.amount, 0);
