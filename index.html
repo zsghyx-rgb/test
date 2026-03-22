@@ -505,12 +505,6 @@ select.compact-form-control { height: 2.1rem; }
     .modal-body { overflow-y: auto; flex: 1; max-height: calc(90vh - 120px); }
     .modal-body form { display: flex; flex-direction: column; }
 
-    /* 编辑交易模态框：手机贴顶 */
-    #editTransactionModal .modal-dialog {
-        margin: 0 auto !important;
-        align-self: flex-start;
-        max-height: 90vh;
-    }
 }
 
 @media (min-width: 769px) {
@@ -647,7 +641,6 @@ select.compact-form-control { height: 2.1rem; }
 <div id="app-toast"></div>
 
 
-<!-- ==================== 登录界面 ==================== -->
 <div id="login-overlay">
     <div class="card shadow p-3 p-md-4" style="width: 480px; max-width: 95%;">
 
@@ -759,7 +752,6 @@ select.compact-form-control { height: 2.1rem; }
         </div>
     </div>
 </div>
-<!-- ==================== 主应用界面 ==================== -->
 <div id="app-wrapper" class="d-none">
     <div class="sidebar">
         <div class="brand-title">
@@ -828,7 +820,6 @@ select.compact-form-control { height: 2.1rem; }
             <span><i class="bi bi-archive-fill me-1"></i>历史模式：<strong id="history-year-label"></strong> 年（只读）</span>
             <button class="btn btn-sm btn-outline-secondary py-0" onclick="exitHistoryMode()"><i class="bi bi-x-lg"></i> 退出</button>
         </div>
-        <!-- ==================== 账户视图 ==================== -->
         <div id="view-accounts" class="view-section">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h4 class="mb-0">我的资产</h4>
@@ -843,7 +834,6 @@ select.compact-form-control { height: 2.1rem; }
             <div id="other-users-accounts-container" class="mt-5 opacity-75"></div>
         </div>
 
-        <!-- ==================== 账户详情视图 ==================== -->
         <div id="view-account-detail" class="view-section">
             <div id="account-detail-header" class="d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center gap-2">
@@ -896,7 +886,6 @@ select.compact-form-control { height: 2.1rem; }
             </div>
         </div>
 
-        <!-- ==================== 交易视图 ==================== -->
         <div id="view-transactions" class="view-section active-view">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h4 class="mb-0">交易管理</h4>
@@ -1019,7 +1008,6 @@ select.compact-form-control { height: 2.1rem; }
             </div>
         </div>
 
-        <!-- ==================== 统计视图 ==================== -->
         <div id="view-stats" class="view-section">
             <div class="d-flex align-items-center mb-3 gap-2">
                 <h4 class="mb-0 flex-shrink-0">数据分析</h4>
@@ -1154,7 +1142,6 @@ select.compact-form-control { height: 2.1rem; }
             </div>
         </div>
 
-        <!-- ==================== 计划交易视图 ==================== -->
         <div id="view-planned" class="view-section">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h4 class="mb-0">计划交易</h4>
@@ -1166,7 +1153,6 @@ select.compact-form-control { height: 2.1rem; }
             <div id="planned-list-container"></div>
         </div>
 
-        <!-- ==================== 设置视图 ==================== -->
         <div id="view-settings" class="view-section">
             <h4 class="mb-4">系统设置</h4>
 
@@ -1357,8 +1343,6 @@ select.compact-form-control { height: 2.1rem; }
     </div>
 </div>
 
-<!-- ==================== 多笔交易子弹窗 ==================== -->
-<!-- ==================== 消费类型统计全屏视图 ==================== -->
 <div id="view-spending-analysis" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bs-body-bg);z-index:2000;display:none;flex-direction:column;">
     <!-- 固定顶部：标题 + 筛选栏 -->
     <div class="p-3 pb-2 flex-shrink-0 border-bottom" style="background:var(--bs-body-bg);">
@@ -1415,8 +1399,6 @@ select.compact-form-control { height: 2.1rem; }
     </div>
 </div>
 
-<!-- ==================== 多笔明细查看弹窗 ==================== -->
-<!-- ==================== 模态框 ==================== -->
 
 <!-- 新增/编辑计划交易 -->
 <div class="modal fade" id="plannedModal" tabindex="-1">
@@ -1742,7 +1724,6 @@ select.compact-form-control { height: 2.1rem; }
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// ==================== 配置常量 ====================
 const DEFAULT_CATEGORIES = {
     expense: ['餐饮', '交通', '住房', '购物', '娱乐', '医疗'],
     income: ['工资', '投资', '兼职', '礼金', '其他']
@@ -1750,14 +1731,12 @@ const DEFAULT_CATEGORIES = {
 
 const DEFAULT_RATES = { 'EUR_RMB': 7.8, 'USD_RMB': 7.2, 'HKD_RMB': 0.92, 'JPY_RMB': 0.048, 'GBP_RMB': 9.1 };
 
-// ==================== Google Drive 同步配置 ====================
 // GAS_URL 不再硬编码，从 localStorage 读取，首次使用时在登录界面填写
 let GAS_URL = localStorage.getItem('APP_gas_url') || '';
 let GAS_TOKEN = localStorage.getItem('APP_gas_token') || '';
 const CURRENCY_SYMBOLS = { 'RMB': '¥', 'EUR': '€', 'USD': '$', 'HKD': 'HK$', 'JPY': '¥', 'GBP': '£' };
 
 
-// ==================== 全局数据变量 ====================
 let inMemoryLoadedData = null;
 let userPassword = '';          // 用户输入的密码
 let dataUsers = [];             // 从数据文件读取的用户列表
@@ -1770,7 +1749,6 @@ let userPlannedTransactions = [];
 let categories = {};
 let exchangeRates = {};
 
-// ==================== 用户状态变量 ====================
 let currentUser = null;
 let currentUserName = null;
 let hasUnsavedChanges = false;
@@ -1780,13 +1758,11 @@ let _toastTimer = null;          // toast 自动消失计时器
 let driveIsSyncing = false;      // 防并发
 let offlineMode = localStorage.getItem('APP_offline_mode') === 'true'; // 离线模式
 
-// ==================== 存档 / 历史模式变量 ====================
 let historyMode = false;          // 当前是否处于历史模式
 let historyYear = null;           // 当前历史模式加载的年份
 let historyBaselines = [];        // 历史模式进入前暂存的基准交易
 let historyPrevFilters = null;    // 历史模式进入前的日期筛选状态
 
-// ==================== UI状态变量 ====================
 let chartInstances = {};
 let currentStatsFilter = { startDate: '', endDate: '', currency: 'RMB', user: 'all' };
 let currentSortField = 'date';
@@ -1798,7 +1774,6 @@ let currentAssetAggregation = 'month';
 let transactionDisplayMode = 'all';
 let currentUserFilterValue = 'all';
 
-// ==================== 共用工具函数 ====================
 const $ = id => document.getElementById(id);
 const $$ = selector => document.querySelectorAll(selector);
 
@@ -1848,14 +1823,10 @@ function formatAmount(amt, currency) {
 }
 
 
-// ==================== 移动端手势变量 ====================
 
 
-// ==================== 分类词库 ====================
 
 
-// ==================== 页面初始化 ====================
-// ==================== GAS URL 本地管理 ====================
 
 /** 构建带 token 的请求 URL，支持 file / action 额外参数 */
 function gasRequestUrl(options = {}) {
@@ -1870,7 +1841,6 @@ function gasRequestUrl(options = {}) {
     return params.length ? `${GAS_URL}?${params.join('&')}` : GAS_URL;
 }
 
-// ==================== 登录设置面板 ====================
 
 function toggleLoginSettings() {
     const panel = $('login-settings-panel');
@@ -1996,7 +1966,6 @@ function saveDeviceName() {
     showToast(`设备昵称已保存：${val}`, 'success', 2000);
 }
 
-// ==================== 离线模式管理 ====================
 
 function initOfflineModeUI() {
     const btn = $('offline-mode-btn');
@@ -2040,7 +2009,6 @@ function toggleOfflineMode() {
     }
 }
 
-// ==================== 切换用户 ====================
 
 function switchUser() {
     if (hasUnsavedChanges) {
@@ -2072,7 +2040,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// ==================== 登录流程 ====================
 
 /**
  * 用户选择文件后触发
@@ -2315,7 +2282,6 @@ function loginWithUser(name) {
     setTimeout(() => backgroundSyncAfterLogin(), 300);
 }
 
-// ==================== 本地草稿恢复 ====================
 /**
  * 进入主界面后检查所有用户的本地草稿
  * 当前用户的草稿：合并 + 刷新 UI + toast 提示
@@ -2362,7 +2328,6 @@ function checkAndRestoreDraft(userName) {
             }
         } catch(e) {
             // 草稿损坏，直接清除，不影响主流程
-            console.warn(`[draft] 用户 ${draftUser} 草稿解析失败，已清除`, e);
             localStorage.removeItem(draftKey);
             localStorage.removeItem(timeKey);
         }
@@ -2375,7 +2340,6 @@ function checkAndRestoreDraft(userName) {
         renderAllTransactions();
     }
 }
-
 
 
 function getArchivableYears() {
@@ -2543,7 +2507,6 @@ async function archiveYear(year) {
         showToast(`${year} 年数据存档成功`, 'success');
     } catch (err) {
         showToast(`存档失败：${err.message}`, 'error');
-        console.error('[archiveYear]', err);
     }
 }
 
@@ -2596,11 +2559,9 @@ async function unarchiveYear(year) {
         showToast(`${year} 年数据解档成功`, 'success');
     } catch (err) {
         showToast(`解档失败：${err.message}`, 'error');
-        console.error('[unarchiveYear]', err);
     }
 }
 
-// ==================== 历史模式 ====================
 
 async function showHistoryYearSelector() {
     const archivedYears = getArchivedYears();
@@ -2672,7 +2633,6 @@ async function loadHistoryYear(year) {
     } catch (err) {
         historyMode = false; historyYear = null;
         showToast(`加载失败：${err.message}`, 'error');
-        console.error('[loadHistoryYear]', err);
     }
 }
 
@@ -2709,7 +2669,6 @@ function logout() {
     location.reload();
 }
 
-// ==================== 初始化应用界面 ====================
 function initAppUI() {
     renderAccounts();
 
@@ -2742,7 +2701,6 @@ function initAppUI() {
     renderExchangeRateSettings();
 }
 
-// ==================== 数据加载与保存 ====================
 function loadAllData() {
     accounts = [];
     transactions = [];
@@ -2781,7 +2739,6 @@ function filterUserData() {
     userPlannedTransactions = plannedTransactions.filter(p => p.ownerName === currentUserName);
 }
 
-// ==================== 未保存更改标记 & Drive 同步 ====================
 
 const toastIcons = {
     success: '<i class="bi bi-check-circle-fill"></i>',
@@ -3010,7 +2967,6 @@ async function syncToDrive(manual = false, forcePush = false) {
         }
     } catch (err) {
         showToast('同步失败：' + err.message, 'error');
-        console.error('[Drive sync error]', err);
     } finally {
         driveIsSyncing = false;
     }
@@ -3172,11 +3128,9 @@ async function backgroundSyncAfterLogin() {
         }
     } catch(e) {
         // 后台同步失败，静默忽略，不打扰用户
-        console.warn('后台同步失败:', e);
     }
 }
 
-// ==================== 数据导出功能 ====================
 
 /**
  * 导出加密文件 (.enc)
@@ -3276,7 +3230,6 @@ function exportTransferCsv() {
     a.click();
 }
 
-// ==================== 数据导入功能 ====================
 function importTransactionCsv() {
     const file = $('transaction-csv-input').files[0];
     if (!file) return;
@@ -3366,7 +3319,6 @@ function importTransferCsv() {
     reader.readAsText(file);
 }
 
-// ==================== 账户显示名称处理 ====================
 function getAccountDisplayName(acc) {
     if (!acc) return '';
     if (acc.ownerName && acc.ownerName !== currentUserName) {
@@ -3376,7 +3328,6 @@ function getAccountDisplayName(acc) {
     return acc.name;
 }
 
-// ==================== 账户渲染功能 ====================
 function renderAccounts() {
     const container = $('account-list-container');
     const otherContainer = $('other-users-accounts-container');
@@ -3412,7 +3363,7 @@ function renderAccounts() {
             col.className = 'account-col';
             const balClass = amountsHidden ? 'amount-hidden' : (bal < 0 ? 'text-danger' : 'text-success');
             col.innerHTML = `
-                <div class="card account-card p-3 shadow-sm" 
+                <div class="card account-card p-3 shadow-sm"
                      data-id="${acc.id}" onclick="openAccountDetail(${acc.id})" style="cursor:pointer;">
                     <div class="d-flex justify-content-between align-items-start">
                         <div style="flex:1">
@@ -3505,7 +3456,6 @@ function deleteAccount(id) {
     }
 }
 
-// ==================== 账户添加/编辑 ====================
 function openNewAccount() {
     $('acc-id').value = '';
     $('acc-mode').value = 'add';
@@ -3797,7 +3747,6 @@ function deleteAccountFromDetail() {
     }
 }
 
-// ==================== Tab 切换 ====================
 function switchTransTab(tab, skipReset) {
     // tab: 'expense' | 'income' | 'transfer'
     const transForm = $('edit-transaction-form');
@@ -3853,7 +3802,7 @@ function switchTransTab(tab, skipReset) {
             // 切换 tab 清空分类/金额
             resetInlineItems();
             $('edit-trans-amount').value = '';
-        
+
         }
         updateEditFormCategories();
         const attachSec = $('attachment-section');
@@ -3923,7 +3872,6 @@ function openNewTransferFromDetail() {
     new bootstrap.Modal($('editTransactionModal')).show();
 }
 
-// ==================== 新增交易 / 转账入口 ====================
 function openNewTransaction() {
     const prefs = _lastTransPrefs;
     _initNewTransModal('add', '新增交易');
@@ -3977,7 +3925,6 @@ function openNewTransfer() {
     new bootstrap.Modal($('editTransactionModal')).show();
 }
 
-// ==================== 转账表单辅助 ====================
 
 function handleEditTransferAmountChange(direction) {
     const fromId = $('edit-transfer-from')?.value;
@@ -4000,7 +3947,6 @@ function handleEditTransferAmountChange(direction) {
     }
 }
 
-// ==================== 交易添加/删除/编辑 ====================
 function deleteTransaction(id) {
     const t = transactions.find(x => x.id === id);
     if (!t) { alert('找不到记录'); return; }
@@ -4161,7 +4107,6 @@ function deleteCurrentTransfer() {
     }
 }
 
-// ==================== 拆分模式（内联） ====================
 
 let _splitData = []; // [{category, amount, spendingType, tags, desc}, ...]
 let _inSplitMode = false;
@@ -4340,13 +4285,8 @@ function loadInlineItems(items, type) {
     renderSplitItems();
 }
 
-// compat stubs
-function refreshInlineTotal() {}
-function addInlineItemRow() {}
 
-// ==================== 拆分模式 END ====================
 
-// ==================== 消费类型 ====================
 const SPENDING_TYPE_CONFIG = {
     need:   { label: '必须的', color: '#0d6efd', bg: 'rgba(13,110,253,0.12)' },
     want:   { label: '想要的', color: '#fd7e14', bg: 'rgba(253,126,20,0.12)' },
@@ -4369,7 +4309,6 @@ function showSpendingTypeRow(show) {
     if (wrap) wrap.style.display = show ? '' : 'none';
 }
 
-// ==================== 消费类型统计 ====================
 let saChartType = null, saChartTrend = null;
 
 let _saCurrentUser = ''; // '' = 所有用户
@@ -4588,7 +4527,6 @@ function renderSaDetailList() {
     });
 }
 
-// ==================== 消费类型 END ====================
 
 function updateEditFormCategories() {
     const type = $('edit-trans-type').value;
@@ -4768,7 +4706,6 @@ $('edit-transfer-form').addEventListener('submit', (e) => {
     }
 });
 
-// ==================== 用户筛选循环切换 ====================
 function updateUserFilterBtn() {
     const btn = $('trans-user-filter-btn');
     const textEl = $('trans-user-filter-text');
@@ -4790,7 +4727,6 @@ function cycleUserFilter() {
     applyTransactionFilter();
 }
 
-// ==================== 交易筛选功能 ====================
 function clearTransactionFilters() {
     $('trans-search-input').value = '';
     $('filter-start-date').value = '';
@@ -4883,7 +4819,6 @@ function getFilteredTransactions() {
     });
 }
 
-// ==================== 移动端手势 ====================
 function initMobileSwipeGestures(card, transactionId) {
     card.addEventListener('click', (e) => {
         const t = transactions.find(x => x.id === transactionId);
@@ -4893,7 +4828,6 @@ function initMobileSwipeGestures(card, transactionId) {
     });
 }
 
-// ==================== 交易列表渲染 ====================
 function renderAllTransactions() {
     const tbody = $('transaction-table-body');
     tbody.innerHTML = '';
@@ -5054,7 +4988,6 @@ function loadMoreTransactions() {
     renderAllTransactions();
 }
 
-// ==================== 历史记忆智能分类 ====================
 
 /**
  * 计算两个字符串的相似度分（0~10）
@@ -5283,7 +5216,6 @@ async function handleAttachmentSelected(input) {
             showToast('上传失败：' + (result.error || '未知错误'), 'error');
         }
     } catch (err) {
-        console.error(err);
         showToast('上传失败：' + err.message, 'error');
     } finally {
         isUploadingAttachment = false;
@@ -5291,7 +5223,6 @@ async function handleAttachmentSelected(input) {
         input.value = '';
     }
 }
-
 
 
 // 4. 渲染多张缩略图（图片显示缩略图，PDF显示图标）
@@ -5345,18 +5276,6 @@ if (!confirm('确定删除这张附件吗？')) return;
 }
 
 // 6. 全屏预览
-function showFullImagePreviewFromSrc(src) {
-    const overlay = document.createElement('div');
-    overlay.style = `position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); 
-                     z-index:9999; display:flex; align-items:center; justify-content:center; cursor:zoom-out;`;
-    const fullImg = document.createElement('img');
-    fullImg.src = src;
-    fullImg.style = "max-width:95%; max-height:95%; object-fit:contain;";
-    overlay.onclick = () => document.body.removeChild(overlay);
-    overlay.appendChild(fullImg);
-    document.body.appendChild(overlay);
-}
-
 
 
 function applyDescHint(catId, category) {
@@ -5420,7 +5339,6 @@ async function checkHistoryCategories() {
     }
 }
 
-// ==================== 统计分析功能 ====================
 function applyStatsFilter() {
     currentStatsFilter.startDate = $('stats-start-date').value;
     currentStatsFilter.endDate = $('stats-end-date').value;
@@ -5674,7 +5592,6 @@ function renderTotalExpenseTrendChart(data) {
     });
 }
 
-// ==================== 下拉选项更新 ====================
 function updateSelectOptions() {
     const fill = (id, arr) => {
         const el = $(id);
@@ -5701,7 +5618,6 @@ function updateSelectOptions() {
     updateUserFilterBtn();
 }
 
-// ==================== 标签页切换 ====================
 function switchTab(t, el) {
     // 切换 tab 前强制关闭所有打开的弹窗，清理残留 backdrop
     ['editTransactionModal','accountModal','plannedModal'].forEach(id => {
@@ -5728,8 +5644,6 @@ function switchTab(t, el) {
     if (t === 'settings') { renderExchangeRateSettings(); initPasswordHint(); renderUserManagement(); renderArchiveManagementUI(); }
 }
 
-// ==================== 状态提示 ====================
-// ==================== 统一通知系统 ====================
 
 /**
  * 显示统一 toast 通知
@@ -5755,23 +5669,13 @@ function showToast(msg, type = 'success', duration = 3000) {
     }
 }
 
-function hideToast() {
-    clearTimeout(_toastTimer);
-    if (hasUnsavedChanges) {
-        showUnsavedToast();
-    } else {
-        $('app-toast')?.classList.remove('show');
-    }
-}
 
-// ==================== 金额显示/隐藏切换 ====================
 function toggleAmountVisibility() {
     amountsHidden = !amountsHidden;
     renderAccounts();
     if ($('view-stats').classList.contains('active-view')) renderStats();
 }
 
-// ==================== 密码修改 ====================
 function openChangePwdModal() {
     ['pwd-current','pwd-new','pwd-confirm'].forEach(id => {
         const el = $(id);
@@ -5831,7 +5735,6 @@ function initPasswordHint() {
     hint.textContent = userPassword ? '当前文件已加密（有密码）' : '当前文件无密码（JSON 明文）';
 }
 
-// ==================== 汇率设置 ====================
 const FOREIGN_CURRENCIES = [
     { code: 'EUR', symbol: '€', label: '欧元' },
     { code: 'USD', symbol: '$', label: '美元' },
@@ -5906,7 +5809,6 @@ function setExchangeRate(from, to, rate) {
     showToast('汇率已更新', 'success');
 }
 
-// ==================== 类别管理 ====================
 function renderCategorySettings() {
     const render = (type, id) => {
         const div = $(id);
@@ -5983,7 +5885,6 @@ function editCategoryName(type, oldName) {
     showToast(`分类已重命名: "${oldName}" → "${trimmedName}"`, 'success');
 }
 
-// ==================== 表格列宽调整 ====================
 let resizingColumn = null, startX = 0, startWidth = 0;
 function startColumnResize(e, resizer) {
     e.stopPropagation(); e.preventDefault();
@@ -6002,7 +5903,6 @@ function stopColumnResize() {
     document.removeEventListener('mouseup', stopColumnResize);
 }
 
-// ==================== 图表显示/隐藏切换 ====================
 function toggleChartVisibility(wrapperId, btn) {
     const wrapper = $(wrapperId);
     const isHidden = wrapper.classList.contains('d-none');
@@ -6017,7 +5917,6 @@ function toggleChartVisibility(wrapperId, btn) {
     }
 }
 
-// ==================== 计划交易功能 ====================
 function renderPlannedTransactions() {
     const container = $('planned-list-container');
     if (!container) return;
@@ -6076,7 +5975,6 @@ function updatePlannedCategories() {
     select.innerHTML = '';
     (type === 'expense' ? categories.expense : categories.income).forEach(c => select.add(new Option(c, c)));
 }
-
 
 
 function openNewPlanned() {
@@ -6229,7 +6127,6 @@ function getNextGenerationDate(plan) {
     return null;
 }
 
-// ==================== 数据导出/导入工具 ====================
 
 function toggleAdvancedExportSection() {
     const card = $('adv-export-card');
@@ -6246,7 +6143,6 @@ function toggleAdvancedExportSection() {
     }
 }
 
-// ==================== 用户管理 ====================
 
 function renderUserManagement() {
     const container = $('user-management-list');
@@ -6324,7 +6220,6 @@ function removeUser(name) {
     showToast(`已删除用户 "${name}"`, 'success');
 }
 
-// ==================== 初始化 ====================
 window.addEventListener('load', () => {
     updateTransferModeButton();
 });
@@ -6335,9 +6230,7 @@ window.addEventListener('load', () => {
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js').then(reg => {
-            console.log('[PWA] SW registered:', reg.scope);
         }).catch(err => {
-            console.warn('[PWA] SW registration failed:', err);
         });
     });
 }
