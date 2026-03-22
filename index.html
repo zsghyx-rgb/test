@@ -542,33 +542,56 @@ select.compact-form-control { height: 2.1rem; }
 .multi-row-amt::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .multi-row-amt { -moz-appearance: textfield; }
 
-/* ── 编辑/新增交易 全屏 ── */
+/* ── 编辑/新增交易弹窗 ── */
 #editTransactionModal .modal-dialog {
-    margin: 0 !important;
-    max-width: 100vw !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    height: 100dvh !important;
-    max-height: 100% !important;
-    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+    max-height: 100dvh;
+    margin: auto;
 }
 #editTransactionModal .modal-content {
-    height: 100% !important;
-    max-height: 100% !important;
-    border-radius: 0 !important;
-    border: none !important;
+    max-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 #editTransactionModal .modal-body {
     display: flex !important;
     flex-direction: column !important;
     overflow-y: auto !important;
     flex: 1 !important;
+    min-height: 0;
 }
 #edit-transaction-form {
     display: flex;
     flex-direction: column;
     flex: 1;
     min-height: 0;
+}
+/* 手机端：宽度全屏、贴顶、无圆角 */
+@media (max-width: 768px) {
+    #editTransactionModal .modal-dialog {
+        margin: 0 !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+        max-height: 100dvh !important;
+        border-radius: 0;
+    }
+    #editTransactionModal .modal-content {
+        border-radius: 0 !important;
+        border: none !important;
+        max-height: 100dvh !important;
+    }
+}
+/* 桌面端：正常宽度居中，高度自适应最大90vh */
+@media (min-width: 769px) {
+    #editTransactionModal .modal-dialog {
+        max-height: 90vh;
+        max-width: 560px;
+    }
+    #editTransactionModal .modal-content {
+        max-height: 90vh;
+    }
 }
 /* 拆分模式时分录列表占满剩余空间 */
 #split-items-section {
@@ -586,6 +609,17 @@ select.compact-form-control { height: 2.1rem; }
     min-height: 0;
     padding: 4px 0;
 }
+/* 分录卡片 Grid 布局 — 两行共用列宽 */
+.split-item-card .split-card-grid {
+    display: grid;
+    grid-template-columns: 2fr 1.2fr 1.5fr 30px;
+    gap: 4px;
+    align-items: center;
+    margin-bottom: 4px;
+}
+.split-card-tags { grid-column: 1; }
+.split-card-desc { grid-column: 2 / 4; }
+.split-card-del  { grid-column: 4; display: flex; justify-content: center; }
 </style>
     <!-- 鸿蒙HarmonyOS 3.0 兼容补丁 -->
     <script>
@@ -4147,24 +4181,24 @@ function _buildSplitItemCard(item, idx) {
     div.style.background = 'var(--bs-body-bg)';
     div.dataset.idx = idx;
     div.innerHTML = `
-        <div class="d-flex gap-1 align-items-center mb-1">
-            <select class="form-select compact-form-control" style="flex:2;min-width:0;"
+        <div class="split-card-grid">
+            <select class="form-select compact-form-control"
                     onchange="_splitData[${idx}].category=this.value">${catOpts}</select>
             <input type="number" step="0.01" min="0.01" class="form-control compact-form-control"
-                   style="flex:1.2;min-width:0;" placeholder="金额"
+                   placeholder="金额"
                    value="${item.amount>0?item.amount:''}"
                    oninput="_splitData[${idx}].amount=parseFloat(this.value)||0;refreshSplitTotal()">
-            <select class="form-select compact-form-control" style="flex:1.5;min-width:0;font-size:0.78rem;"
+            <select class="form-select compact-form-control" style="font-size:0.78rem;"
                     onchange="_splitData[${idx}].spendingType=this.value">${_stOptsHTML(item.spendingType)}</select>
-            <button type="button" class="btn btn-link text-danger btn-sm p-0 flex-shrink-0"
-                    onclick="removeSplitItem(${idx})"><i class="bi bi-x-lg"></i></button>
-        </div>
-        <div class="d-flex gap-1 align-items-center">
-            <input type="text" class="form-control compact-form-control"
-                   style="flex:1;min-width:0;" placeholder="标签"
+            <div class="split-card-del">
+                <button type="button" class="btn btn-link text-danger btn-sm p-0"
+                        onclick="removeSplitItem(${idx})"><i class="bi bi-x-lg"></i></button>
+            </div>
+            <input type="text" class="form-control compact-form-control split-card-tags"
+                   placeholder="标签"
                    value="${item.tags||''}" oninput="_splitData[${idx}].tags=this.value">
-            <input type="text" class="form-control compact-form-control"
-                   style="flex:2;min-width:0;" placeholder="备注"
+            <input type="text" class="form-control compact-form-control split-card-desc"
+                   placeholder="备注"
                    value="${item.desc||''}" oninput="_splitData[${idx}].desc=this.value">
         </div>`;
     return div;
@@ -4914,7 +4948,12 @@ function renderAllTransactions() {
         // 其他用户的交易：桌面端不显示操作图标
 
         const tr = document.createElement('tr');
-        const tDescDisplay = t.desc||'';
+        const tDescDisplay = t.items && t.items.length > 1
+            ? t.items.filter(it => it.desc).map(it => it.desc).join(' / ')
+            : (t.desc||'');
+        const tTagsDisplay = t.items && t.items.length > 1
+            ? t.items.filter(it => it.tags).map(it => `@${it.tags}`).join(' ')
+            : (t.tags||'');
         tr.innerHTML = `
             <td>${t.date}</td>
             <td><div class="text-start ps-2 ${typeColorClass}">${typeText}</div></td>
@@ -4924,7 +4963,7 @@ function renderAllTransactions() {
             <td>${toAccountDisplay}</td>
             <td>${amountInDisplay}</td>
             <td><div class="desc-content" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:250px;" title="${tDescDisplay.replace(/"/g,'&quot;')}">${tDescDisplay}${t.attachmentId ? ` <a href="${getDriveAttachmentUrl(t.attachmentId)}" target="_blank" title="查看附件" onclick="event.stopPropagation()"><i class="bi bi-paperclip text-muted"></i></a>` : ''}</div></td>
-            <td>${t.tags||''}</td>
+            <td>${tTagsDisplay}</td>
             <td><span class="badge bg-secondary">${t.ownerName}</span></td>
             <td><div class="text-center">${editBtns}</div></td>`;
         tbody.appendChild(tr);
@@ -4968,13 +5007,24 @@ function renderAllTransactions() {
                 const tagsHtml = t.tags ? `<span style="color:var(--bs-secondary);"> @${t.tags}</span>` : '';
                 const noteHtml = descClean ? `<span style="color:var(--bs-secondary);"> · ${descClean}</span>` : '';
                 const attachIconHtml = t.attachmentId ? ` <i class="bi bi-paperclip" style="color:var(--bs-secondary);font-size:0.72rem;"></i>` : '';
+                // 拆分交易：聚合各分录的标签和备注
+                let splitMetaHtml = '';
+                if (t.items && t.items.length > 1) {
+                    const parts = t.items.filter(it => it.tags || it.desc).slice(0, 3).map(it => {
+                        const p = [];
+                        if (it.tags) p.push(`@${it.tags}`);
+                        if (it.desc) p.push(it.desc);
+                        return p.join(' ');
+                    });
+                    if (parts.length) splitMetaHtml = `<span style="color:var(--bs-secondary);"> · ${parts.join(' / ')}</span>`;
+                }
                 card.innerHTML = `
                     <div class="card-line-1">
                         <span class="category-text">${(t.items && t.items.length > 1 ? t.items[0].category + '等' + (t.items.length-1) + '项' : (t.category || ''))}${tagsHtml}${attachIconHtml}</span>
                         <div class="${amountClass} fw-bold">${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}</div>
                     </div>
                     <div class="card-line-2">
-                        <span class="text-muted small">${t.date} · ${accDisplayName}${noteHtml}</span>
+                        <span class="text-muted small">${t.date} · ${accDisplayName}${noteHtml}${splitMetaHtml}</span>
                     </div>`;
             }
 
