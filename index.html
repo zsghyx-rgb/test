@@ -1505,11 +1505,11 @@ select.compact-form-control { height: 2.1rem; }
                     <div class="row g-2 mb-2">
                         <div class="col-6">
                             <label class="compact-form-label">备注</label>
-                            <input type="text" class="form-control compact-form-control" id="planned-desc">
+                            <input type="text" class="form-control compact-form-control" id="planned-desc" placeholder="添加备注…">
                         </div>
                         <div class="col-6">
                             <label class="compact-form-label">标签</label>
-                            <input type="text" class="form-control compact-form-control" id="planned-tags">
+                            <input type="text" class="form-control compact-form-control" id="planned-tags" placeholder="添加标签…">
                         </div>
                     </div>
                     <button type="submit" class="btn btn-primary btn-sm w-100 mt-2" id="planned-submit-btn">保存计划</button>
@@ -1657,7 +1657,7 @@ select.compact-form-control { height: 2.1rem; }
                     <div id="single-meta-section">
                         <div class="mb-2">
                             <label class="compact-form-label">标签</label>
-                            <input type="text" class="form-control compact-form-control" id="edit-trans-tags">
+                            <input type="text" class="form-control compact-form-control" id="edit-trans-tags" placeholder="添加标签…">
                         </div>
                         <div class="mb-2">
                             <label class="compact-form-label">备注</label>
@@ -3684,10 +3684,25 @@ function renderDetailContent(id) {
                 const cleanDesc = tOut ? (tOut.desc || '') : (t.desc || '');
                 if (cleanDesc) subLine += ' · ' + cleanDesc;
             } else {
-                const tagsHtml = t.tags ? `<span style="font-size:0.72rem;color:var(--bs-secondary);margin-left:4px;">@${t.tags}</span>` : '';
-                const catDisplay = t.items && t.items.length > 1 ? t.items[0].category + '等' + (t.items.length-1) + '项' : (t.category || '');
+                const catDisplay = t.items && t.items.length > 1
+                    ? t.items[0].category + '等' + (t.items.length - 1) + '项'
+                    : (t.category || '');
+                let tagsHtml, noteStr;
+                if (t.items && t.items.length > 1) {
+                    const allTags = t.items.map(it => it.tags).filter(Boolean);
+                    const allDesc = t.items.map(it => it.desc).filter(Boolean);
+                    tagsHtml = allTags.length
+                        ? `<span style="font-size:0.72rem;color:var(--bs-secondary);margin-left:4px;"><i class="bi bi-tag" style="font-size:0.62rem;"></i> ${allTags.join(' / ')}</span>`
+                        : '';
+                    noteStr = allDesc.length ? allDesc.join(' / ') : '';
+                } else {
+                    tagsHtml = t.tags
+                        ? `<span style="font-size:0.72rem;color:var(--bs-secondary);margin-left:4px;"><i class="bi bi-tag" style="font-size:0.62rem;"></i> ${t.tags}</span>`
+                        : '';
+                    noteStr = t.desc || '';
+                }
                 titleHtml = `<span style="font-weight:600;font-size:0.83rem;">${catDisplay}${tagsHtml}</span>`;
-                if (t.desc) subLine += ' · ' + t.desc;
+                if (noteStr) subLine += ` <i class="bi bi-chat-left-text" style="font-size:0.62rem;"></i> ${noteStr}`;
             }
 
             const amtSign = (!isTransfer && t.amount >= 0) ? '+' : '';
@@ -4209,10 +4224,10 @@ function _buildSplitItemCard(item, idx) {
                         onclick="removeSplitItem(${idx})"><i class="bi bi-x-lg"></i></button>
             </div>
             <input type="text" class="form-control compact-form-control split-card-tags"
-                   placeholder="标签"
+                   placeholder="添加标签…"
                    value="${item.tags||''}" oninput="_splitData[${idx}].tags=this.value">
             <input type="text" class="form-control compact-form-control split-card-desc"
-                   placeholder="备注"
+                   placeholder="添加备注…"
                    value="${item.desc||''}" oninput="_splitData[${idx}].desc=this.value">
         </div>`;
     return div;
@@ -4576,8 +4591,12 @@ function renderSaDetailList() {
         const editId = t._parentId || t.id;
         const isExpanded = !!t._parentId;
         const descClean = t.desc || '';
-        const tagsHtml = t.tags ? `<span style="color:var(--bs-secondary);"> @${t.tags}</span>` : '';
-        const noteHtml = descClean ? `<span style="color:var(--bs-secondary);"> · ${descClean}</span>` : '';
+        const tagsHtml = t.tags
+            ? `<span style="color:var(--bs-secondary);font-size:0.78rem;"> <i class="bi bi-tag" style="font-size:0.62rem;"></i> ${t.tags}</span>`
+            : '';
+        const noteHtml = descClean
+            ? `<span style="color:var(--bs-secondary);font-size:0.78rem;"> <i class="bi bi-chat-left-text" style="font-size:0.62rem;"></i> ${descClean}</span>`
+            : '';
         const stBadge = `<span style="font-size:0.62rem;background:${cfg.bg || cfg.color};color:${cfg.color};border-radius:3px;padding:0 4px;margin-left:4px;border:1px solid ${cfg.color};vertical-align:middle;">${cfg.label}</span>`;
 
         const card = document.createElement('div');
@@ -5036,14 +5055,18 @@ function renderAllTransactions() {
                     const allTags = t.items.map(it => it.tags).filter(Boolean);
                     const allDesc = t.items.map(it => it.desc).filter(Boolean);
                     tagsHtml = allTags.length
-                        ? `<span style="color:var(--bs-secondary);font-size:0.78rem;"> ${allTags.map(tag => `@${tag}`).join(' / ')}</span>`
+                        ? `<span style="color:var(--bs-secondary);font-size:0.78rem;"> <i class="bi bi-tag" style="font-size:0.62rem;"></i> ${allTags.join(' / ')}</span>`
                         : '';
                     noteHtml = allDesc.length
-                        ? `<span style="color:var(--bs-secondary);"> · ${allDesc.join(' / ')}</span>`
+                        ? `<span style="color:var(--bs-secondary);font-size:0.78rem;"> <i class="bi bi-chat-left-text" style="font-size:0.62rem;"></i> ${allDesc.join(' / ')}</span>`
                         : '';
                 } else {
-                    tagsHtml = t.tags ? `<span style="color:var(--bs-secondary);"> @${t.tags}</span>` : '';
-                    noteHtml = descClean ? `<span style="color:var(--bs-secondary);"> · ${descClean}</span>` : '';
+                    tagsHtml = t.tags
+                        ? `<span style="color:var(--bs-secondary);font-size:0.78rem;"> <i class="bi bi-tag" style="font-size:0.62rem;"></i> ${t.tags}</span>`
+                        : '';
+                    noteHtml = descClean
+                        ? `<span style="color:var(--bs-secondary);font-size:0.78rem;"> <i class="bi bi-chat-left-text" style="font-size:0.62rem;"></i> ${descClean}</span>`
+                        : '';
                 }
 
                 const catDisplay = t.items && t.items.length > 1
