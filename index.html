@@ -1,21 +1,19 @@
-<!DOCTYPE html>
-<!-- saved from url=(0034)https://zsghyx-rgb.github.io/test/ -->
-<html lang="zh-CN" data-bs-theme="dark"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    
+<!DOCTYPE html><html lang="zh-CN" data-bs-theme="dark"><head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>记一笔</title>
     <!-- PWA -->
-    <link rel="manifest" href="https://zsghyx-rgb.github.io/test/manifest.json">
+    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0d6efd">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="记一笔">
-    <link rel="apple-touch-icon" href="https://zsghyx-rgb.github.io/test/icon-192.png">
-    <link href="./记一笔_files/bootstrap.min.css" rel="stylesheet">
-    <link href="./记一笔_files/bootstrap-icons.css" rel="stylesheet">
-    <script src="./记一笔_files/crypto-js.min.js.下载"></script>
-    <script src="./记一笔_files/chart.js.下载"></script>
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
         (() => {
@@ -870,7 +868,7 @@ select.compact-form-control { height: 2.1rem; }
 <body>
 
 <!-- 统一通知 toast -->
-<div id="app-toast" class="show" style="background: rgb(207, 244, 252); color: rgb(5, 81, 96); border: 1px solid rgb(158, 234, 249);"><i class="bi bi-info-circle-fill"></i> 请输入密码</div>
+<div id="app-toast"></div>
 
 
 <div id="login-overlay">
@@ -968,7 +966,7 @@ select.compact-form-control { height: 2.1rem; }
             <!-- 离线模式 -->
             <div class="d-flex align-items-center justify-content-between mb-2">
                 <span class="small text-muted">数据来源</span>
-                <button id="offline-mode-btn" class="btn btn-sm btn-outline-secondary" onclick="toggleOfflineMode()" style="font-size:0.72rem; padding:0.2rem 0.6rem;"><i class="bi bi-wifi"></i> 在线模式</button>
+                <button id="offline-mode-btn" class="btn btn-sm btn-warning" onclick="toggleOfflineMode()" style="font-size:0.72rem; padding:0.2rem 0.6rem;"><i class="bi bi-wifi-off"></i> 离线模式</button>
             </div>
 
             <!-- 新建数据文件 -->
@@ -984,11 +982,11 @@ select.compact-form-control { height: 2.1rem; }
 
         <!-- ① 选择数据文件 -->
         <div class="mb-3">
-            <label class="form-label small text-muted fw-bold mb-2" id="select-file-label" style="display: none;">选择数据文件</label>
-            <div id="offline-file-bar" style="display: none;">
+            <label class="form-label small text-muted fw-bold mb-2" id="select-file-label">选择数据文件</label>
+            <div id="offline-file-bar">
                 <input type="file" class="form-control form-control-sm" id="data-import-file" accept=".enc,.json,.txt" onchange="onFileSelected()">
             </div>
-            <div id="online-drive-bar" style="">
+            <div id="online-drive-bar" style="display:none;">
                 <button class="btn btn-outline-primary btn-sm" onclick="loadFromDrive()">
                     <i class="bi bi-cloud-arrow-down"></i> 重新加载
                 </button>
@@ -997,11 +995,11 @@ select.compact-form-control { height: 2.1rem; }
         </div>
 
         <!-- ② 输入密码 -->
-        <div class="mb-3" id="password-section" style="display: block;">
+        <div class="mb-3" id="password-section" style="display:none;">
             <label class="form-label small text-muted fw-bold">输入密码</label>
             <div class="input-group input-group-sm">
                 <input type="text" id="login-username-hint" name="username" autocomplete="username" style="display:none;" aria-hidden="true">
-                <input type="password" class="form-control" id="login-password" name="password" placeholder="输入数据文件密码" autocomplete="current-password" onkeydown="if(event.key===&#39;Enter&#39;) decryptAndLoadData()">
+                <input type="password" class="form-control" id="login-password" name="password" placeholder="输入数据文件密码" autocomplete="current-password" onkeydown="if(event.key==='Enter') decryptAndLoadData()">
                 <button class="btn btn-primary" type="button" onclick="decryptAndLoadData()">
                     <i class="bi bi-unlock"></i> 解密
                 </button>
@@ -1018,7 +1016,7 @@ select.compact-form-control { height: 2.1rem; }
         </div>
     </div>
     <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;pointer-events:none;">
-        <span class="text-muted" style="font-size:0.7rem;">v1.5.2</span>
+        <span class="text-muted" style="font-size:0.7rem;">v1.5.1</span>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
@@ -1029,27 +1027,27 @@ select.compact-form-control { height: 2.1rem; }
         </div>
         <ul class="nav nav-pills flex-md-column mb-auto">
             <li class="nav-item">
-                <button class="nav-link" onclick="switchTab(&#39;accounts&#39;, this)">
+                <button class="nav-link" onclick="switchTab('accounts', this)">
                     <i class="bi bi-bank"></i><span>账户</span>
                 </button>
             </li>
             <li class="nav-item">
-                <button class="nav-link active" onclick="switchTab(&#39;transactions&#39;, this)">
+                <button class="nav-link active" onclick="switchTab('transactions', this)">
                     <i class="bi bi-table"></i><span>交易</span>
                 </button>
             </li>
             <li class="nav-item">
-                <button class="nav-link" onclick="switchTab(&#39;stats&#39;, this)">
+                <button class="nav-link" onclick="switchTab('stats', this)">
                     <i class="bi bi-pie-chart"></i><span>统计</span>
                 </button>
             </li>
             <li class="nav-item">
-                <button class="nav-link" onclick="switchTab(&#39;planned&#39;, this)">
+                <button class="nav-link" onclick="switchTab('planned', this)">
                     <i class="bi bi-calendar-check"></i><span>计划</span>
                 </button>
             </li>
             <li class="nav-item">
-                <button class="nav-link" onclick="switchTab(&#39;settings&#39;, this)">
+                <button class="nav-link" onclick="switchTab('settings', this)">
                     <i class="bi bi-gear"></i><span>设置</span>
                 </button>
             </li>
@@ -1061,7 +1059,7 @@ select.compact-form-control { height: 2.1rem; }
                     <span class="user-name-full">User</span>
                     <span class="user-name-short">U</span>
                 </div>
-                <div class="user-status" id="sync-mode-status">在线模式</div>
+                <div class="user-status" id="sync-mode-status">离线模式</div>
             </div>
             <button class="btn btn-sm btn-outline-secondary w-100 mb-1" onclick="switchUser()" style="font-size: 0.7rem; padding: 0.3rem;">
                 <i class="bi bi-arrow-left-right"></i> 切换
@@ -1106,7 +1104,7 @@ select.compact-form-control { height: 2.1rem; }
         <div id="view-account-detail" class="view-section">
             <div id="account-detail-header" class="d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center gap-2">
-                    <button class="btn btn-sm btn-outline-secondary" onclick="switchTab(&#39;accounts&#39;, document.querySelector(&#39;.nav-link[onclick*=accounts]&#39;))">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="switchTab('accounts', document.querySelector('.nav-link[onclick*=accounts]'))">
                         <i class="bi bi-arrow-left"></i>
                     </button>
                     <div>
@@ -1200,11 +1198,11 @@ select.compact-form-control { height: 2.1rem; }
                             </div>
                             <div>
                                 <div class="btn-group btn-group-sm">
-                                    <button class="btn btn-outline-secondary" onclick="quickDateFilter(&#39;30days&#39;)">近30天</button>
-                                    <button class="btn btn-outline-secondary" onclick="quickDateFilter(&#39;month&#39;)">本月</button>
-                                    <button class="btn btn-outline-secondary" onclick="quickDateFilter(&#39;lastmonth&#39;)">上月</button>
-                                    <button class="btn btn-outline-secondary" onclick="quickDateFilter(&#39;year&#39;)">本年</button>
-                                    <button class="btn btn-outline-secondary" onclick="quickDateFilter(&#39;all&#39;)">全部</button>
+                                    <button class="btn btn-outline-secondary" onclick="quickDateFilter('30days')">近30天</button>
+                                    <button class="btn btn-outline-secondary" onclick="quickDateFilter('month')">本月</button>
+                                    <button class="btn btn-outline-secondary" onclick="quickDateFilter('lastmonth')">上月</button>
+                                    <button class="btn btn-outline-secondary" onclick="quickDateFilter('year')">本年</button>
+                                    <button class="btn btn-outline-secondary" onclick="quickDateFilter('all')">全部</button>
                                 </div>
                             </div>
                         </div>
@@ -1217,7 +1215,7 @@ select.compact-form-control { height: 2.1rem; }
                     <table class="table table-hover excel-table" id="transaction-table">
                         <thead>
                             <tr id="table-header-row">
-                                <th data-column="date" style="width:120px" onclick="sortTransactions(&#39;date&#39;)">
+                                <th data-column="date" style="width:120px" onclick="sortTransactions('date')">
                                     日期 <i class="bi bi-arrow-down-up sort-indicator"></i>
                                     <div class="column-resizer" onmousedown="startColumnResize(event, this)"></div>
                                 </th>
@@ -1233,7 +1231,7 @@ select.compact-form-control { height: 2.1rem; }
                                     账户/转出
                                     <div class="column-resizer" onmousedown="startColumnResize(event, this)"></div>
                                 </th>
-                                <th data-column="amount" style="width:120px" onclick="sortTransactions(&#39;amount&#39;)">
+                                <th data-column="amount" style="width:120px" onclick="sortTransactions('amount')">
                                     金额/转出 <i class="bi bi-arrow-down-up sort-indicator"></i>
                                     <div class="column-resizer" onmousedown="startColumnResize(event, this)"></div>
                                 </th>
@@ -1241,7 +1239,7 @@ select.compact-form-control { height: 2.1rem; }
                                     转入账户
                                     <div class="column-resizer" onmousedown="startColumnResize(event, this)"></div>
                                 </th>
-                                <th data-column="amountIn" style="width:120px" onclick="sortTransactions(&#39;amountIn&#39;)">
+                                <th data-column="amountIn" style="width:120px" onclick="sortTransactions('amountIn')">
                                     转入金额 <i class="bi bi-arrow-down-up sort-indicator"></i>
                                     <div class="column-resizer" onmousedown="startColumnResize(event, this)"></div>
                                 </th>
@@ -1299,11 +1297,11 @@ select.compact-form-control { height: 2.1rem; }
                 </div>
                 <div>
                     <div class="btn-group btn-group-sm">
-                        <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter(&#39;30days&#39;)">近30天</button>
-                        <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter(&#39;month&#39;)">本月</button>
-                        <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter(&#39;lastmonth&#39;)">上月</button>
-                        <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter(&#39;year&#39;)">本年</button>
-                        <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter(&#39;all&#39;)">全部</button>
+                        <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter('30days')">近30天</button>
+                        <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter('month')">本月</button>
+                        <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter('lastmonth')">上月</button>
+                        <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter('year')">本年</button>
+                        <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter('all')">全部</button>
                     </div>
                 </div>
             </div>
@@ -1337,11 +1335,11 @@ select.compact-form-control { height: 2.1rem; }
 
                 <div>
                     <div class="btn-group btn-group-sm">
-                        <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter(&#39;3months&#39;)">3个月</button>
-                        <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter(&#39;6months&#39;)">6个月</button>
-                        <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter(&#39;12months&#39;)">12个月</button>
-                        <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter(&#39;24months&#39;)">24个月</button>
-                        <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter(&#39;all&#39;)">全部</button>
+                        <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter('3months')">3个月</button>
+                        <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter('6months')">6个月</button>
+                        <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter('12months')">12个月</button>
+                        <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter('24months')">24个月</button>
+                        <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter('all')">全部</button>
                     </div>
                 </div>
 
@@ -1387,20 +1385,20 @@ select.compact-form-control { height: 2.1rem; }
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <h6 class="card-title mb-0">历史资产趋势</h6>
                                 <div class="d-flex gap-2">
-                                    <button class="btn btn-sm btn-primary" onclick="toggleChartVisibility(&#39;history-chart-wrapper&#39;, this)">
+                                    <button class="btn btn-sm btn-primary" onclick="toggleChartVisibility('history-chart-wrapper', this)">
                                         <i class="bi bi-eye"></i> 显示图表
                                     </button>
                                     <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-secondary" onclick="switchAssetAggregation(&#39;day&#39;, this)">按天</button>
-                                        <button class="btn btn-outline-secondary" onclick="switchAssetAggregation(&#39;week&#39;, this)">按周</button>
-                                        <button class="btn btn-outline-secondary active" onclick="switchAssetAggregation(&#39;month&#39;, this)">按月</button>
+                                        <button class="btn btn-outline-secondary" onclick="switchAssetAggregation('day', this)">按天</button>
+                                        <button class="btn btn-outline-secondary" onclick="switchAssetAggregation('week', this)">按周</button>
+                                        <button class="btn btn-outline-secondary active" onclick="switchAssetAggregation('month', this)">按月</button>
                                     </div>
                                 </div>
                             </div>
                             <div id="history-chart-archive-notice" class="d-none alert alert-warning py-2 px-3 mb-2" style="font-size:0.85rem;">
                                 <i class="bi bi-archive me-1"></i>
                                 <span id="history-chart-archive-text"></span>
-                                <a href="https://zsghyx-rgb.github.io/test/#" class="ms-2" onclick="switchTab(&#39;settings&#39;, document.querySelector(&#39;[onclick*=settings]&#39;)); return false;">前往设置查看存档</a>
+                                <a href="#" class="ms-2" onclick="switchTab('settings', document.querySelector('[onclick*=settings]')); return false;">前往设置查看存档</a>
                             </div>
                             <div id="history-chart-wrapper" class="d-none" style="height: 350px;">
                                 <canvas id="assetHistoryChart"></canvas>
@@ -1536,16 +1534,16 @@ select.compact-form-control { height: 2.1rem; }
                             <div class="row">
                                 <div class="col-md-6">
                                     <h6 class="text-danger border-bottom pb-2">支出类别</h6>
-                                    <div id="expense-cat-container" class="d-flex flex-wrap gap-2 mb-3 p-2 rounded" style="background-color: var(--bs-tertiary-bg);" ondragover="allowDrop(event)" ondrop="dropCategory(event, &#39;expense&#39;)"></div>
-                                    <form onsubmit="addCategory(event, &#39;expense&#39;)" class="input-group input-group-sm">
+                                    <div id="expense-cat-container" class="d-flex flex-wrap gap-2 mb-3 p-2 rounded" style="background-color: var(--bs-tertiary-bg);" ondragover="allowDrop(event)" ondrop="dropCategory(event, 'expense')"></div>
+                                    <form onsubmit="addCategory(event, 'expense')" class="input-group input-group-sm">
                                         <input type="text" class="form-control" id="new-expense-cat" placeholder="新类别名" required="">
                                         <button class="btn btn-outline-danger" type="submit">添加</button>
                                     </form>
                                 </div>
                                 <div class="col-md-6">
                                     <h6 class="text-success border-bottom pb-2">收入类别</h6>
-                                    <div id="income-cat-container" class="d-flex flex-wrap gap-2 mb-3 p-2 rounded" style="background-color: var(--bs-tertiary-bg);" ondragover="allowDrop(event)" ondrop="dropCategory(event, &#39;income&#39;)"></div>
-                                    <form onsubmit="addCategory(event, &#39;income&#39;)" class="input-group input-group-sm">
+                                    <div id="income-cat-container" class="d-flex flex-wrap gap-2 mb-3 p-2 rounded" style="background-color: var(--bs-tertiary-bg);" ondragover="allowDrop(event)" ondrop="dropCategory(event, 'income')"></div>
+                                    <form onsubmit="addCategory(event, 'income')" class="input-group input-group-sm">
                                         <input type="text" class="form-control" id="new-income-cat" placeholder="新类别名" required="">
                                         <button class="btn btn-outline-success" type="submit">添加</button>
                                     </form>
@@ -1597,10 +1595,10 @@ select.compact-form-control { height: 2.1rem; }
                                     </button>
                                 </div>
                                 <div class="btn-group">
-                                    <button class="btn btn-primary" onclick="$(&#39;transaction-csv-input&#39;).click()">
+                                    <button class="btn btn-primary" onclick="$('transaction-csv-input').click()">
                                         <i class="bi bi-file-earmark-arrow-up"></i> 导入交易CSV
                                     </button>
-                                    <button class="btn btn-primary" onclick="$(&#39;transfer-csv-input&#39;).click()">
+                                    <button class="btn btn-primary" onclick="$('transfer-csv-input').click()">
                                         <i class="bi bi-file-earmark-arrow-up"></i> 导入转账CSV
                                     </button>
                                 </div>
@@ -1613,7 +1611,7 @@ select.compact-form-control { height: 2.1rem; }
             </div>
         </div>
     </div>
-
+</div>
 
 <div id="view-spending-analysis" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bs-body-bg);z-index:2000;display:none;flex-direction:column;">
     <!-- 固定顶部：标题 + 筛选栏 -->
@@ -1630,10 +1628,10 @@ select.compact-form-control { height: 2.1rem; }
             <input type="date" class="form-control form-control-sm flex-shrink-0" id="sa-start-date" style="width:130px;min-width:130px;" onchange="renderSpendingAnalysis()">
             <input type="date" class="form-control form-control-sm flex-shrink-0" id="sa-end-date" style="width:130px;min-width:130px;" onchange="renderSpendingAnalysis()">
             <div class="btn-group btn-group-sm flex-shrink-0">
-                <button class="btn btn-outline-secondary" onclick="saQuickDate(&#39;month&#39;)">本月</button>
-                <button class="btn btn-outline-secondary" onclick="saQuickDate(&#39;3months&#39;)">3月</button>
-                <button class="btn btn-outline-secondary" onclick="saQuickDate(&#39;year&#39;)">本年</button>
-                <button class="btn btn-outline-secondary" onclick="saQuickDate(&#39;all&#39;)">全部</button>
+                <button class="btn btn-outline-secondary" onclick="saQuickDate('month')">本月</button>
+                <button class="btn btn-outline-secondary" onclick="saQuickDate('3months')">3月</button>
+                <button class="btn btn-outline-secondary" onclick="saQuickDate('year')">本年</button>
+                <button class="btn btn-outline-secondary" onclick="saQuickDate('all')">全部</button>
             </div>
         </div>
     </div>
@@ -1814,9 +1812,9 @@ select.compact-form-control { height: 2.1rem; }
             <!-- Tab 栏 -->
             <div class="px-3 pt-2 pb-1" id="trans-tab-bar">
                 <div class="btn-group w-100" role="group">
-                    <button type="button" class="btn btn-sm btn-outline-danger active" id="tab-btn-expense" onclick="switchTransTab(&#39;expense&#39;)">支出</button>
-                    <button type="button" class="btn btn-sm btn-outline-success" id="tab-btn-income" onclick="switchTransTab(&#39;income&#39;)">收入</button>
-                    <button type="button" class="btn btn-sm btn-outline-warning" id="tab-btn-transfer" onclick="switchTransTab(&#39;transfer&#39;)">转账</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger active" id="tab-btn-expense" onclick="switchTransTab('expense')">支出</button>
+                    <button type="button" class="btn btn-sm btn-outline-success" id="tab-btn-income" onclick="switchTransTab('income')">收入</button>
+                    <button type="button" class="btn btn-sm btn-outline-warning" id="tab-btn-transfer" onclick="switchTransTab('transfer')">转账</button>
                 </div>
             </div>
             <div class="modal-body pt-2">
@@ -1838,7 +1836,10 @@ select.compact-form-control { height: 2.1rem; }
                         </div>
                         <!-- 拆分切换按钮：普通模式=剪刀，拆分模式=加号添加行 -->
                         <div id="split-btn-wrap" style="flex-shrink:0;align-self:flex-end;">
-                            <button type="button" id="split-toggle-btn" class="btn btn-outline-secondary btn-sm" style="width:34px;height:34px;padding:0;font-size:0.85rem;" title="拆分账单" onclick="handleSplitBtn()">
+                            <button type="button" id="split-toggle-btn"
+                                    class="btn btn-outline-secondary btn-sm"
+                                    style="width:34px;height:34px;padding:0;font-size:0.85rem;"
+                                    title="拆分账单" onclick="handleSplitBtn()">
                                 <i class="bi bi-scissors"></i>
                             </button>
                         </div>
@@ -1871,7 +1872,8 @@ select.compact-form-control { height: 2.1rem; }
                     <div id="split-items-section">
                         <div id="split-items-list"></div>
                         <div class="d-flex align-items-center gap-2 py-2 border-top">
-                            <button type="button" class="btn btn-outline-secondary btn-sm" id="split-attach-btn" onclick="document.getElementById(&#39;attachment-file-input&#39;).click()">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="split-attach-btn"
+                                    onclick="document.getElementById('attachment-file-input').click()">
                                 <i class="bi bi-image"></i> 添加附件
                             </button>
                             <span class="ms-auto small text-muted">合计：</span>
@@ -1888,8 +1890,10 @@ select.compact-form-control { height: 2.1rem; }
                         <div class="mb-2">
                             <label class="compact-form-label">备注</label>
                             <div class="input-group" id="desc-input-group">
-                                <input type="text" class="form-control compact-form-control" id="edit-trans-desc" oninput="updateDescHint(&#39;edit-trans-desc&#39;,&#39;edit-trans-desc-hint&#39;,&#39;edit-trans-type&#39;,&#39;edit-trans-category&#39;,&#39;edit-trans-account&#39;)" placeholder="添加备注...">
-                                <button type="button" class="btn btn-outline-secondary btn-sm" id="attachment-btn" style="width: 45px;" onclick="document.getElementById(&#39;attachment-file-input&#39;).click()">
+                                <input type="text" class="form-control compact-form-control" id="edit-trans-desc"
+                                       oninput="updateDescHint('edit-trans-desc','edit-trans-desc-hint','edit-trans-type','edit-trans-category','edit-trans-account')"
+                                       placeholder="添加备注...">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="attachment-btn" style="width: 45px;" onclick="document.getElementById('attachment-file-input').click()">
                                     <i class="bi bi-image"></i>
                                 </button>
                             </div>
@@ -1928,7 +1932,7 @@ select.compact-form-control { height: 2.1rem; }
                         </div>
                         <div class="col-6">
                             <label class="compact-form-label">转出金额</label>
-                            <input type="number" step="0.01" class="form-control compact-form-control" id="edit-transfer-amount-out" oninput="handleEditTransferAmountChange(&#39;out&#39;)" required="">
+                            <input type="number" step="0.01" class="form-control compact-form-control" id="edit-transfer-amount-out" oninput="handleEditTransferAmountChange('out')" required="">
                         </div>
                     </div>
                     <div class="row g-2 mb-2">
@@ -1938,7 +1942,7 @@ select.compact-form-control { height: 2.1rem; }
                         </div>
                         <div class="col-6">
                             <label class="compact-form-label">转入金额</label>
-                            <input type="number" step="0.01" class="form-control compact-form-control" id="edit-transfer-amount-in" oninput="handleEditTransferAmountChange(&#39;in&#39;)" required="">
+                            <input type="number" step="0.01" class="form-control compact-form-control" id="edit-transfer-amount-in" oninput="handleEditTransferAmountChange('in')" required="">
                         </div>
                     </div>
                     <div class="mb-2">
@@ -1973,7 +1977,7 @@ select.compact-form-control { height: 2.1rem; }
                 </div>
                 <div class="mb-3">
                     <label class="form-label small fw-bold">确认新密码</label>
-                    <input type="password" class="form-control form-control-sm" id="pwd-confirm" placeholder="再次输入新密码" autocomplete="new-password" onkeydown="if(event.key===&#39;Enter&#39;) changeDataPassword()">
+                    <input type="password" class="form-control form-control-sm" id="pwd-confirm" placeholder="再次输入新密码" autocomplete="new-password" onkeydown="if(event.key==='Enter') changeDataPassword()">
                 </div>
                 <div id="pwd-change-msg" class="small mb-2" style="display:none;"></div>
             </div>
@@ -1987,7 +1991,7 @@ select.compact-form-control { height: 2.1rem; }
     </div>
 </div>
 
-<script src="./记一笔_files/bootstrap.bundle.min.js.下载"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 const DEFAULT_CATEGORIES = {
     expense: ['餐饮', '交通', '住房', '购物', '娱乐', '医疗'],
@@ -4224,11 +4228,6 @@ function _initNewTransModal(mode, title) {
     const today = new Date().toISOString().split('T')[0];
     $('edit-trans-id').value = '';
     $('edit-trans-mode').value = mode;
-
-    // 👇 新增下面这两行：确保转账表单的模式也被正确初始化为 'add'
-    $('edit-transfer-id').value = '';
-    $('edit-transfer-mode').value = mode;
-
     $('editTransactionModalTitle').textContent = title;
     $('edit-trans-submit-btn').textContent = '保存';
     $('edit-trans-delete-btn').style.setProperty('display','none','important');
@@ -6764,7 +6763,6 @@ window.addEventListener('online', () => {
     }
 });
 </script>
-
 
 
 </body></html>
