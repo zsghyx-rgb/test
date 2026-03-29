@@ -658,7 +658,7 @@ select.compact-form-control { height: 2.1rem; }
 .split-item-card[data-accent="2"] { border-left-color: #198754; background: rgba(25,135,84,0.05) !important; }
 .split-item-card[data-accent="3"] { border-left-color: #9c27b0; background: rgba(156,39,176,0.05) !important; }
 
-    /* ===== EASTER 2025 START — 删除此块及对应HTML即可移除复活节主题 ===== */
+    /* ===== EASTER 2026 START — 删除此块及对应HTML即可移除复活节主题 ===== */
 
     /* 背景渐变 */
     #login-overlay {
@@ -842,7 +842,7 @@ select.compact-form-control { height: 2.1rem; }
         opacity: 0.85;
     }
 
-    /* ===== EASTER 2025 END ===== */
+    /* ===== EASTER 2026 END ===== */
 
     </style>
     <!-- 鸿蒙HarmonyOS 3.0 兼容补丁 -->
@@ -872,7 +872,7 @@ select.compact-form-control { height: 2.1rem; }
 
 
 <div id="login-overlay">
-<!-- EASTER 2025 START -->
+<!-- EASTER 2026 START -->
     <!-- 背景浮动彩蛋 -->
     <div class="easter-egg-float" style="width:90px;height:110px;background:#a8d8a8;top:8%;left:5%;animation-delay:0s;animation-duration:7s;"></div>
     <div class="easter-egg-float" style="width:60px;height:74px;background:#f4a0c0;top:15%;right:8%;animation-delay:1.5s;animation-duration:5.5s;"></div>
@@ -906,7 +906,14 @@ select.compact-form-control { height: 2.1rem; }
             <div class="mini-egg" style="background:linear-gradient(135deg,#a8d8f8,#c8ecf8);"></div>
         </div>
     </div>
-<!-- EASTER 2025 END -->
+
+    <div class="text-center mb-3">
+        <span class="badge rounded-pill bg-white bg-opacity-75 text-success border border-success border-opacity-25 px-3 py-2 shadow-sm" style="letter-spacing: 2px; color: #2e7d32 !important;">
+            🐰 HAPPY EASTER 2026 🥚
+        </span>
+    </div>
+
+<!-- EASTER 2026 END -->
     <div class="card shadow p-3 p-md-4" style="width: 480px; max-width: 95%;">
 
         <!-- 标题栏 + 齿轮 -->
@@ -1016,7 +1023,7 @@ select.compact-form-control { height: 2.1rem; }
         </div>
     </div>
     <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;pointer-events:none;">
-        <span class="text-muted" style="font-size:0.7rem;">v1.5.1</span>
+        <span class="text-muted" style="font-size:0.7rem;">v1.5.2</span>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
@@ -4228,6 +4235,11 @@ function _initNewTransModal(mode, title) {
     const today = new Date().toISOString().split('T')[0];
     $('edit-trans-id').value = '';
     $('edit-trans-mode').value = mode;
+
+// 👇 新增下面这两行：确保转账表单的模式也被正确初始化为 'add'
+    $('edit-transfer-id').value = '';
+    $('edit-transfer-mode').value = mode;
+
     $('editTransactionModalTitle').textContent = title;
     $('edit-trans-submit-btn').textContent = '保存';
     $('edit-trans-delete-btn').style.setProperty('display','none','important');
