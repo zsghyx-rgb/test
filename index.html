@@ -5247,22 +5247,33 @@ function getFilteredTransactions() {
     const startDate = $('filter-start-date').value;
     const endDate = $('filter-end-date').value;
     const userFilter = currentUserFilterValue;
+    
     return transactions.filter(t => {
         if (t._isBaseline) return false;
         if (transactionDisplayMode === 'transactions' && t.isTransfer) return false;
         if (transactionDisplayMode === 'transfers' && !t.isTransfer) return false;
         if (startDate && t.date < startDate) return false;
         if (endDate && t.date > endDate) return false;
-        if (userFilter !== 'all') {
-            // 筛选指定用户：显示该用户的记录 + 别人转入该用户账户的收款记录
-            const isOwn = t.ownerName === userFilter;
-            const isIncomingTransfer = t.isTransfer && t.type === 'income' &&
-                accounts.some(a => a.id == t.accountId && a.ownerName === userFilter);
-            if (!isOwn && !isIncomingTransfer) return false;
-        } else {
-            // 所有用户视图：转账收入由转出那条统一展示，跳过转入避免重复
-            if (t.isTransfer && t.type === 'income') return false;
+
+        // 👇 核心修复逻辑在这里 👇
+        if (t.isTransfer && t.type === 'income') {
+            // 找到这笔钱是从哪个账户转出来的
+            const relatedAcc = accounts.find(a => a.id == t.relatedAccountId);
+            
+            // 如果是“所有用户”视图，或者转出账户的主人也是当前被筛选的人
+            // 说明这是一笔“自己转自己”的账。因为转出(expense)记录一定会被显示，
+            // 为了防止双重显示，我们直接把这条转入(income)记录隐藏掉。
+            if (userFilter === 'all' || (relatedAcc && relatedAcc.ownerName === userFilter)) {
+                return false; 
+            }
         }
+
+        if (userFilter !== 'all') {
+            const isOwn = t.ownerName === userFilter;
+            // 因为上面已经拦截了自己转自己的情况，能走到这里的 income 肯定是别人转给我的
+            if (!isOwn) return false; 
+        }
+
         if (search) {
             const acc = accounts.find(a => a.id == t.accountId);
             const accName = acc ? acc.name.toLowerCase() : '';
