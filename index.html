@@ -193,9 +193,6 @@ body {
 }
 
 .account-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-.account-col.drag-over { outline: 2px dashed var(--bs-primary); border-radius: 8px; opacity: 0.7; }
-.account-col[draggable="true"] { cursor: grab; }
-.account-col.dragging { opacity: 0.4; }
 .account-card-other {
     opacity: 0.7;
     background-color: rgba(var(--bs-secondary-rgb), 0.1);
@@ -396,40 +393,6 @@ select.compact-form-control { height: 2.1rem; }
     box-shadow: 0 1px 4px rgba(0,0,0,0.3);
 }
 
-/* ── 交易卡片（手机列表 + SA详情列表 共用） ── */
-.mobile-transaction-card {
-    background: var(--bs-body-bg);
-    border: 1px solid var(--bs-border-color);
-    border-radius: 6px;
-    padding: 8px 10px;
-    margin-bottom: 8px;
-    position: relative;
-    font-size: 0.85rem;
-    user-select: none;
-}
-.mobile-transaction-card .card-line-1 {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 4px;
-    white-space: nowrap;
-    min-width: 100%;
-}
-.mobile-transaction-card .card-line-2 {
-    display: flex;
-    align-items: center;
-    font-size: 0.8rem;
-    color: var(--bs-secondary);
-    white-space: nowrap;
-    gap: 0.3rem;
-    min-width: 100%;
-}
-.mobile-transaction-card .card-line-2 > div { overflow: hidden; text-overflow: ellipsis; }
-.mobile-transaction-card .amount-expense { color: #dc3545; font-weight: bold; font-size: 1rem; }
-.mobile-transaction-card .amount-income  { color: #198754; font-weight: bold; font-size: 1rem; }
-.mobile-transaction-card .amount-transfer{ color: #ff8c00; font-weight: bold; font-size: 1rem; }
-.mobile-transaction-card .category-text  { font-weight: bold; color: var(--bs-body-color); }
-
 @media (max-width: 768px) {
     body { padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
 
@@ -501,12 +464,55 @@ select.compact-form-control { height: 2.1rem; }
     .excel-table-container { display: none; }
     #mobile-transaction-list { display: flex !important; flex-direction: column; flex: 1; overflow-y: auto; min-height: 0; }
 
-    /* 手机端卡片额外样式 */
     .mobile-transaction-card {
+        background: var(--bs-body-bg);
+        border: 1px solid var(--bs-border-color);
+        border-radius: 6px;
+        padding: 8px 10px;
+        margin-bottom: 8px;
+        position: relative;
         transition: transform 0.3s ease-out;
-        touch-action: pan-x pan-y;
+        font-size: 0.85rem;
+        touch-action: pan-y;
+        user-select: none;
         overflow-x: auto;
     }
+
+    .scrolling-note {
+        white-space: nowrap;
+        overflow-x: auto;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+        mask-image: linear-gradient(90deg, #000 90%, transparent);
+        -webkit-mask-image: linear-gradient(90deg, #000 90%, transparent);
+    }
+    .scrolling-note::-webkit-scrollbar { display: none; }
+
+    .mobile-transaction-card .card-line-1 {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 4px;
+        white-space: nowrap;
+        min-width: 100%;
+    }
+
+    .mobile-transaction-card .card-line-2 {
+        display: flex;
+        align-items: center;
+        font-size: 0.8rem;
+        color: var(--bs-secondary);
+        white-space: nowrap;
+        gap: 0.3rem;
+        min-width: 100%;
+    }
+
+    .mobile-transaction-card .card-line-2 > div { overflow: hidden; text-overflow: ellipsis; }
+
+    .mobile-transaction-card .amount-expense { color: #dc3545; font-weight: bold; font-size: 1rem; }
+    .mobile-transaction-card .amount-income { color: #198754; font-weight: bold; font-size: 1rem; }
+    .mobile-transaction-card .amount-transfer { color: #ff8c00; font-weight: bold; font-size: 1rem; }
+    .mobile-transaction-card .category-text { font-weight: bold; color: var(--bs-body-color); }
 
     .row.g-3 > div { width: 100% !important; }
     .mobile-hide { display: none !important; }
@@ -533,16 +539,6 @@ select.compact-form-control { height: 2.1rem; }
     #mobile-transaction-list { display: none !important; }
     .user-name-short { display: none; }
     .user-name-full { display: inline; }
-
-    /* SA支出明细：桌面端双列网格 */
-    #sa-detail-list {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 8px;
-    }
-    #sa-detail-list .mobile-transaction-card {
-        margin-bottom: 0;
-    }
 
     .desc-content { cursor: help; }
     .desc-content:hover { position: relative; overflow: visible; white-space: normal; z-index: 1000; }
@@ -657,230 +653,7 @@ select.compact-form-control { height: 2.1rem; }
 .split-item-card[data-accent="1"] { border-left-color: #fd7e14; background: rgba(253,126,20,0.05) !important; }
 .split-item-card[data-accent="2"] { border-left-color: #198754; background: rgba(25,135,84,0.05) !important; }
 .split-item-card[data-accent="3"] { border-left-color: #9c27b0; background: rgba(156,39,176,0.05) !important; }
-
-/* ===== EASTER 2026 START — 修正版 ===== */
-
-#login-overlay {
-        background: linear-gradient(160deg, #fef6e4 0%, #e8f5e9 40%, #f3e5f5 80%, #fce4ec 100%) !important;
-        overflow: hidden;
-        position: relative;
-    }
-
-    /* 2. 背景浮动彩蛋装饰 */
-    .easter-egg-float {
-        position: absolute;
-        border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-        opacity: 0.18;
-        animation: eggFloat 6s ease-in-out infinite;
-        pointer-events: none;
-    }
-    @keyframes eggFloat {
-        0%, 100% { transform: translateY(0) rotate(0deg); }
-        50% { transform: translateY(-18px) rotate(6deg); }
-    }
-
-    /* 3. 登录卡片与按钮春日美化 */
-    #login-overlay > .card {
-        border: 1.5px solid rgba(186,222,155,0.5) !important;
-        box-shadow: 0 8px 32px rgba(120,180,100,0.13), 0 2px 8px rgba(200,160,220,0.10) !important;
-    }
-    #user-buttons .btn-outline-primary {
-        border-color: #a084ca !important;
-        color: #7b5ea7 !important;
-    }
-    #user-buttons .btn-outline-primary:hover {
-        background: #a084ca !important;
-        color: white !important;
-    }
-    #login-overlay .btn-primary {
-        background: #78a87e !important;
-        border-color: #78a87e !important;
-    }
-    #login-overlay .btn-primary:hover {
-        background: #5d8f63 !important;
-    }
-    #login-overlay h4.text-primary {
-        color: #7b5ea7 !important;
-    }
-
-    /* 4. 核心：CSS 兔子全套样式 */
-    .easter-bunny-wrap {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        margin-bottom: 15px;
-        filter: drop-shadow(0 4px 10px rgba(0,0,0,0.08));
-        position: relative;
-        z-index: 10;
-    }
-
-    .bunny {
-        position: relative;
-        width: 80px;
-        height: 115px; 
-        animation: bunnyJump 3s ease-in-out infinite;
-    }
-
-    /* 整体跳跃感 */
-    @keyframes bunnyJump {
-        0%, 100% { transform: translateY(0) scale(1); }
-        50% { transform: translateY(-10px) scale(0.98, 1.02); }
-    }
-
-    /* 耳朵动画 */
-    .bunny-ear {
-        position: absolute;
-        width: 18px;
-        height: 52px;
-        background: #f5e6e6;
-        border-radius: 50% 50% 20% 20%;
-        border: 2px solid #e8d0d0;
-        top: 0;
-        z-index: 1;
-    }
-    .bunny-ear-inner {
-        position: absolute;
-        width: 8px;
-        height: 35px;
-        background: #f4b8c1;
-        border-radius: 50%;
-        top: 6px;
-        left: 50%;
-        transform: translateX(-50%);
-    }
-    .bunny-ear-left  { left: 14px; transform: rotate(-12deg); animation: earTwitchL 4s ease-in-out infinite; }
-    .bunny-ear-right { right: 14px; transform: rotate(12deg); animation: earTwitchR 4s ease-in-out infinite; }
-
-    @keyframes earTwitchL { 0%, 90%, 100% { transform: rotate(-12deg); } 95% { transform: rotate(-25deg); } }
-    @keyframes earTwitchR { 0%, 85%, 100% { transform: rotate(12deg); } 92% { transform: rotate(25deg); } }
-
-    /* 身体与尾巴 */
-    .bunny-body {
-        position: absolute;
-        width: 70px;
-        height: 62px;
-        background: #f9f0f0;
-        border-radius: 50% 50% 40% 40%;
-        border: 2px solid #e8d8d8;
-        bottom: 5px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 2;
-    }
-    .bunny-tail {
-        position: absolute;
-        width: 22px;
-        height: 22px;
-        background: #fff;
-        border-radius: 50%;
-        border: 2px solid #e8d8d8;
-        bottom: 12px;
-        right: -4px;
-        z-index: 1;
-        animation: tailWag 2s ease-in-out infinite;
-    }
-    @keyframes tailWag { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1) translateX(2px); } }
-
-    /* 爪子 */
-    .bunny-paw {
-        position: absolute;
-        width: 16px;
-        height: 12px;
-        background: #f9f0f0;
-        border: 2px solid #e8d8d8;
-        border-radius: 50%;
-        bottom: -2px;
-        z-index: 3;
-    }
-    .bunny-paw-left { left: 12px; }
-    .bunny-paw-right { right: 12px; }
-
-    /* 头部：必须保证 z-index 最高且眼睛在内部 */
-    .bunny-head {
-        position: absolute;
-        width: 62px;
-        height: 56px;
-        background: #f9f0f0;
-        border-radius: 50%;
-        border: 2px solid #e8d8d8;
-        top: 28px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 10;
-    }
-
-    /* 眼睛修复版 */
-    .bunny-eye {
-        position: absolute;
-        width: 8px;
-        height: 10px;
-        background: #4a3040;
-        border-radius: 50%;
-        top: 18px;
-    }
-    .bunny-eye::after {
-        content: '';
-        position: absolute;
-        width: 3px; height: 3px;
-        background: white;
-        border-radius: 50%;
-        top: 1px; right: 1px;
-    }
-    .bunny-eye-left  { left: 14px; animation: eyeBlink 4s 0.2s infinite; }
-    .bunny-eye-right { right: 14px; animation: eyeBlink 4s infinite; }
-
-    @keyframes eyeBlink {
-        0%, 96%, 100% { transform: scaleY(1); }
-        98% { transform: scaleY(0.1); }
-    }
-
-    /* 鼻子、嘴巴、腮红、胡须 */
-    .bunny-nose {
-        position: absolute;
-        width: 8px; height: 6px;
-        background: #f4a0b0;
-        border-radius: 50%;
-        top: 30px; left: 50%;
-        transform: translateX(-50%);
-        animation: noseWiggle 1.2s ease-in-out infinite;
-    }
-    @keyframes noseWiggle { 0%, 100% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.2, 0.8); } }
-
-    .bunny-mouth {
-        position: absolute;
-        top: 36px; left: 50%;
-        transform: translateX(-50%);
-        width: 12px; height: 8px;
-        border-bottom: 2px solid #d4909e;
-        border-radius: 0 0 50% 50%;
-    }
-    .bunny-cheek {
-        position: absolute;
-        width: 12px; height: 7px;
-        background: #f9c6cb;
-        border-radius: 50%;
-        opacity: 0.5;
-        top: 32px;
-    }
-    .bunny-cheek-left { left: 6px; }
-    .bunny-cheek-right { right: 6px; }
-
-    .bunny-whisker {
-        position: absolute;
-        height: 1.5px; width: 15px;
-        background: #c8a8b0;
-        opacity: 0.4;
-    }
-    .bunny-whisker-l { left: -10px; transform: rotate(-10deg); top: 34px; box-shadow: 0 6px 0 #c8a8b0; }
-    .bunny-whisker-r { right: -10px; transform: rotate(10deg); top: 34px; box-shadow: 0 6px 0 #c8a8b0; }
-
-    /* 底部署名与彩蛋 */
-    .easter-eggs-row { display: flex; gap: 8px; margin-top: 10px; justify-content: center; }
-    .mini-egg { width: 14px; height: 18px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; opacity: 0.9; }
-
-/* ===== EASTER 2026 END ===== */
-
-    </style>
+</style>
     <!-- 鸿蒙HarmonyOS 3.0 兼容补丁 -->
     <script>
     // canvas.toBlob polyfill (HarmonyOS 3.0 部分机型缺失)
@@ -908,56 +681,11 @@ select.compact-form-control { height: 2.1rem; }
 
 
 <div id="login-overlay">
-    
-<!-- EASTER 2026 START -->
-    <!-- 背景浮动彩蛋 -->
-    <div class="easter-egg-float" style="width:90px;height:110px;background:#a8d8a8;top:8%;left:5%;animation-delay:0s;animation-duration:7s;"></div>
-    <div class="easter-egg-float" style="width:60px;height:74px;background:#f4a0c0;top:15%;right:8%;animation-delay:1.5s;animation-duration:5.5s;"></div>
-    <div class="easter-egg-float" style="width:50px;height:62px;background:#b8a8e8;bottom:12%;left:10%;animation-delay:0.8s;animation-duration:8s;"></div>
-    <div class="easter-egg-float" style="width:70px;height:86px;background:#f8d08a;bottom:8%;right:6%;animation-delay:2s;animation-duration:6.5s;"></div>
-
-    <div class="easter-bunny-wrap">
-        <div class="bunny">
-            <div class="bunny-tail"></div>
-            <div class="bunny-ear bunny-ear-left"><div class="bunny-ear-inner"></div></div>
-            <div class="bunny-ear bunny-ear-right"><div class="bunny-ear-inner"></div></div>
-            <div class="bunny-body">
-                <div class="bunny-paw bunny-paw-left"></div>
-                <div class="bunny-paw bunny-paw-right"></div>
-            </div>
-            <div class="bunny-head">
-                <div class="bunny-eye bunny-eye-left"></div>
-                <div class="bunny-eye bunny-eye-right"></div>
-                <div class="bunny-nose"></div>
-                <div class="bunny-mouth"></div>
-                <div class="bunny-cheek bunny-cheek-left"></div>
-                <div class="bunny-cheek bunny-cheek-right"></div>
-                <div class="bunny-whisker bunny-whisker-l"></div>
-                <div class="bunny-whisker bunny-whisker-r"></div>
-            </div>
-        </div>
-        
-        <div class="easter-eggs-row">
-            <div class="mini-egg" style="background:linear-gradient(135deg,#f4a0c0,#f8d0e0);"></div>
-            <div class="mini-egg" style="background:linear-gradient(135deg,#a8d8a8,#c8f0c8);"></div>
-            <div class="mini-egg" style="background:linear-gradient(135deg,#f8d08a,#faeac0);"></div>
-            <div class="mini-egg" style="background:linear-gradient(135deg,#b8a8e8,#d8d0f8);"></div>
-            <div class="mini-egg" style="background:linear-gradient(135deg,#a8d8f8,#c8ecf8);"></div>
-        </div>
-    </div>
-
-    <div class="text-center mb-3">
-        <span class="badge rounded-pill bg-white bg-opacity-75 text-success border border-success border-opacity-25 px-3 py-2 shadow-sm" style="letter-spacing: 2px; color: #2e7d32 !important; font-weight: bold;">
-            🐰 HAPPY EASTER 2026 🥚
-        </span>
-    </div>
-<!-- EASTER 2026 END -->
-    
     <div class="card shadow p-3 p-md-4" style="width: 480px; max-width: 95%;">
 
         <!-- 标题栏 + 齿轮 -->
         <div class="d-flex align-items-center justify-content-between mb-3">
-            <h4 class="mb-0 text-primary"><i class="bi bi-wallet2"></i>记一笔 <span style="font-size:0.7em;">🌷</span></h4>
+            <h4 class="mb-0 text-primary"><i class="bi bi-wallet2"></i>记一笔</h4>
             <button class="btn btn-sm btn-outline-secondary" onclick="toggleLoginSettings()" title="连接设置">
                 <i class="bi bi-gear" id="login-settings-gear"></i>
             </button>
@@ -1023,6 +751,7 @@ select.compact-form-control { height: 2.1rem; }
                 </button>
             </div>
             <div class="text-end mt-2">
+                <span class="text-muted" style="font-size:0.7rem;">v1.5.0</span>
             </div>
         </div>
 
@@ -1060,9 +789,6 @@ select.compact-form-control { height: 2.1rem; }
             <label class="form-label small text-muted fw-bold">选择用户</label>
             <div id="user-buttons" class="d-flex gap-2 flex-wrap"></div>
         </div>
-    </div>
-    <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;pointer-events:none;">
-        <span class="text-muted" style="font-size:0.7rem;">v1.5.2</span>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
@@ -1571,7 +1297,7 @@ select.compact-form-control { height: 2.1rem; }
                     <!-- 手机端显示提示，桌面端显示完整管理 -->
                     <div class="card shadow-sm d-md-none">
                         <div class="card-body py-3 text-center text-muted small">
-                            <i class="bi bi-laptop me-1"></i> 类别管理及账户排序请在电脑端操作
+                            <i class="bi bi-laptop me-1"></i> 类别管理功能请在电脑端操作
                         </div>
                     </div>
                     <div class="card shadow-sm d-none d-md-block">
@@ -2330,16 +2056,18 @@ function switchUser() {
     if (hasUnsavedChanges) {
         if (!confirm('有未保存的更改，确定切换用户？')) return;
     }
+    // 重置当前用户状态，但保留内存中的数据和密码
     currentUser = null;
     currentUserName = null;
     hasUnsavedChanges = false;
     clearTimeout(driveAutoSaveTimer);
 
+    // 隐藏主界面，显示登录界面
     $('app-wrapper').classList.add('d-none');
     $('login-overlay').classList.remove('d-none');
 
+    // 数据已在内存，直接跳到用户选择步骤
     if (inMemoryLoadedData) {
-        window._suppressAutoLogin = true;  // 手动切换时不自动选用户
         onDataLoaded();
         showToast('数据已就绪，请选择用户', 'success', 3000);
     }
@@ -2516,15 +2244,6 @@ function onDataLoaded() {
         btn.onclick = () => loginWithUser(name);
         container.appendChild(btn);
     });
-
-    // 自动登录：如果上次登录的用户仍在列表中，直接登录
-    try {
-        const lastUser = localStorage.getItem('APP_last_user');
-        if (lastUser && dataUsers.includes(lastUser) && !window._suppressAutoLogin) {
-            setTimeout(() => loginWithUser(lastUser), 300);
-        }
-    } catch(_) {}
-    window._suppressAutoLogin = false;
 }
 
 /**
@@ -2572,8 +2291,6 @@ function loginWithUser(name) {
 
     currentUser = { name: name };
     currentUserName = name;
-    // 记录本设备最近登录的用户
-    try { localStorage.setItem('APP_last_user', name); } catch(_) {}
 
     $('login-overlay').classList.add('d-none');
     $('app-wrapper').classList.remove('d-none');
@@ -2997,10 +2714,6 @@ function logout() {
 function initAppUI() {
     renderAccounts();
 
-    // 默认只显示当前用户的流水
-    currentUserFilterValue = currentUserName;
-    updateUserFilterBtn();
-
     const end = new Date();
     const start = new Date();
     start.setDate(start.getDate() - 30);
@@ -3051,43 +2764,15 @@ function loadAllData() {
 function saveUserData() {
     if (!currentUser) return;
     dataUsers.forEach(u => {
-        // 保留已有的 accountOrder，不覆盖
-        const prevOrder = (inMemoryLoadedData.allUserData[u] || {}).accountOrder;
         inMemoryLoadedData.allUserData[u] = {
             accounts: accounts.filter(a => a.ownerName === u),
-            transactions: transactions.filter(t => t.ownerName === u && !t._isArchived),
-            plannedTransactions: plannedTransactions.filter(p => p.ownerName === u),
-            ...(prevOrder ? { accountOrder: prevOrder } : {})
+            transactions: transactions.filter(t => t.ownerName === u && !t._isArchived), // 排除历史模式临时加载的存档交易
+            plannedTransactions: plannedTransactions.filter(p => p.ownerName === u)
         };
     });
     inMemoryLoadedData.users = dataUsers;
     inMemoryLoadedData.categories = categories;
     inMemoryLoadedData.exchangeRates = exchangeRates;
-}
-
-/** 获取当前用户的账户顺序数组，不存在则返回 null */
-function getAccountOrder() {
-    return (inMemoryLoadedData.allUserData[currentUserName] || {}).accountOrder || null;
-}
-
-/** 保存账户顺序并触发同步 */
-function saveAccountOrder(idArray) {
-    if (!inMemoryLoadedData.allUserData[currentUserName]) return;
-    inMemoryLoadedData.allUserData[currentUserName].accountOrder = idArray;
-    triggerAutoSave();
-}
-
-/** 按 accountOrder 对账户数组排序（不在列表里的追加到末尾） */
-function sortedUserAccounts(accs) {
-    const order = getAccountOrder();
-    if (!order || order.length === 0) return accs;
-    const idxMap = {};
-    order.forEach((id, i) => { idxMap[String(id)] = i; });
-    return [...accs].sort((a, b) => {
-        const ia = idxMap[String(a.id)] ?? 9999;
-        const ib = idxMap[String(b.id)] ?? 9999;
-        return ia - ib;
-    });
 }
 
 function filterUserData() {
@@ -3236,14 +2921,11 @@ function mergeData(local, remote) {
         const remoteU = ((remote && remote.allUserData) || {})[u] || { accounts: [], transactions: [], plannedTransactions: [] };
         const mergedTransactions = mergeArray(localU.transactions, remoteU.transactions)
             .filter(t => !deletedIdSet.has(String(t.id))); // 过滤已删除的交易
-        // accountOrder：优先保留 local 的，local 没有则用 remote 的
-        const mergedOrder = localU.accountOrder || remoteU.accountOrder || undefined;
         merged.allUserData[u] = {
             accounts: mergeArray(localU.accounts, remoteU.accounts)
                 .filter(a => !deletedIdSet.has(String(a.id))), // 过滤已删除的账户
             transactions: mergedTransactions,
-            plannedTransactions: mergeArray(localU.plannedTransactions, remoteU.plannedTransactions),
-            ...(mergedOrder ? { accountOrder: mergedOrder } : {})
+            plannedTransactions: mergeArray(localU.plannedTransactions, remoteU.plannedTransactions)
         };
     });
 
@@ -3737,73 +3419,32 @@ function renderAccounts() {
             <div class="col-4">净值: <b class="text-primary ${hiddenClass}">¥${(totalAssets + totalLiabilities).toFixed(2)}</b></div>
         </div>`;
 
-    const isDesktop = window.innerWidth >= 769;
     ['Asset', 'Liability', 'Receivable'].forEach(type => {
-        const rawAccs = userAccounts.filter(a => (a.accountType || 'Asset') === type);
-        if (rawAccs.length === 0) return;
-        const myTypeAccs = sortedUserAccounts(rawAccs);
+        const myTypeAccs = userAccounts.filter(a => (a.accountType || 'Asset') === type);
+        if (myTypeAccs.length === 0) return;
         const color = type === 'Liability' ? 'danger' : (type === 'Asset' ? 'success' : 'info');
         container.innerHTML += `<h6 class="mt-3 mb-2 text-${color} border-bottom border-${color} pb-2">${type === 'Asset' ? '资产' : (type === 'Liability' ? '负债' : '应收')}</h6>`;
         const row = document.createElement('div');
         row.className = 'd-flex flex-wrap g-3 gap-3';
-        row.dataset.accType = type;
         myTypeAccs.forEach(acc => {
             const bal = calculateBalance(acc.id);
             const col = document.createElement('div');
             col.className = 'account-col';
-            col.dataset.accId = acc.id;
             const balClass = amountsHidden ? 'amount-hidden' : (bal < 0 ? 'text-danger' : 'text-success');
-            const dragHandle = isDesktop
-                ? `<div class="text-muted d-none d-md-flex align-items-center px-1" style="cursor:grab;opacity:0.35;font-size:0.85rem;" title="拖拽排序"><i class="bi bi-grip-vertical"></i></div>`
-                : '';
             col.innerHTML = `
-                <div class="card account-card p-3 shadow-sm d-flex flex-row align-items-center gap-1"
-                     data-id="${acc.id}" style="cursor:pointer;">
-                    ${dragHandle}
-                    <div class="flex-grow-1" onclick="openAccountDetail(${acc.id})">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div style="flex:1">
-                                <div class="fw-bold text-truncate">${acc.name} · <span class="fw-normal">${acc.currency}</span></div>
-                                ${acc.notes ? `<div class="small text-muted text-truncate" style="max-width:140px;" title="${acc.notes}">${acc.notes}</div>` : ''}
-                            </div>
-                            <div class="text-end">
-                                <h5 class="mb-0 ${balClass}">${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(bal, acc.currency)}</h5>
-                                <small class="text-muted"><i class="bi bi-chevron-right"></i></small>
-                            </div>
+                <div class="card account-card p-3 shadow-sm"
+                     data-id="${acc.id}" onclick="openAccountDetail(${acc.id})" style="cursor:pointer;">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div style="flex:1">
+                            <div class="fw-bold text-truncate">${acc.name} · <span class="fw-normal">${acc.currency}</span></div>
+                            ${acc.notes ? `<div class="small text-muted text-truncate" style="max-width:140px;" title="${acc.notes}">${acc.notes}</div>` : ''}
+                        </div>
+                        <div class="text-end">
+                            <h5 class="mb-0 ${balClass}">${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(bal, acc.currency)}</h5>
+                            <small class="text-muted"><i class="bi bi-chevron-right"></i></small>
                         </div>
                     </div>
                 </div>`;
-            if (isDesktop) {
-                col.draggable = true;
-                col.addEventListener('dragstart', e => {
-                    e.dataTransfer.setData('accId', acc.id);
-                    e.dataTransfer.setData('accType', type);
-                    col.classList.add('dragging');
-                });
-                col.addEventListener('dragend', () => col.classList.remove('dragging'));
-                col.addEventListener('dragover', e => { e.preventDefault(); col.classList.add('drag-over'); });
-                col.addEventListener('dragleave', () => col.classList.remove('drag-over'));
-                col.addEventListener('drop', e => {
-                    e.preventDefault();
-                    col.classList.remove('drag-over');
-                    const fromId = Number(e.dataTransfer.getData('accId'));
-                    const fromType = e.dataTransfer.getData('accType');
-                    if (fromType !== type || fromId === acc.id) return;
-                    // Reorder: build new order from current DOM, swap
-                    const allOfType = sortedUserAccounts(userAccounts.filter(a => (a.accountType || 'Asset') === type));
-                    const ids = allOfType.map(a => a.id);
-                    const fi = ids.indexOf(fromId), ti = ids.indexOf(acc.id);
-                    if (fi < 0 || ti < 0) return;
-                    ids.splice(fi, 1); ids.splice(ti, 0, fromId);
-                    // Merge with order for other types
-                    const otherOrder = (getAccountOrder() || []).filter(id => !ids.includes(id));
-                    saveAccountOrder([...otherOrder.filter(id => {
-                        const a = accounts.find(x => x.id === id);
-                        return a && (a.accountType || 'Asset') !== type;
-                    }), ...ids]);
-                    renderAccounts();
-                });
-            }
             row.appendChild(col);
         });
         container.appendChild(row);
@@ -3814,15 +3455,7 @@ function renderAccounts() {
         otherContainer.innerHTML = `<h6 class="mt-4 mb-2 text-secondary border-bottom pb-2">其他用户的账户</h6>`;
         const otherRow = document.createElement('div');
         otherRow.className = 'd-flex flex-wrap g-3 gap-3';
-        // 按各用户自己的 accountOrder 排序
-        const sortedOthers = [...otherAccs].sort((a, b) => {
-            const orderA = (inMemoryLoadedData.allUserData[a.ownerName] || {}).accountOrder || [];
-            const orderB = (inMemoryLoadedData.allUserData[b.ownerName] || {}).accountOrder || [];
-            const ia = orderA.indexOf(a.id) >= 0 ? orderA.indexOf(a.id) : 9999;
-            const ib = orderB.indexOf(b.id) >= 0 ? orderB.indexOf(b.id) : 9999;
-            return a.ownerName === b.ownerName ? ia - ib : 0;
-        });
-        sortedOthers.forEach(acc => {
+        otherAccs.forEach(acc => {
             const bal = calculateBalance(acc.id);
             const col = document.createElement('div');
             col.className = 'account-col';
@@ -4274,11 +3907,6 @@ function _initNewTransModal(mode, title) {
     const today = new Date().toISOString().split('T')[0];
     $('edit-trans-id').value = '';
     $('edit-trans-mode').value = mode;
-
-// 👇 新增下面这两行：确保转账表单的模式也被正确初始化为 'add'
-    $('edit-transfer-id').value = '';
-    $('edit-transfer-mode').value = mode;
-
     $('editTransactionModalTitle').textContent = title;
     $('edit-trans-submit-btn').textContent = '保存';
     $('edit-trans-delete-btn').style.setProperty('display','none','important');
@@ -4351,21 +3979,18 @@ function fillTransferSelects(fromValue, toValue) {
     const fromSelect = $('edit-transfer-from');
     const toSelect = $('edit-transfer-to');
     fromSelect.innerHTML = '';
-    // 转出：只有自己的账户，按手动排序
-    sortedUserAccounts(accounts.filter(a => a.ownerName === currentUserName)).forEach(a => {
+    accounts.filter(a => a.ownerName === currentUserName).forEach(a => {
         fromSelect.add(new Option(`${getAccountDisplayName(a)} (${CURRENCY_SYMBOLS[a.currency]})`, a.id));
     });
     toSelect.innerHTML = '';
-    // 转入：自己的账户（排序）+ 其他用户账户
-    const sortedMine = sortedUserAccounts(accounts.filter(a => a.ownerName === currentUserName));
-    const others = accounts.filter(a => a.ownerName !== currentUserName);
-    [...sortedMine, ...others].forEach(a => {
+    accounts.forEach(a => {
         toSelect.add(new Option(`${getAccountDisplayName(a)} (${CURRENCY_SYMBOLS[a.currency]})`, a.id));
     });
     if (fromValue) fromSelect.value = fromValue;
     else if (fromSelect.options.length > 0) fromSelect.selectedIndex = 0;
     if (toValue) toSelect.value = toValue;
     else {
+        // 默认选一个与 from 不同的账户
         const fromId = fromSelect.value;
         const other = accounts.find(a => a.id != fromId);
         if (other) toSelect.value = other.id;
@@ -5286,33 +4911,13 @@ function getFilteredTransactions() {
     const startDate = $('filter-start-date').value;
     const endDate = $('filter-end-date').value;
     const userFilter = currentUserFilterValue;
-    
     return transactions.filter(t => {
-        if (t._isBaseline) return false;
+        if (t._isBaseline) return false; // 基准交易不在列表中显示
         if (transactionDisplayMode === 'transactions' && t.isTransfer) return false;
         if (transactionDisplayMode === 'transfers' && !t.isTransfer) return false;
         if (startDate && t.date < startDate) return false;
         if (endDate && t.date > endDate) return false;
-
-        // 👇 核心修复逻辑在这里 👇
-        if (t.isTransfer && t.type === 'income') {
-            // 找到这笔钱是从哪个账户转出来的
-            const relatedAcc = accounts.find(a => a.id == t.relatedAccountId);
-            
-            // 如果是“所有用户”视图，或者转出账户的主人也是当前被筛选的人
-            // 说明这是一笔“自己转自己”的账。因为转出(expense)记录一定会被显示，
-            // 为了防止双重显示，我们直接把这条转入(income)记录隐藏掉。
-            if (userFilter === 'all' || (relatedAcc && relatedAcc.ownerName === userFilter)) {
-                return false; 
-            }
-        }
-
-        if (userFilter !== 'all') {
-            const isOwn = t.ownerName === userFilter;
-            // 因为上面已经拦截了自己转自己的情况，能走到这里的 income 肯定是别人转给我的
-            if (!isOwn) return false; 
-        }
-
+        if (userFilter !== 'all' && t.ownerName !== userFilter) return false;
         if (search) {
             const acc = accounts.find(a => a.id == t.accountId);
             const accName = acc ? acc.name.toLowerCase() : '';
@@ -5360,9 +4965,8 @@ function renderAllTransactions() {
     displayData.forEach(t => {
         const acc = accounts.find(a => a.id == t.accountId);
         if (!acc) return;
-        const isIncomingTransfer = t.isTransfer && t.type === 'income';
-        const typeText = t.isTransfer ? (isIncomingTransfer ? '收款' : '转账') : (t.amount < 0 ? '支出' : '收入');
-        const typeColorClass = isIncomingTransfer ? 'text-success' : (t.isTransfer ? 'text-warning' : (t.amount < 0 ? 'text-danger' : 'text-success'));
+        const typeText = t.isTransfer ? '转账' : (t.amount < 0 ? '支出' : '收入');
+        const typeColorClass = t.isTransfer ? 'text-warning' : (t.amount < 0 ? 'text-danger' : 'text-success');
 
         let toAccountDisplay = '', amountInDisplay = '';
         if (t.isTransfer && t.type === 'expense') {
@@ -5376,12 +4980,7 @@ function renderAllTransactions() {
                 amountInDisplay = `<div class="fw-bold text-warning">${CURRENCY_SYMBOLS[accTo.currency]}${formatAmount(amountIn, accTo.currency)}</div>`;
             }
         } else if (t.isTransfer && t.type === 'income') {
-            // 别人转入我的账户：渲染为收款记录
-            const accFrom = accounts.find(a => a.id == t.relatedAccountId);
-            if (accFrom) {
-                toAccountDisplay = `<small>${getAccountDisplayName(accFrom)}</small>`;
-            }
-            amountInDisplay = `<div class="fw-bold text-success">${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}</div>`;
+            return; // 跳过转入记录
         }
 
         const canEdit = t.ownerName === currentUserName && !t._isArchived;
@@ -5417,6 +5016,7 @@ function renderAllTransactions() {
         displayData.forEach(t => {
             const acc = accounts.find(a => a.id == t.accountId);
             if (!acc) return;
+            if (t.isTransfer && t.type === 'income') return;
 
             const card = document.createElement('div');
             card.className = 'mobile-transaction-card';
@@ -5444,18 +5044,6 @@ function renderAllTransactions() {
     <div class="card-line-2 d-flex justify-content-between align-items-center">
         <span class="text-muted small">${t.date}${descClean ? ` · ${descClean}` : ''}${tagsDisplay}${attachIcon}</span>
         ${isCrossCurrency ? `<span class="small text-primary fw-bold">→ ${CURRENCY_SYMBOLS[accTo.currency]}${formatAmount(amountIn, accTo.currency)}</span>` : ''}
-    </div>`;
-            } else if (t.isTransfer && t.type === 'income') {
-                // 别人转入我的账户：显示为收款
-                const accFrom = accounts.find(a => a.id == t.relatedAccountId);
-                const fromName = accFrom ? getAccountDisplayName(accFrom) : '?';
-                card.innerHTML = `
-    <div class="card-line-1">
-        <div class="fw-bold flex-grow-1" style="font-size:0.85rem;">${fromName} <i class="bi bi-arrow-right-short text-success"></i> ${accDisplayName}</div>
-        <div class="amount-income fw-bold">${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}</div>
-    </div>
-    <div class="card-line-2">
-        <span class="text-muted small">${t.date}${descClean ? ` · ${descClean}` : ''}${attachIcon}</span>
     </div>`;
             } else {
                 const amountClass = t.amount < 0 ? 'amount-expense' : 'amount-income';
@@ -5820,29 +5408,12 @@ function applyDescHint(catId, category) {
  */
 async function checkHistoryCategories() {
     const suspects = [];
-
-    // ── 第一步：孤立分类（优先级最高，排在最前）──
-    const allValidCats = new Set([...categories.expense, ...categories.income]);
-    const orphanTrans = transactions.filter(t =>
-        !t.isTransfer && t.ownerName === currentUserName && !t._isArchived && t.category &&
-        !allValidCats.has(t.category)
-    );
-    // 去重：同一个孤立分类只提示一次，让用户选择新分类
-    const orphanGroups = {};
-    orphanTrans.forEach(t => {
-        if (!orphanGroups[t.category]) orphanGroups[t.category] = [];
-        orphanGroups[t.category].push(t);
-    });
-    Object.entries(orphanGroups).forEach(([orphanCat, txList]) => {
-        suspects.push({ isOrphan: true, orphanCat, txList, t: txList[0], suggested: null });
-    });
-
-    // ── 第二步：相似备注但分类不一致（原有逻辑）──
     const myTrans = transactions.filter(t =>
         !t.isTransfer && t.ownerName === currentUserName && t.desc && !(t.items && t.items.length > 1)
     );
     myTrans.forEach(t => {
         const type = t.amount > 0 ? 'income' : 'expense';
+        // 查找除自身外的历史，避免自我强化；排除多笔交易（一备注多分类会污染参考样本）
         const pool = myTrans.filter(x => x !== t && x.category && !(x.items && x.items.length > 1));
         const catScores = {};
         pool.forEach(x => {
@@ -5853,55 +5424,29 @@ async function checkHistoryCategories() {
             catScores[x.category] = (catScores[x.category] || 0) + score;
         });
         if (Object.keys(catScores).length === 0) return;
-        const [bestCat, bestScore] = Object.entries(catScores).sort((a, b) => b[1] - a[1])[0];
+        const [bestCat, bestScore] = Object.entries(catScores)
+            .sort((a, b) => b[1] - a[1])[0];
+        // 只在建议分类明显压倒当前分类时才标记（建议分≥5且比当前分高出50%）
         const currentScore = catScores[t.category] || 0;
         if (bestCat !== t.category && bestScore >= 5 && bestScore > currentScore * 1.5) {
-            suspects.push({ isOrphan: false, t, suggested: bestCat, bestScore });
+            suspects.push({ t, suggested: bestCat, bestScore });
         }
     });
 
-    if (suspects.length === 0) { alert('校对完成！所有分类均正常。'); return; }
-
-    const orphanCount = suspects.filter(s => s.isOrphan).length;
-    const suggCount   = suspects.filter(s => !s.isOrphan).length;
-    let summary = `发现 ${suspects.length} 条需处理：`;
-    if (orphanCount) summary += `\n⚠️ ${orphanCount} 个孤立分类（不在分类列表中）`;
-    if (suggCount)   summary += `\n💡 ${suggCount} 条建议修改`;
-    if (!confirm(summary + '\n\n点击确定开始逐条处理。')) return;
+    if (suspects.length === 0) { alert('校对完成！所有分类均与历史记忆一致。'); return; }
 
     let updated = 0;
     for (let i = 0; i < suspects.length; i++) {
-        const s = suspects[i];
-        let ok = false;
-
-        if (s.isOrphan) {
-            // 孤立分类：提示选择新分类
-            const type = s.txList[0].amount > 0 ? 'income' : 'expense';
-            const validList = (type === 'expense' ? categories.expense : categories.income).join('、');
-            const newCat = prompt(
-                `【${i + 1}/${suspects.length}】⚠️ 孤立分类\n\n` +
-                `分类名称：「${s.orphanCat}」（已不在分类列表中）\n` +
-                `涉及交易：${s.txList.length} 条\n\n` +
-                `请输入新分类名称（可选）：\n${validList}\n\n` +
-                `留空跳过，输入分类名后点确定修改。`,
-                s.orphanCat
-            );
-            if (newCat && newCat.trim() && newCat.trim() !== s.orphanCat) {
-                s.txList.forEach(t => { t.category = newCat.trim(); });
-                updated += s.txList.length;
-            }
-        } else {
-            const typeLabel = s.t.amount > 0 ? '收入' : '支出';
-            ok = confirm(
-                `【${i + 1}/${suspects.length}】💡 分类建议\n\n` +
-                `日期：${s.t.date}\n备注：${s.t.desc}\n` +
-                `金额：${Math.abs(s.t.amount)} (${typeLabel})\n\n` +
-                `当前分类：${s.t.category}\n历史建议：${s.suggested}\n\n` +
-                `点击"确定"修改，点击"取消"跳过。`
-            );
-            if (ok) { s.t.category = s.suggested; updated++; }
-        }
-
+        const { t, suggested } = suspects[i];
+        const typeLabel = t.amount > 0 ? '收入' : '支出';
+        const ok = confirm(
+            `【${i + 1}/${suspects.length}】\n\n` +
+            `日期：${t.date}\n备注：${t.desc}\n` +
+            `金额：${Math.abs(t.amount)} (${typeLabel})\n\n` +
+            `当前分类：${t.category}\n历史建议：${suggested}\n\n` +
+            `点击"确定"修改，点击"取消"跳过。`
+        );
+        if (ok) { t.category = suggested; updated++; }
         if (i > 0 && i % 10 === 0 && i < suspects.length - 1) {
             if (!confirm(`已处理 ${i + 1} 条，继续？`)) break;
         }
@@ -6184,8 +5729,7 @@ function updateSelectOptions() {
         const el = $(id);
         if (!el) return;
         el.innerHTML = '';
-        const myAccs = sortedUserAccounts(userAccounts);
-        const accsToShow = includeOthers ? [...myAccs, ...accounts.filter(a => a.ownerName !== currentUserName)] : myAccs;
+        const accsToShow = includeOthers ? accounts : userAccounts;
         accsToShow.forEach(a => {
             el.add(new Option(`${getAccountDisplayName(a)} (${CURRENCY_SYMBOLS[a.currency] || a.currency})`, a.id));
         });
