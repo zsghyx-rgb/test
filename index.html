@@ -504,7 +504,7 @@ select.compact-form-control { height: 2.1rem; }
     /* 手机端卡片额外样式 */
     .mobile-transaction-card {
         transition: transform 0.3s ease-out;
-        touch-action: pan-y;
+        touch-action: pan-x pan-y;
         overflow-x: auto;
     }
 
@@ -2062,18 +2062,16 @@ function switchUser() {
     if (hasUnsavedChanges) {
         if (!confirm('有未保存的更改，确定切换用户？')) return;
     }
-    // 重置当前用户状态，但保留内存中的数据和密码
     currentUser = null;
     currentUserName = null;
     hasUnsavedChanges = false;
     clearTimeout(driveAutoSaveTimer);
 
-    // 隐藏主界面，显示登录界面
     $('app-wrapper').classList.add('d-none');
     $('login-overlay').classList.remove('d-none');
 
-    // 数据已在内存，直接跳到用户选择步骤
     if (inMemoryLoadedData) {
+        window._suppressAutoLogin = true;  // 手动切换时不自动选用户
         onDataLoaded();
         showToast('数据已就绪，请选择用户', 'success', 3000);
     }
@@ -2254,11 +2252,11 @@ function onDataLoaded() {
     // 自动登录：如果上次登录的用户仍在列表中，直接登录
     try {
         const lastUser = localStorage.getItem('APP_last_user');
-        if (lastUser && dataUsers.includes(lastUser)) {
-            // 延迟一帧，让用户看到"数据加载成功"提示后再跳转
+        if (lastUser && dataUsers.includes(lastUser) && !window._suppressAutoLogin) {
             setTimeout(() => loginWithUser(lastUser), 300);
         }
     } catch(_) {}
+    window._suppressAutoLogin = false;
 }
 
 /**
@@ -2731,6 +2729,10 @@ function logout() {
 function initAppUI() {
     renderAccounts();
 
+    // 默认只显示当前用户的流水
+    currentUserFilterValue = currentUserName;
+    updateUserFilterBtn();
+
     const end = new Date();
     const start = new Date();
     start.setDate(start.getDate() - 30);
@@ -2966,11 +2968,14 @@ function mergeData(local, remote) {
         const remoteU = ((remote && remote.allUserData) || {})[u] || { accounts: [], transactions: [], plannedTransactions: [] };
         const mergedTransactions = mergeArray(localU.transactions, remoteU.transactions)
             .filter(t => !deletedIdSet.has(String(t.id))); // 过滤已删除的交易
+        // accountOrder：优先保留 local 的，local 没有则用 remote 的
+        const mergedOrder = localU.accountOrder || remoteU.accountOrder || undefined;
         merged.allUserData[u] = {
             accounts: mergeArray(localU.accounts, remoteU.accounts)
                 .filter(a => !deletedIdSet.has(String(a.id))), // 过滤已删除的账户
             transactions: mergedTransactions,
-            plannedTransactions: mergeArray(localU.plannedTransactions, remoteU.plannedTransactions)
+            plannedTransactions: mergeArray(localU.plannedTransactions, remoteU.plannedTransactions),
+            ...(mergedOrder ? { accountOrder: mergedOrder } : {})
         };
     });
 
@@ -3541,7 +3546,15 @@ function renderAccounts() {
         otherContainer.innerHTML = `<h6 class="mt-4 mb-2 text-secondary border-bottom pb-2">其他用户的账户</h6>`;
         const otherRow = document.createElement('div');
         otherRow.className = 'd-flex flex-wrap g-3 gap-3';
-        otherAccs.forEach(acc => {
+        // 按各用户自己的 accountOrder 排序
+        const sortedOthers = [...otherAccs].sort((a, b) => {
+            const orderA = (inMemoryLoadedData.allUserData[a.ownerName] || {}).accountOrder || [];
+            const orderB = (inMemoryLoadedData.allUserData[b.ownerName] || {}).accountOrder || [];
+            const ia = orderA.indexOf(a.id) >= 0 ? orderA.indexOf(a.id) : 9999;
+            const ib = orderB.indexOf(b.id) >= 0 ? orderB.indexOf(b.id) : 9999;
+            return a.ownerName === b.ownerName ? ia - ib : 0;
+        });
+        sortedOthers.forEach(acc => {
             const bal = calculateBalance(acc.id);
             const col = document.createElement('div');
             col.className = 'account-col';
@@ -4065,18 +4078,21 @@ function fillTransferSelects(fromValue, toValue) {
     const fromSelect = $('edit-transfer-from');
     const toSelect = $('edit-transfer-to');
     fromSelect.innerHTML = '';
-    accounts.filter(a => a.ownerName === currentUserName).forEach(a => {
+    // 转出：只有自己的账户，按手动排序
+    sortedUserAccounts(accounts.filter(a => a.ownerName === currentUserName)).forEach(a => {
         fromSelect.add(new Option(`${getAccountDisplayName(a)} (${CURRENCY_SYMBOLS[a.currency]})`, a.id));
     });
     toSelect.innerHTML = '';
-    accounts.forEach(a => {
+    // 转入：自己的账户（排序）+ 其他用户账户
+    const sortedMine = sortedUserAccounts(accounts.filter(a => a.ownerName === currentUserName));
+    const others = accounts.filter(a => a.ownerName !== currentUserName);
+    [...sortedMine, ...others].forEach(a => {
         toSelect.add(new Option(`${getAccountDisplayName(a)} (${CURRENCY_SYMBOLS[a.currency]})`, a.id));
     });
     if (fromValue) fromSelect.value = fromValue;
     else if (fromSelect.options.length > 0) fromSelect.selectedIndex = 0;
     if (toValue) toSelect.value = toValue;
     else {
-        // 默认选一个与 from 不同的账户
         const fromId = fromSelect.value;
         const other = accounts.find(a => a.id != fromId);
         if (other) toSelect.value = other.id;
@@ -5858,7 +5874,8 @@ function updateSelectOptions() {
         const el = $(id);
         if (!el) return;
         el.innerHTML = '';
-        const accsToShow = includeOthers ? accounts : userAccounts;
+        const myAccs = sortedUserAccounts(userAccounts);
+        const accsToShow = includeOthers ? [...myAccs, ...accounts.filter(a => a.ownerName !== currentUserName)] : myAccs;
         accsToShow.forEach(a => {
             el.add(new Option(`${getAccountDisplayName(a)} (${CURRENCY_SYMBOLS[a.currency] || a.currency})`, a.id));
         });
