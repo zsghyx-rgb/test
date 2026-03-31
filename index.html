@@ -2903,11 +2903,16 @@ function clearUnsavedFlag() {
     clearTimeout(_toastMinimizeTimer);
     const el = $('app-toast');
     if (el) { el.classList.remove('minimized'); el.onclick = null; }
-    // 同步成功后清掉本地草稿
-    if (currentUserName) {
-        localStorage.removeItem(`APP_local_draft_${currentUserName}`);
-        localStorage.removeItem(`APP_local_draft_time_${currentUserName}`);
+    
+    // 清空 localStorage 中所有用户的本地草稿
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('APP_local_draft_')) {
+            keysToRemove.push(key);
+        }
     }
+    keysToRemove.forEach(key => localStorage.removeItem(key));
 }
 
 /**
