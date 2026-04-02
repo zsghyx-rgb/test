@@ -2956,8 +2956,10 @@ async function loadHistoryYear(year) {
                 el.value = id.includes('start') ? yStart : yEnd;
             }
         });
-        currentStatsFilter.startDate = yStart;
-        currentStatsFilter.endDate = yEnd;
+        // 安全地更新全局统计过滤变量
+        if (typeof currentStatsFilter !== 'undefined') {
+            currentStatsFilter.startDate = yStart;
+            currentStatsFilter.endDate = yEnd;
 
         // 6. 导航限制：强制跳转到流水页，并置灰不可用的菜单
         switchTab('transactions', document.querySelector('.nav-link[onclick*="transactions"]'));
