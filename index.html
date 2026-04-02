@@ -659,7 +659,7 @@ select.compact-form-control { height: 2.1rem; }
 .split-item-card[data-accent="2"] { border-left-color: #198754; background: rgba(25,135,84,0.05) !important; }
 .split-item-card[data-accent="3"] { border-left-color: #9c27b0; background: rgba(156,39,176,0.05) !important; }
 
-/* ===== EASTER 2026 START — 修正版 ===== */
+/* ===== EASTER 2026 START  ===== */
 
 #login-overlay {
         background: linear-gradient(160deg, #fef6e4 0%, #e8f5e9 40%, #f3e5f5 80%, #fce4ec 100%) !important;
@@ -938,7 +938,7 @@ select.compact-form-control { height: 2.1rem; }
 
         <!-- 标题栏 + 齿轮 -->
         <div class="d-flex align-items-center justify-content-between mb-3">
-            <h4 class="mb-0 text-primary"><i class="bi bi-wallet2"></i>记一笔</h4>
+            <h4 class="mb-0 text-primary"><i class="bi bi-wallet2"></i> 🥚记一笔</h4>
             <button class="btn btn-sm btn-outline-secondary" onclick="toggleLoginSettings()" title="连接设置">
                 <i class="bi bi-gear" id="login-settings-gear"></i>
             </button>
@@ -1043,7 +1043,7 @@ select.compact-form-control { height: 2.1rem; }
         </div>
     </div>
     <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;pointer-events:none;">
-        <span class="text-muted" style="font-size:0.7rem;">v2.0.0</span>
+        <span class="text-muted" style="font-size:0.7rem;">version 2.1</span>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
@@ -1075,7 +1075,7 @@ select.compact-form-control { height: 2.1rem; }
             </li>
             <li class="nav-item">
                 <button class="nav-link" onclick="switchTab('settings', this)">
-                    <i class="bi bi-gear"></i><span>设置</span>
+                    <i class="bi bi-gear"></i><span>🐰设置</span>
                 </button>
             </li>
         </ul>
@@ -2765,6 +2765,13 @@ async function archiveYear(year) {
         // 从主数据删除该年原始交易
         const removeIds = new Set(yearTrans.map(t => t.id));
         transactions = transactions.filter(t => !removeIds.has(t.id));
+        
+        // 【新增代码】记录到删除日志，防止被 mergeData 幽灵复活
+        if (!inMemoryLoadedData.deletedLog) inMemoryLoadedData.deletedLog = [];
+        const nowTime = Date.now();
+        removeIds.forEach(id => {
+            inMemoryLoadedData.deletedLog.push({ id: String(id), deletedAt: nowTime, type: 'transaction' });
+        });
 
         // 标记存档年份
         if (!inMemoryLoadedData.archivedYears) inMemoryLoadedData.archivedYears = [];
@@ -2837,8 +2844,20 @@ async function unarchiveYear(year) {
             archiveData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
         }
 
+        // 【新增代码】先找出要删除的基准交易 ID
+        const baselineIdsToRemove = transactions
+            .filter(t => t._isBaseline && t._archiveYear == year)
+            .map(t => String(t.id));
+        
         // 删除该年的基准交易
         transactions = transactions.filter(t => !(t._isBaseline && t._archiveYear == year));
+        
+        // 【新增代码】记录到删除日志
+        if (!inMemoryLoadedData.deletedLog) inMemoryLoadedData.deletedLog = [];
+        const nowTime = Date.now();
+        baselineIdsToRemove.forEach(id => {
+            inMemoryLoadedData.deletedLog.push({ id: id, deletedAt: nowTime, type: 'transaction' });
+        });
 
         // 将存档交易合并回主数据
         dataUsers.forEach(u => {
@@ -2895,7 +2914,7 @@ async function loadHistoryYear(year) {
             archiveData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
         }
 
-        // 将该年的基准交易暂存，从 transactions 移出，避免余额重复计算
+        // 将该年的基准交易暂存，从 transactions 移出
         historyBaselines = transactions.filter(t => t._isBaseline && t._archiveYear == year);
         transactions = transactions.filter(t => !(t._isBaseline && t._archiveYear == year));
 
@@ -2907,7 +2926,7 @@ async function loadHistoryYear(year) {
             }
         });
 
-        // 进入历史模式前保存当前日期筛选，供退出时还原
+        // 进入历史模式前的保存日期筛选以供退出时还原
         historyPrevFilters = {
             transStart: $('filter-start-date')?.value || '',
             transEnd:   $('filter-end-date')?.value   || '',
@@ -2919,23 +2938,31 @@ async function loadHistoryYear(year) {
         historyYear = year;
         filterUserData();
 
-        // 自动把日期范围设为该存档年份全年
+        // 历史模式强制切换到交易页，并隐藏无关的侧边栏菜单
+        switchTab('transactions', document.querySelector('.nav-link[onclick*="transactions"]'));
+        $$('.nav-link[onclick*="accounts"], .nav-link[onclick*="planned"], .nav-link[onclick*="settings"]').forEach(el => el.style.opacity = '0.3');
+        $$('button[onclick="openNewTransaction()"], button[onclick="openNewTransfer()"]').forEach(btn => btn.style.display = 'none');
+
+        // 历史模式自动把日期范围设为该存档年份全年，并锁定可选范围 (min / max)
         const yStart = `${year}-01-01`, yEnd = `${year}-12-31`;
-        const fsd = $('filter-start-date');
-        const fed = $('filter-end-date');
-        const ssd = $('stats-start-date');
-        const sed = $('stats-end-date');
-        if (fsd) fsd.value = yStart;
-        if (fed) fed.value = yEnd;
-        if (ssd) { ssd.value = yStart; currentStatsFilter.startDate = yStart; }
-        if (sed) { sed.value = yEnd;   currentStatsFilter.endDate   = yEnd; }
+        ['filter-start-date', 'filter-end-date', 'stats-start-date', 'stats-end-date', 'sa-start-date', 'sa-end-date'].forEach(id => {
+            const el = $(id);
+            if (el) {
+                el.value = (id.includes('start')) ? yStart : yEnd;
+                el.min = yStart;
+                el.max = yEnd;
+            }
+        });
+        currentStatsFilter.startDate = yStart;
+        currentStatsFilter.endDate = yEnd;
+
         applyTransactionFilter();
 
         const banner = $('history-mode-banner');
         if (banner) { banner.classList.remove('d-none'); $('history-year-label').textContent = year; }
 
         renderAllTransactions(); renderAccounts(); renderStats();
-        showToast(`已加载 ${year} 年存档（只读）`, 'success');
+        showToast(`已加载 ${year} 年存档（只读模式）`, 'success');
     } catch (err) {
         historyMode = false; historyYear = null;
         showToast(`加载失败：${err.message}`, 'error');
@@ -2950,6 +2977,15 @@ function exitHistoryMode() {
     historyMode = false; historyYear = null;
     const banner = $('history-mode-banner');
     if (banner) banner.classList.add('d-none');
+    
+    // 解除隐藏和锁定
+    $$('.nav-link[onclick*="accounts"], .nav-link[onclick*="planned"], .nav-link[onclick*="settings"]').forEach(el => el.style.opacity = '1');
+    $$('button[onclick="openNewTransaction()"], button[onclick="openNewTransfer()"]').forEach(btn => btn.style.display = '');
+    ['filter-start-date', 'filter-end-date', 'stats-start-date', 'stats-end-date', 'sa-start-date', 'sa-end-date'].forEach(id => {
+        const el = $(id);
+        if (el) { el.removeAttribute('min'); el.removeAttribute('max'); }
+    });
+
     // 还原进入历史模式前的日期筛选
     if (historyPrevFilters) {
         const fsd = $('filter-start-date');
@@ -2963,6 +2999,8 @@ function exitHistoryMode() {
         historyPrevFilters = null;
         applyTransactionFilter();
     }
+    
+    switchTab('settings', document.querySelector('.nav-link[onclick*="settings"]')); // 退回设置页
     filterUserData(); renderAllTransactions(); renderAccounts(); renderStats();
     showToast('已退出历史模式', 'info');
 }
@@ -3030,6 +3068,12 @@ function loadAllData() {
 }
 
 function saveUserData() {
+    // 历史模式下绝对禁止保存数据，保护主数据和基准流水的安全
+    if (historyMode) {
+        console.warn("历史模式只读，拦截了保存请求。");
+        return;
+    }
+
     if (!currentUser) return;
     dataUsers.forEach(u => {
         // 保留已有的 accountOrder，不覆盖
@@ -4388,6 +4432,11 @@ function handleEditTransferAmountChange(direction) {
 }
 
 function deleteTransaction(id) {
+    if (historyMode) { 
+        showToast("历史模式下无法删除数据", "warning"); 
+        return; 
+    }
+
     const t = transactions.find(x => x.id === id);
     if (!t) { alert('找不到记录'); return; }
 
@@ -4794,6 +4843,7 @@ function closeSpendingAnalysis() {
 }
 
 function saQuickDate(p) {
+    if (historyMode) { showToast('历史模式下不支持快捷日期筛选', 'warning'); return; }
     const today = new Date();
     let start = '', end = '';
     if (p === 'month') { start = new Date(today.getFullYear(), today.getMonth(), 1); end = today; }
@@ -5216,6 +5266,7 @@ function applyTransactionFilter() {
 }
 
 function quickDateFilter(p) {
+    if (historyMode) { showToast('历史模式下不支持快捷日期筛选', 'warning'); return; }
     const today = new Date();
     let start = '', end = '';
     if (p === '30days') { start = new Date(today); start.setDate(start.getDate() - 30); end = today; }
@@ -5866,6 +5917,7 @@ function applyStatsFilter() {
 }
 
 function quickStatsDateFilter(p) {
+    if (historyMode) { showToast('历史模式下不支持快捷日期筛选', 'warning'); return; }
     const today = new Date();
     let start = '', end = '';
     if (p === '30days') { start = new Date(today); start.setDate(today.getDate() - 30); end = today; }
@@ -6140,6 +6192,12 @@ function updateSelectOptions() {
 }
 
 function switchTab(t, el) {
+    // 历史模式下的导航拦截
+    if (historyMode && ['accounts', 'account-detail', 'planned', 'settings'].includes(t)) {
+        showToast("历史模式下仅支持查看「交易」和「统计」", "warning");
+        return;
+    }
+
     // 切换 tab 前强制关闭所有打开的弹窗，清理残留 backdrop
     ['editTransactionModal','accountModal','plannedModal'].forEach(id => {
         const inst = bootstrap.Modal.getInstance($(id));
@@ -6158,8 +6216,19 @@ function switchTab(t, el) {
     $(`view-${t}`).classList.add('active-view');
     $$('.nav-link').forEach(n => n.classList.remove('active'));
     if (el) el.classList.add('active');
+    
+    // 手机端悬浮按钮控制 (历史模式下强制隐藏)
     const fab = $('mobile-fab-group');
-    if (fab) fab.classList.toggle('d-none', t !== 'transactions');
+    if (fab) {
+        if (historyMode) {
+            fab.classList.add('d-none');
+            fab.style.display = 'none';
+        } else {
+            fab.classList.toggle('d-none', t !== 'transactions');
+            fab.style.display = '';
+        }
+    }
+    
     if (t === 'stats') renderStats();
     if (t === 'planned') renderPlannedTransactions();
     if (t === 'settings') { renderExchangeRateSettings(); initPasswordHint(); renderUserManagement(); renderArchiveManagementUI(); }
