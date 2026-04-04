@@ -4491,7 +4491,9 @@ function deleteTransaction(id) {
 }
 
 function openEditTransaction(id) {
-    const t = transactions.find(x => x.id === id);
+    const t = historyMode
+        ? historyTransactions.find(x => x.id == id)
+        : transactions.find(x => x.id == id);
     if (!t) { alert('找不到此交易'); return; }
     if (t.isTransfer) { openEditTransfer(id); return; }
 
@@ -4538,7 +4540,9 @@ function openEditTransaction(id) {
 }
 
 function openEditTransfer(id) {
-    const t = transactions.find(x => x.id === id);
+    const t = historyMode
+        ? historyTransactions.find(x => x.id == id)
+        : transactions.find(x => x.id == id);
     if (!t || !t.isTransfer) return;
 
     let tOut, tIn;
@@ -5361,13 +5365,16 @@ function getFilteredTransactions() {
 }
 function initMobileSwipeGestures(card, transactionId) {
     card.addEventListener('click', (e) => {
-        const t = transactions.find(x => x.id === transactionId);
-        if (!t || t.ownerName !== currentUserName || t._isArchived) return;
+        // 历史模式从 historyTransactions 找，正常模式从 transactions 找
+        const t = historyMode
+            ? historyTransactions.find(x => x.id === transactionId)
+            : transactions.find(x => x.id === transactionId);
+        if (!t || t.ownerName !== currentUserName) return;
+        // 历史模式：_isArchived 为 true，openEditTransaction 内部会以只读模式打开
         if (t.isTransfer) openEditTransfer(transactionId);
         else openEditTransaction(transactionId);
     });
 }
-
 function renderAllTransactions() {
     const tbody = $('transaction-table-body');
     tbody.innerHTML = '';
