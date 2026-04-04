@@ -1223,7 +1223,7 @@ select.compact-form-control { height: 2.1rem; }
                             <div style="width: 120px;">
                                 <input type="date" class="form-control form-control-sm" id="filter-end-date" onchange="applyTransactionFilter()">
                             </div>
-                            <div>
+                            <div id="quick-date-filter-group">
                                 <div class="btn-group btn-group-sm">
                                     <button class="btn btn-outline-secondary" onclick="quickDateFilter('30days')">近30天</button>
                                     <button class="btn btn-outline-secondary" onclick="quickDateFilter('month')">本月</button>
@@ -1322,7 +1322,7 @@ select.compact-form-control { height: 2.1rem; }
                 <div style="width: 120px;">
                     <input type="date" class="form-control form-control-sm" id="stats-end-date" onchange="applyStatsFilter()">
                 </div>
-                <div>
+                <div id="quick-stats-filter-group-1">
                     <div class="btn-group btn-group-sm">
                         <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter('30days')">近30天</button>
                         <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter('month')">本月</button>
@@ -1359,8 +1359,7 @@ select.compact-form-control { height: 2.1rem; }
                         </div>
                     </div>
                 </div>
-
-                <div>
+                <div id="quick-stats-filter-group-2">
                     <div class="btn-group btn-group-sm">
                         <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter('3months')">3个月</button>
                         <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter('6months')">6个月</button>
@@ -1369,7 +1368,6 @@ select.compact-form-control { height: 2.1rem; }
                         <button class="btn btn-outline-secondary" onclick="quickStatsDateFilter('all')">全部</button>
                     </div>
                 </div>
-
                 <div class="col-md-6">
                     <div class="card shadow-sm chart-card">
                         <div class="card-body">
@@ -2946,21 +2944,20 @@ async function loadHistoryYear(year) {
         if (ssd) { ssd.value = yStart; ssd.min = yStart; ssd.max = yEnd; currentStatsFilter.startDate = yStart; }
         if (sed) { sed.value = yEnd;   sed.min = yStart; sed.max = yEnd; currentStatsFilter.endDate   = yEnd; }
         applyTransactionFilter();
-
         // 显示历史模式横幅
         const banner = $('history-mode-banner');
         if (banner) { banner.classList.remove('d-none'); $('history-year-label').textContent = year; }
-
+        // 隐藏快速日期筛选按钮组
+        ['quick-date-filter-group', 'quick-stats-filter-group-1', 'quick-stats-filter-group-2']
+            .forEach(id => { const el = $(id); if (el) el.style.display = 'none'; });
         // 隐藏账户导航按钮
         const navAccounts = $('nav-btn-accounts');
         if (navAccounts) navAccounts.style.display = 'none';
-
         // 如果当前正在账户页，自动跳回交易页
         const activeView = document.querySelector('.view-section.active-view');
         if (activeView && activeView.id === 'view-accounts') {
             switchTab('transactions', document.querySelector('.nav-link[onclick*="transactions"]'));
         }
-
         // 隐藏悬浮新增按钮
         const fab = $('mobile-fab-group');
         if (fab) fab.classList.add('d-none');
@@ -3007,7 +3004,9 @@ function exitHistoryMode() {
     // 恢复账户导航按钮
     const navAccounts = $('nav-btn-accounts');
     if (navAccounts) navAccounts.style.display = '';
-
+    // 恢复快速日期筛选按钮组
+    ['quick-date-filter-group', 'quick-stats-filter-group-1', 'quick-stats-filter-group-2']
+        .forEach(id => { const el = $(id); if (el) el.style.display = ''; });
     filterUserData();
     renderAllTransactions();
     renderAccounts();
