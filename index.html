@@ -1469,17 +1469,15 @@ select.compact-form-control { height: 2.1rem; }
         <div class="card-body">
             <p class="text-muted small mb-2">将历史年份数据存档，减少主文件大小，提升同步速度。存档数据只读，可解档恢复。</p>
             <div id="archive-management-ui" class="mb-2"></div>
-            <div class="btn-group w-100" id="history-year-btn-group">
-                <button class="btn btn-outline-secondary btn-sm" onclick="showHistoryYearSelector()">
-                    <i class="bi bi-clock-history"></i> 查看历史存档
-                </button>
-                <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle dropdown-toggle-split"
-                    data-bs-toggle="dropdown" aria-expanded="false">
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end" id="history-year-dropdown">
-                    <li><span class="dropdown-item text-muted small">暂无存档</span></li>
-                </ul>
-            </div>
+<div class="dropdown" id="history-year-btn-group">
+    <button class="btn btn-outline-secondary btn-sm w-100 dropdown-toggle" type="button"
+        data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="bi bi-clock-history"></i> 查看历史存档
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end" id="history-year-dropdown">
+        <li><span class="dropdown-item text-muted small">暂无存档</span></li>
+    </ul>
+</div>
         </div>
     </div>
 </div>
@@ -2906,22 +2904,6 @@ async function unarchiveYear(year) {
     } catch (err) {
         showToast(`解档失败：${err.message}`, 'error');
     }
-}
-
-
-function showHistoryYearSelector() {
-    const archivedYears = getArchivedYears();
-    if (archivedYears.length === 0) {
-        showToast('暂无存档数据，请先在设置中存档', 'warning');
-        return;
-    }
-    if (archivedYears.length === 1) {
-        loadHistoryYear(archivedYears[0]);
-        return;
-    }
-    // 多个年份：展开下拉菜单
-    const btn = document.querySelector('#history-year-btn-group .dropdown-toggle');
-    if (btn) btn.click();
 }
 
 async function loadHistoryYear(year) {
