@@ -5445,7 +5445,7 @@ const editBtns = canEdit ? (t.isTransfer ?
     `<i class="bi bi-pencil text-primary cursor-pointer me-2" style="cursor:pointer;" onclick="openEditTransfer(${t.id})"></i><i class="bi bi-trash text-danger cursor-pointer" style="cursor:pointer;" onclick="deleteTransaction(${t.id})"></i>` :
     `<i class="bi bi-pencil text-primary cursor-pointer me-2" style="cursor:pointer;" onclick="openEditTransaction(${t.id})"></i><i class="bi bi-trash text-danger cursor-pointer" style="cursor:pointer;" onclick="deleteTransaction(${t.id})"></i>`) :
     (t._isArchived ? '<span class="badge bg-secondary" style="font-size:0.6rem;">存档</span>' :
-    `<i class="bi bi-eye text-secondary" style="cursor:pointer;" title="查看" onclick="${t.isTransfer ? `openEditTransfer(${t.id})` : `openEditTransaction(${t.id})`}"></i>`);
+    (!t.isTransfer ? `<i class="bi bi-eye text-secondary" style="cursor:pointer;" title="查看" onclick="openEditTransaction(${t.id})"></i>` : ''));
 
         const tr = document.createElement('tr');
         const tDescDisplay = t.items && t.items.length > 1
@@ -5542,14 +5542,14 @@ const editBtns = canEdit ? (t.isTransfer ?
 
             if (t.ownerName === currentUserName) {
                 initMobileSwipeGestures(card, t.id);
-            } else {
-    // 其他用户：可点击查看，但只读
+} else if (!t.isTransfer) {
     card.style.opacity = '0.85';
     card.style.cursor = 'pointer';
     card.addEventListener('click', () => {
-        if (t.isTransfer) openEditTransfer(t.id);
-        else openEditTransaction(t.id);
+        openEditTransaction(t.id);
     });
+} else {
+    card.style.opacity = '0.75';
 }
             mobileContainer.appendChild(card);
         });
