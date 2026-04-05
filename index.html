@@ -1461,24 +1461,28 @@ select.compact-form-control { height: 2.1rem; }
             </div>
 
             <div class="row g-4">
-                <div class="col-12 col-md-6">
-                    <div class="card shadow-sm h-100">
-                        <div class="card-header bg-transparent fw-bold">
-                            <i class="bi bi-archive"></i> 数据存档管理
-                        </div>
-<div class="btn-group w-100" id="history-year-btn-group">
-    <button class="btn btn-outline-secondary btn-sm" onclick="showHistoryYearSelector()">
-        <i class="bi bi-clock-history"></i> 查看历史存档
-    </button>
-    <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle dropdown-toggle-split"
-        data-bs-toggle="dropdown" aria-expanded="false">
-    </button>
-    <ul class="dropdown-menu dropdown-menu-end" id="history-year-dropdown">
-        <li><span class="dropdown-item text-muted small">暂无存档</span></li>
-    </ul>
+ <div class="col-12 col-md-6">
+    <div class="card shadow-sm h-100">
+        <div class="card-header bg-transparent fw-bold">
+            <i class="bi bi-archive"></i> 数据存档管理
+        </div>
+        <div class="card-body">
+            <p class="text-muted small mb-2">将历史年份数据存档，减少主文件大小，提升同步速度。存档数据只读，可解档恢复。</p>
+            <div id="archive-management-ui" class="mb-2"></div>
+            <div class="btn-group w-100" id="history-year-btn-group">
+                <button class="btn btn-outline-secondary btn-sm" onclick="showHistoryYearSelector()">
+                    <i class="bi bi-clock-history"></i> 查看历史存档
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle dropdown-toggle-split"
+                    data-bs-toggle="dropdown" aria-expanded="false">
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" id="history-year-dropdown">
+                    <li><span class="dropdown-item text-muted small">暂无存档</span></li>
+                </ul>
+            </div>
+        </div>
+    </div>
 </div>
-                    </div>
-                </div>
 
                 <div class="col-12 col-md-6">
                     <div class="card shadow-sm h-100">
@@ -5388,7 +5392,7 @@ function getFilteredTransactions() {
 
     return source.filter(t => {
         // 历史模式年份保护
-        if (historyMode && !t.date.startsWith(historyYear)) return false;
+        if (historyMode && !t.date.startsWith(String(historyYear))) return false;
         
         if (t._isBaseline) return false;
         if (transactionDisplayMode === 'transactions' && t.isTransfer) return false;
