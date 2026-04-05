@@ -5849,10 +5849,10 @@ async function checkHistoryCategories() {
 
     // ── 第一步：孤立分类（优先级最高，排在最前）──
     const allValidCats = new Set([...categories.expense, ...categories.income]);
-    const orphanTrans = transactions.filter(t =>
-        !t.isTransfer && t.ownerName === currentUserName && !t._isArchived && t.category &&
-        !allValidCats.has(t.category)
-    );
+const orphanTrans = transactions.filter(t =>
+    !t.isTransfer && t.ownerName === currentUserName && !t._isArchived && !t._isBaseline && t.category &&
+    !allValidCats.has(t.category)
+);
     // 去重：同一个孤立分类只提示一次，让用户选择新分类
     const orphanGroups = {};
     orphanTrans.forEach(t => {
@@ -5863,10 +5863,10 @@ async function checkHistoryCategories() {
         suspects.push({ isOrphan: true, orphanCat, txList, t: txList[0], suggested: null });
     });
 
-    // ── 第二步：相似备注但分类不一致（原有逻辑）──
-    const myTrans = transactions.filter(t =>
-        !t.isTransfer && t.ownerName === currentUserName && t.desc && !(t.items && t.items.length > 1)
-    );
+    // ── 第二步：相似备注但分类不一致 ──
+const myTrans = transactions.filter(t =>
+    !t.isTransfer && !t._isBaseline && t.ownerName === currentUserName && t.desc && !(t.items && t.items.length > 1)
+);
     myTrans.forEach(t => {
         const type = t.amount > 0 ? 'income' : 'expense';
         const pool = myTrans.filter(x => x !== t && x.category && !(x.items && x.items.length > 1));
