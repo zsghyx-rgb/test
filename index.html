@@ -659,31 +659,6 @@ select.compact-form-control { height: 2.1rem; }
 .split-item-card[data-accent="2"] { border-left-color: #198754; background: rgba(25,135,84,0.05) !important; }
 .split-item-card[data-accent="3"] { border-left-color: #9c27b0; background: rgba(156,39,176,0.05) !important; }
 
-
-    /* 登录卡片与按钮春日美化 */
-    #login-overlay > .card {
-        border: 1.5px solid rgba(186,222,155,0.5) !important;
-        box-shadow: 0 8px 32px rgba(120,180,100,0.13), 0 2px 8px rgba(200,160,220,0.10) !important;
-    }
-    #user-buttons .btn-outline-primary {
-        border-color: #a084ca !important;
-        color: #7b5ea7 !important;
-    }
-    #user-buttons .btn-outline-primary:hover {
-        background: #a084ca !important;
-        color: white !important;
-    }
-    #login-overlay .btn-primary {
-        background: #78a87e !important;
-        border-color: #78a87e !important;
-    }
-    #login-overlay .btn-primary:hover {
-        background: #5d8f63 !important;
-    }
-    #login-overlay h4.text-primary {
-        color: #7b5ea7 !important;
-    }
-
 /* ── 标签自动补全 ── */
 .tags-autocomplete-wrapper {
     position: relative;
@@ -720,6 +695,33 @@ select.compact-form-control { height: 2.1rem; }
 .tags-suggestion-item .tag-badge {
     font-size: 0.85rem;
 }
+
+
+    /* 登录卡片与按钮春日美化 */
+    #login-overlay > .card {
+        border: 1.5px solid rgba(186,222,155,0.5) !important;
+        box-shadow: 0 8px 32px rgba(120,180,100,0.13), 0 2px 8px rgba(200,160,220,0.10) !important;
+    }
+    #user-buttons .btn-outline-primary {
+        border-color: #a084ca !important;
+        color: #7b5ea7 !important;
+    }
+    #user-buttons .btn-outline-primary:hover {
+        background: #a084ca !important;
+        color: white !important;
+    }
+    #login-overlay .btn-primary {
+        background: #78a87e !important;
+        border-color: #78a87e !important;
+    }
+    #login-overlay .btn-primary:hover {
+        background: #5d8f63 !important;
+    }
+    #login-overlay h4.text-primary {
+        color: #7b5ea7 !important;
+    }
+   /* 登录卡片与按钮春日美化 */
+   
 </style>
 </head>
 <body>
@@ -728,50 +730,6 @@ select.compact-form-control { height: 2.1rem; }
 <div id="app-toast"></div>
 
 <div id="login-overlay">
-
-<!-- EASTER 2026 START -->
-    <!-- 背景浮动彩蛋 -->
-    <div class="easter-egg-float" style="width:90px;height:110px;background:#a8d8a8;top:8%;left:5%;animation-delay:0s;animation-duration:7s;"></div>
-    <div class="easter-egg-float" style="width:60px;height:74px;background:#f4a0c0;top:15%;right:8%;animation-delay:1.5s;animation-duration:5.5s;"></div>
-    <div class="easter-egg-float" style="width:50px;height:62px;background:#b8a8e8;bottom:12%;left:10%;animation-delay:0.8s;animation-duration:8s;"></div>
-    <div class="easter-egg-float" style="width:70px;height:86px;background:#f8d08a;bottom:8%;right:6%;animation-delay:2s;animation-duration:6.5s;"></div>
-
-    <div class="easter-bunny-wrap">
-        <div class="bunny">
-            <div class="bunny-tail"></div>
-            <div class="bunny-ear bunny-ear-left"><div class="bunny-ear-inner"></div></div>
-            <div class="bunny-ear bunny-ear-right"><div class="bunny-ear-inner"></div></div>
-            <div class="bunny-body">
-                <div class="bunny-paw bunny-paw-left"></div>
-                <div class="bunny-paw bunny-paw-right"></div>
-            </div>
-            <div class="bunny-head">
-                <div class="bunny-eye bunny-eye-left"></div>
-                <div class="bunny-eye bunny-eye-right"></div>
-                <div class="bunny-nose"></div>
-                <div class="bunny-mouth"></div>
-                <div class="bunny-cheek bunny-cheek-left"></div>
-                <div class="bunny-cheek bunny-cheek-right"></div>
-                <div class="bunny-whisker bunny-whisker-l"></div>
-                <div class="bunny-whisker bunny-whisker-r"></div>
-            </div>
-        </div>
-        
-        <div class="easter-eggs-row">
-            <div class="mini-egg" style="background:linear-gradient(135deg,#f4a0c0,#f8d0e0);"></div>
-            <div class="mini-egg" style="background:linear-gradient(135deg,#a8d8a8,#c8f0c8);"></div>
-            <div class="mini-egg" style="background:linear-gradient(135deg,#f8d08a,#faeac0);"></div>
-            <div class="mini-egg" style="background:linear-gradient(135deg,#b8a8e8,#d8d0f8);"></div>
-            <div class="mini-egg" style="background:linear-gradient(135deg,#a8d8f8,#c8ecf8);"></div>
-        </div>
-    </div>
-
-    <div class="text-center mb-3">
-        <span class="badge rounded-pill bg-white bg-opacity-75 text-success border border-success border-opacity-25 px-3 py-2 shadow-sm" style="letter-spacing: 2px; color: #2e7d32 !important; font-weight: bold;">
-            🐰 HAPPY EASTER 2026 🥚
-        </span>
-    </div>
-<!-- EASTER 2026 END -->
 
     <div class="card shadow p-3 p-md-4" style="width: 480px; max-width: 95%;">
 
@@ -882,7 +840,7 @@ select.compact-form-control { height: 2.1rem; }
         </div>
     </div>
     <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;pointer-events:none;">
-        <span class="text-muted" style="font-size:0.7rem;">version 2.1.1</span>
+        <span class="text-muted" style="font-size:0.7rem;">version 2.1.2</span>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
