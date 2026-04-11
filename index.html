@@ -886,7 +886,7 @@ select.compact-form-control { height: 2.1rem; }
         </div>
     </div>
     <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;pointer-events:none;">
-        <span class="text-muted" style="font-size:0.7rem;">version 2.1.0</span>
+        <span class="text-muted" style="font-size:0.7rem;">version 2.1.1</span>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
@@ -1612,13 +1612,13 @@ select.compact-form-control { height: 2.1rem; }
                         <div class="mb-2">
                             <label class="compact-form-label">标签</label>
                             <div class="tags-autocomplete-wrapper">
-                                <input type="text" class="form-control compact-form-control" id="edit-trans-tags"
+                                <input type="text" class="form-control compact-form-control" id="planned-tags"
                                        placeholder="添加标签…"
                                        autocomplete="off"
-                                       oninput="showTagSuggestions('edit-trans-tags', 'edit-trans-tags-dropdown')"
-                                       onfocus="showTagSuggestions('edit-trans-tags', 'edit-trans-tags-dropdown')"
-                                       onkeydown="handleTagInputKey(event, 'edit-trans-tags', 'edit-trans-tags-dropdown')">
-                                <div id="edit-trans-tags-dropdown" class="tags-suggestions"></div>
+                                       oninput="showTagSuggestions('planned-tags', 'planned-tags-dropdown')"
+                                       onfocus="showTagSuggestions('planned-tags', 'planned-tags-dropdown')"
+                                       onkeydown="handleTagInputKey(event, 'planned-tags', 'planned-tags-dropdown')">
+                                <div id="planned-tags-dropdown" class="tags-suggestions"></div>
                             </div>
                         </div>
                     </div>
@@ -1767,7 +1767,15 @@ select.compact-form-control { height: 2.1rem; }
                     <div id="single-meta-section">
                         <div class="mb-2">
                             <label class="compact-form-label">标签</label>
-                            <input type="text" class="form-control compact-form-control" id="edit-trans-tags" placeholder="添加标签…">
+                            <div class="tags-autocomplete-wrapper">
+                                <input type="text" class="form-control compact-form-control" id="edit-trans-tags"
+                                       placeholder="添加标签…"
+                                       autocomplete="off"
+                                       oninput="showTagSuggestions('edit-trans-tags', 'edit-trans-tags-dropdown')"
+                                       onfocus="showTagSuggestions('edit-trans-tags', 'edit-trans-tags-dropdown')"
+                                       onkeydown="handleTagInputKey(event, 'edit-trans-tags', 'edit-trans-tags-dropdown')">
+                                <div id="edit-trans-tags-dropdown" class="tags-suggestions"></div>
+                            </div>
                         </div>
                         <div class="mb-2">
                             <label class="compact-form-label">备注</label>
