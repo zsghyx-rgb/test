@@ -644,7 +644,7 @@ select.compact-form-control { height: 2.1rem; }
     align-items: center;
     margin-bottom: 4px;
 }
-.split-card-tags { grid-column: 1; }
+.split-card-tags { grid-column: 1; position: relative; }
 .split-card-desc { grid-column: 2 / 4; }
 .split-card-del  { grid-column: 4; display: flex; justify-content: center; }
 
@@ -1612,13 +1612,13 @@ select.compact-form-control { height: 2.1rem; }
                         <div class="mb-2">
                             <label class="compact-form-label">标签</label>
                             <div class="tags-autocomplete-wrapper">
-                                <input type="text" class="form-control compact-form-control" id="planned-tags"
+                                <input type="text" class="form-control compact-form-control" id="edit-trans-tags"
                                        placeholder="添加标签…"
                                        autocomplete="off"
-                                       oninput="showTagSuggestions('planned-tags', 'planned-tags-dropdown')"
-                                       onfocus="showTagSuggestions('planned-tags', 'planned-tags-dropdown')"
-                                       onkeydown="handleTagInputKey(event, 'planned-tags', 'planned-tags-dropdown')">
-                                <div id="planned-tags-dropdown" class="tags-suggestions"></div>
+                                       oninput="showTagSuggestions('edit-trans-tags', 'edit-trans-tags-dropdown')"
+                                       onfocus="showTagSuggestions('edit-trans-tags', 'edit-trans-tags-dropdown')"
+                                       onkeydown="handleTagInputKey(event, 'edit-trans-tags', 'edit-trans-tags-dropdown')">
+                                <div id="edit-trans-tags-dropdown" class="tags-suggestions"></div>
                             </div>
                         </div>
                     </div>
@@ -1767,15 +1767,7 @@ select.compact-form-control { height: 2.1rem; }
                     <div id="single-meta-section">
                         <div class="mb-2">
                             <label class="compact-form-label">标签</label>
-                            <div class="tags-autocomplete-wrapper">
-                                <input type="text" class="form-control compact-form-control" id="edit-trans-tags"
-                                       placeholder="添加标签…"
-                                       autocomplete="off"
-                                       oninput="showTagSuggestions('edit-trans-tags', 'edit-trans-tags-dropdown')"
-                                       onfocus="showTagSuggestions('edit-trans-tags', 'edit-trans-tags-dropdown')"
-                                       onkeydown="handleTagInputKey(event, 'edit-trans-tags', 'edit-trans-tags-dropdown')">
-                                <div id="edit-trans-tags-dropdown" class="tags-suggestions"></div>
-                            </div>
+                            <input type="text" class="form-control compact-form-control" id="edit-trans-tags" placeholder="添加标签…">
                         </div>
                         <div class="mb-2">
                             <label class="compact-form-label">备注</label>
@@ -4529,9 +4521,17 @@ function _buildSplitItemCard(item, idx) {
                 <button type="button" class="btn btn-link text-danger btn-sm p-0"
                         onclick="removeSplitItem(${idx})"><i class="bi bi-x-lg"></i></button>
             </div>
-            <input type="text" class="form-control compact-form-control split-card-tags"
-                   placeholder="添加标签…"
-                   value="${item.tags||''}" oninput="_splitData[${idx}].tags=this.value">
+            <div class="tags-autocomplete-wrapper split-card-tags">
+                <input type="text" class="form-control compact-form-control"
+                       id="split-tags-${idx}"
+                       placeholder="添加标签…"
+                       autocomplete="off"
+                       value="${item.tags||''}"
+                       oninput="_splitData[${idx}].tags=this.value;showTagSuggestions('split-tags-${idx}','split-tags-dd-${idx}')"
+                       onfocus="showTagSuggestions('split-tags-${idx}','split-tags-dd-${idx}')"
+                       onkeydown="handleTagInputKey(event,'split-tags-${idx}','split-tags-dd-${idx}')">
+                <div id="split-tags-dd-${idx}" class="tags-suggestions"></div>
+            </div>
             <input type="text" class="form-control compact-form-control split-card-desc"
                    placeholder="添加备注…"
                    value="${item.desc||''}" oninput="_splitData[${idx}].desc=this.value">
@@ -6765,18 +6765,22 @@ window.addEventListener('online', () => {
     }
 });
 
-/** 从所有交易中提取最近使用的标签，去重、按频率排序 */
+/** 从所有交易中提取最近使用的标签，按最后使用时间降序（最新的排最前） */
 function getRecentTags() {
-    const tagCount = {};
+    const tagLatest = {};  // tag -> 最近一次使用的时间戳（或日期字符串）
     transactions.forEach(t => {
         if (!t.tags) return;
+        // 用 updatedAt 优先，否则用 date 字符串
+        const timeKey = t.updatedAt || t.date || 0;
         t.tags.split(/[,，\s]+/).map(s => s.trim()).filter(Boolean).forEach(tag => {
-            tagCount[tag] = (tagCount[tag] || 0) + 1;
+            if (!tagLatest[tag] || timeKey > tagLatest[tag]) {
+                tagLatest[tag] = timeKey;
+            }
         });
     });
-    // 按出现次数降序，取前20个
-    return Object.entries(tagCount)
-        .sort((a, b) => b[1] - a[1])
+    // 按最近使用时间降序，取前20个
+    return Object.entries(tagLatest)
+        .sort((a, b) => (b[1] > a[1] ? 1 : b[1] < a[1] ? -1 : 0))
         .slice(0, 20)
         .map(e => e[0]);
 }
