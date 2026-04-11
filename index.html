@@ -565,6 +565,45 @@ select.compact-form-control { height: 2.1rem; }
     }
 }
 
+/* ── 标签建议下拉 ── */
+.tag-suggest-wrap { position: relative; }
+.tag-suggest-list {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1060;
+    width: 100%;
+    min-width: 160px;
+    max-height: 200px;
+    overflow-y: auto;
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 6px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+    padding: 4px 0;
+    margin: 0;
+    list-style: none;
+}
+.tag-suggest-list.open { display: block; }
+.tag-suggest-list li a {
+    display: block;
+    padding: 5px 12px;
+    font-size: 0.875rem;
+    color: var(--bs-body-color);
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.tag-suggest-list li a:hover,
+.tag-suggest-list li a:focus { background: rgba(var(--bs-primary-rgb),0.1); }
+.tag-suggest-list .ts-empty {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    color: var(--bs-secondary);
+}
+
 .multi-row-amt::-webkit-outer-spin-button,
 .multi-row-amt::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .multi-row-amt { -moz-appearance: textfield; }
@@ -781,7 +820,7 @@ select.compact-form-control { height: 2.1rem; }
         </div>
     </div>
     <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;pointer-events:none;">
-        <span class="text-muted" style="font-size:0.7rem;">version 2.1.1</span>
+        <span class="text-muted" style="font-size:0.7rem;">version 2.1.2</span>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
@@ -1654,13 +1693,12 @@ select.compact-form-control { height: 2.1rem; }
                     <div id="single-meta-section">
                         <div class="mb-2">
                             <label class="compact-form-label">标签</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control compact-form-control" id="edit-trans-tags" placeholder="添加标签…">
-                                <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle dropdown-toggle-split" id="tags-dropdown-btn" data-bs-toggle="dropdown" aria-expanded="false" style="width:32px;padding:0 6px;" title="最近使用的标签">
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end" id="tags-recent-dropdown" style="max-height:220px;overflow-y:auto;min-width:180px;font-size:0.875rem;">
-                                    <li><span class="dropdown-item text-muted small" id="tags-dropdown-empty">暂无历史标签</span></li>
-                                </ul>
+                            <div class="tag-suggest-wrap">
+                                <input type="text" class="form-control compact-form-control" id="edit-trans-tags"
+                                       placeholder="添加标签…" autocomplete="off"
+                                       onfocus="openTagSuggest(this,'ts-single')"
+                                       onblur="scheduleCloseTagSuggest('ts-single')">
+                                <ul class="tag-suggest-list" id="ts-single"></ul>
                             </div>
                         </div>
                         <div class="mb-2">
@@ -4415,9 +4453,16 @@ function _buildSplitItemCard(item, idx) {
                 <button type="button" class="btn btn-link text-danger btn-sm p-0"
                         onclick="removeSplitItem(${idx})"><i class="bi bi-x-lg"></i></button>
             </div>
-            <input type="text" class="form-control compact-form-control split-card-tags"
-                   placeholder="添加标签…"
-                   value="${item.tags||''}" oninput="_splitData[${idx}].tags=this.value">
+            <div class="split-card-tags tag-suggest-wrap">
+                <input type="text" class="form-control compact-form-control split-card-tags-input"
+                       placeholder="添加标签…"
+                       value="${item.tags||''}"
+                       autocomplete="off"
+                       oninput="_splitData[${idx}].tags=this.value"
+                       onfocus="openTagSuggest(this,'ts-split-${idx}')"
+                       onblur="scheduleCloseTagSuggest('ts-split-${idx}')">
+                <ul class="tag-suggest-list" id="ts-split-${idx}"></ul>
+            </div>
             <input type="text" class="form-control compact-form-control split-card-desc"
                    placeholder="添加备注…"
                    value="${item.desc||''}" oninput="_splitData[${idx}].desc=this.value">
@@ -6628,10 +6673,11 @@ function removeUser(name) {
     showToast(`已删除用户 "${name}"`, 'success');
 }
 
-// ── 最近标签下拉框 ──
+// ── 标签建议下拉（点击/聚焦触发） ──
+let _tagSuggestCloseTimer = {};
+
 function getRecentTags() {
     const tagSet = new Map();
-    // 按 updatedAt 降序收集标签（最新在前）
     const sorted = [...transactions].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
     for (const t of sorted) {
         if (t.tags && t.tags.trim()) {
@@ -6642,41 +6688,50 @@ function getRecentTags() {
     return [...tagSet.keys()];
 }
 
-function populateTagsDropdown() {
-    const dropdown = $('tags-recent-dropdown');
-    const emptyItem = $('tags-dropdown-empty');
-    if (!dropdown) return;
-    const tags = getRecentTags();
-    // 清空旧条目（保留 empty 提示）
-    [...dropdown.querySelectorAll('li.tag-item')].forEach(el => el.remove());
-    if (tags.length === 0) {
-        if (emptyItem) emptyItem.style.display = '';
-        return;
+function openTagSuggest(inputEl, listId) {
+    // 取消待关闭计时
+    if (_tagSuggestCloseTimer[listId]) {
+        clearTimeout(_tagSuggestCloseTimer[listId]);
+        delete _tagSuggestCloseTimer[listId];
     }
-    if (emptyItem) emptyItem.style.display = 'none';
-    const input = $('edit-trans-tags');
-    tags.forEach(tag => {
+    const ul = document.getElementById(listId);
+    if (!ul) return;
+
+    // 构建列表
+    ul.innerHTML = '';
+    const tags = getRecentTags();
+    if (tags.length === 0) {
         const li = document.createElement('li');
-        li.className = 'tag-item';
-        const a = document.createElement('a');
-        a.className = 'dropdown-item';
-        a.href = '#';
-        a.textContent = tag;
-        a.addEventListener('click', e => {
-            e.preventDefault();
-            if (input) input.value = tag;
+        li.className = 'ts-empty';
+        li.textContent = '暂无历史标签';
+        ul.appendChild(li);
+    } else {
+        tags.forEach(tag => {
+            const li = document.createElement('li');
+            const a = document.createElement('a');
+            a.href = '#';
+            a.textContent = tag;
+            a.addEventListener('mousedown', e => {
+                e.preventDefault(); // 阻止 blur 触发
+                inputEl.value = tag;
+                // 同步分录数据（split card）
+                inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+                ul.classList.remove('open');
+            });
+            li.appendChild(a);
+            ul.appendChild(li);
         });
-        li.appendChild(a);
-        dropdown.appendChild(li);
-    });
+    }
+    ul.classList.add('open');
 }
 
-// 每次打开编辑/新增交易弹窗时刷新标签下拉
-document.addEventListener('show.bs.modal', function(e) {
-    if (e.target && e.target.id === 'editTransactionModal') {
-        populateTagsDropdown();
-    }
-});
+function scheduleCloseTagSuggest(listId) {
+    _tagSuggestCloseTimer[listId] = setTimeout(() => {
+        const ul = document.getElementById(listId);
+        if (ul) ul.classList.remove('open');
+        delete _tagSuggestCloseTimer[listId];
+    }, 200);
+}
 
 window.addEventListener('load', () => {
     updateTransferModeButton();
