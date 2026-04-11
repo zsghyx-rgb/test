@@ -659,69 +659,8 @@ select.compact-form-control { height: 2.1rem; }
 .split-item-card[data-accent="2"] { border-left-color: #198754; background: rgba(25,135,84,0.05) !important; }
 .split-item-card[data-accent="3"] { border-left-color: #9c27b0; background: rgba(156,39,176,0.05) !important; }
 
-/* ── 标签自动补全 ── */
-.tags-autocomplete-wrapper {
-    position: relative;
-}
-.tags-suggestions {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    z-index: 9999;
-    background: var(--bs-body-bg);
-    border: 1px solid var(--bs-border-color);
-    border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    max-height: 180px;
-    overflow-y: auto;
-    display: none;
-    margin-top: 2px;
-}
-.tags-suggestions.show { display: block; }
-.tags-suggestion-item {
-    padding: 6px 10px;
-    cursor: pointer;
-    font-size: 0.85rem;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-.tags-suggestion-item:hover,
-.tags-suggestion-item.active {
-    background: rgba(var(--bs-primary-rgb), 0.1);
-    color: var(--bs-primary);
-}
-.tags-suggestion-item .tag-badge {
-    font-size: 0.85rem;
-}
 
 
-    /* 登录卡片与按钮春日美化 */
-    #login-overlay > .card {
-        border: 1.5px solid rgba(186,222,155,0.5) !important;
-        box-shadow: 0 8px 32px rgba(120,180,100,0.13), 0 2px 8px rgba(200,160,220,0.10) !important;
-    }
-    #user-buttons .btn-outline-primary {
-        border-color: #a084ca !important;
-        color: #7b5ea7 !important;
-    }
-    #user-buttons .btn-outline-primary:hover {
-        background: #a084ca !important;
-        color: white !important;
-    }
-    #login-overlay .btn-primary {
-        background: #78a87e !important;
-        border-color: #78a87e !important;
-    }
-    #login-overlay .btn-primary:hover {
-        background: #5d8f63 !important;
-    }
-    #login-overlay h4.text-primary {
-        color: #7b5ea7 !important;
-    }
-   /* 登录卡片与按钮春日美化 */
-   
 </style>
 </head>
 <body>
@@ -731,11 +670,13 @@ select.compact-form-control { height: 2.1rem; }
 
 <div id="login-overlay">
 
+
+
     <div class="card shadow p-3 p-md-4" style="width: 480px; max-width: 95%;">
 
         <!-- 标题栏 + 齿轮 -->
         <div class="d-flex align-items-center justify-content-between mb-3">
-            <h4 class="mb-0 text-primary"><i class="bi bi-wallet2"></i> 🥚记一笔</h4>
+            <h4 class="mb-0 text-primary"><i class="bi bi-wallet2"></i> 记一笔</h4>
             <button class="btn btn-sm btn-outline-secondary" onclick="toggleLoginSettings()" title="连接设置">
                 <i class="bi bi-gear" id="login-settings-gear"></i>
             </button>
@@ -840,7 +781,7 @@ select.compact-form-control { height: 2.1rem; }
         </div>
     </div>
     <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;pointer-events:none;">
-        <span class="text-muted" style="font-size:0.7rem;">version 2.1.2</span>
+        <span class="text-muted" style="font-size:0.7rem;">version 2.1.1</span>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
@@ -872,7 +813,7 @@ select.compact-form-control { height: 2.1rem; }
             </li>
             <li class="nav-item">
                 <button class="nav-link" onclick="switchTab('settings', this)">
-                    <i class="bi bi-gear"></i><span>🐰设置</span>
+                    <i class="bi bi-gear"></i><span>设置</span>
                 </button>
             </li>
         </ul>
@@ -1563,17 +1504,9 @@ select.compact-form-control { height: 2.1rem; }
                             <label class="compact-form-label">备注</label>
                             <input type="text" class="form-control compact-form-control" id="planned-desc" placeholder="添加备注…">
                         </div>
-                        <div class="mb-2">
+                        <div class="col-6">
                             <label class="compact-form-label">标签</label>
-                            <div class="tags-autocomplete-wrapper">
-                                <input type="text" class="form-control compact-form-control" id="edit-trans-tags"
-                                       placeholder="添加标签…"
-                                       autocomplete="off"
-                                       oninput="showTagSuggestions('edit-trans-tags', 'edit-trans-tags-dropdown')"
-                                       onfocus="showTagSuggestions('edit-trans-tags', 'edit-trans-tags-dropdown')"
-                                       onkeydown="handleTagInputKey(event, 'edit-trans-tags', 'edit-trans-tags-dropdown')">
-                                <div id="edit-trans-tags-dropdown" class="tags-suggestions"></div>
-                            </div>
+                            <input type="text" class="form-control compact-form-control" id="planned-tags" placeholder="添加标签…">
                         </div>
                     </div>
                     <button type="submit" class="btn btn-primary btn-sm w-100 mt-2" id="planned-submit-btn">保存计划</button>
@@ -1721,7 +1654,14 @@ select.compact-form-control { height: 2.1rem; }
                     <div id="single-meta-section">
                         <div class="mb-2">
                             <label class="compact-form-label">标签</label>
-                            <input type="text" class="form-control compact-form-control" id="edit-trans-tags" placeholder="添加标签…">
+                            <div class="input-group">
+                                <input type="text" class="form-control compact-form-control" id="edit-trans-tags" placeholder="添加标签…">
+                                <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle dropdown-toggle-split" id="tags-dropdown-btn" data-bs-toggle="dropdown" aria-expanded="false" style="width:32px;padding:0 6px;" title="最近使用的标签">
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end" id="tags-recent-dropdown" style="max-height:220px;overflow-y:auto;min-width:180px;font-size:0.875rem;">
+                                    <li><span class="dropdown-item text-muted small" id="tags-dropdown-empty">暂无历史标签</span></li>
+                                </ul>
+                            </div>
                         </div>
                         <div class="mb-2">
                             <label class="compact-form-label">备注</label>
@@ -6688,6 +6628,56 @@ function removeUser(name) {
     showToast(`已删除用户 "${name}"`, 'success');
 }
 
+// ── 最近标签下拉框 ──
+function getRecentTags() {
+    const tagSet = new Map();
+    // 按 updatedAt 降序收集标签（最新在前）
+    const sorted = [...transactions].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    for (const t of sorted) {
+        if (t.tags && t.tags.trim()) {
+            const tag = t.tags.trim();
+            if (!tagSet.has(tag)) tagSet.set(tag, true);
+        }
+    }
+    return [...tagSet.keys()];
+}
+
+function populateTagsDropdown() {
+    const dropdown = $('tags-recent-dropdown');
+    const emptyItem = $('tags-dropdown-empty');
+    if (!dropdown) return;
+    const tags = getRecentTags();
+    // 清空旧条目（保留 empty 提示）
+    [...dropdown.querySelectorAll('li.tag-item')].forEach(el => el.remove());
+    if (tags.length === 0) {
+        if (emptyItem) emptyItem.style.display = '';
+        return;
+    }
+    if (emptyItem) emptyItem.style.display = 'none';
+    const input = $('edit-trans-tags');
+    tags.forEach(tag => {
+        const li = document.createElement('li');
+        li.className = 'tag-item';
+        const a = document.createElement('a');
+        a.className = 'dropdown-item';
+        a.href = '#';
+        a.textContent = tag;
+        a.addEventListener('click', e => {
+            e.preventDefault();
+            if (input) input.value = tag;
+        });
+        li.appendChild(a);
+        dropdown.appendChild(li);
+    });
+}
+
+// 每次打开编辑/新增交易弹窗时刷新标签下拉
+document.addEventListener('show.bs.modal', function(e) {
+    if (e.target && e.target.id === 'editTransactionModal') {
+        populateTagsDropdown();
+    }
+});
+
 window.addEventListener('load', () => {
     updateTransferModeButton();
 });
@@ -6710,108 +6700,6 @@ window.addEventListener('online', () => {
         backgroundSyncAfterLogin();
     }
 });
-
-/** 从所有交易中提取最近使用的标签，去重、按频率排序 */
-function getRecentTags() {
-    const tagCount = {};
-    transactions.forEach(t => {
-        if (!t.tags) return;
-        t.tags.split(/[,，\s]+/).map(s => s.trim()).filter(Boolean).forEach(tag => {
-            tagCount[tag] = (tagCount[tag] || 0) + 1;
-        });
-    });
-    // 按出现次数降序，取前20个
-    return Object.entries(tagCount)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 20)
-        .map(e => e[0]);
-}
-
-/** 显示/过滤建议列表 */
-function showTagSuggestions(inputId, dropdownId) {
-    const input = document.getElementById(inputId);
-    const dropdown = document.getElementById(dropdownId);
-    if (!input || !dropdown) return;
-
-    const allTags = getRecentTags();
-    if (allTags.length === 0) return;
-
-    // 取光标前最后一个标签作为当前正在输入的词
-    const fullValue = input.value;
-    const parts = fullValue.split(/[,，\s]+/);
-    const currentWord = parts[parts.length - 1].trim().toLowerCase();
-
-    // 过滤：包含当前输入词，且还没被选中
-    const alreadyUsed = parts.slice(0, -1).map(p => p.trim().toLowerCase());
-    const filtered = allTags.filter(tag =>
-        tag.toLowerCase().includes(currentWord) &&
-        !alreadyUsed.includes(tag.toLowerCase())
-    );
-
-    if (filtered.length === 0) {
-        dropdown.classList.remove('show');
-        return;
-    }
-
-    dropdown.innerHTML = filtered.map((tag, i) =>
-        `<div class="tags-suggestion-item" data-tag="${tag}"
-              onmousedown="selectTagSuggestion('${inputId}', '${dropdownId}', '${tag}')">
-            <span class="tag-badge">${tag}</span>
-         </div>`
-    ).join('');
-    dropdown.classList.add('show');
-}
-
-/** 用户点击某个建议 */
-function selectTagSuggestion(inputId, dropdownId, tag) {
-    const input = document.getElementById(inputId);
-    const dropdown = document.getElementById(dropdownId);
-    if (!input) return;
-
-    // 替换最后一个正在输入的词为选中的标签
-    const parts = input.value.split(/[,，]+/).map(s => s.trim()).filter(Boolean);
-    parts[parts.length - 1] = tag;   // 替换最后一段
-    input.value = parts.join(', ') + ', ';   // 追加逗号，方便继续输入
-    input.focus();
-
-    if (dropdown) dropdown.classList.remove('show');
-}
-
-/** 键盘导航支持（↑↓选择，Enter确认，Escape关闭） */
-function handleTagInputKey(e, inputId, dropdownId) {
-    const dropdown = document.getElementById(dropdownId);
-    if (!dropdown || !dropdown.classList.contains('show')) return;
-
-    const items = dropdown.querySelectorAll('.tags-suggestion-item');
-    let activeIdx = Array.from(items).findIndex(el => el.classList.contains('active'));
-
-    if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        if (activeIdx >= 0) items[activeIdx].classList.remove('active');
-        activeIdx = (activeIdx + 1) % items.length;
-        items[activeIdx].classList.add('active');
-    } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        if (activeIdx >= 0) items[activeIdx].classList.remove('active');
-        activeIdx = (activeIdx - 1 + items.length) % items.length;
-        items[activeIdx].classList.add('active');
-    } else if (e.key === 'Enter' && activeIdx >= 0) {
-        e.preventDefault();
-        selectTagSuggestion(inputId, dropdownId, items[activeIdx].dataset.tag);
-    } else if (e.key === 'Escape') {
-        dropdown.classList.remove('show');
-    }
-}
-
-/** 点击其他地方时关闭所有建议列表 */
-document.addEventListener('click', function(e) {
-    document.querySelectorAll('.tags-suggestions.show').forEach(dropdown => {
-        if (!dropdown.closest('.tags-autocomplete-wrapper').contains(e.target)) {
-            dropdown.classList.remove('show');
-        }
-    });
-});
-
 </script>
 
 
