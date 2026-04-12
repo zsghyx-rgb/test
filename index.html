@@ -41,6 +41,15 @@
     </script>
 
     <style>
+/* ── 用户背景色调 ── */
+:root { --user-hue: 210; }
+[data-bs-theme="light"] body {
+    background-color: hsl(var(--user-hue), 45%, 96%) !important;
+}
+[data-bs-theme="dark"] body {
+    background-color: hsl(var(--user-hue), 18%, 9%) !important;
+}
+
 body {
     height: 100vh;
     height: 100dvh;
@@ -820,7 +829,7 @@ select.compact-form-control { height: 2.1rem; }
         </div>
     </div>
     <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;pointer-events:none;">
-        <span class="text-muted" style="font-size:0.7rem;">version 2.1.2</span>
+        <span class="text-muted" style="font-size:0.7rem;">version 2.1.3</span>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
@@ -2342,6 +2351,12 @@ function loginWithUser(name) {
     currentUserName = name;
     // 记录本设备最近登录的用户
     try { localStorage.setItem('APP_last_user', name); } catch(_) {}
+
+    // 应用用户背景色调
+    const USER_HUES = [210, 145, 30, 280, 350, 175, 55];
+    const userIdx = (typeof dataUsers !== 'undefined') ? dataUsers.indexOf(name) : 0;
+    const hue = USER_HUES[Math.max(0, userIdx) % USER_HUES.length];
+    document.documentElement.style.setProperty('--user-hue', hue);
 
     $('login-overlay').classList.add('d-none');
     $('app-wrapper').classList.remove('d-none');
@@ -4048,7 +4063,7 @@ function switchTransTab(tab, skipReset) {
     const mode = $('edit-trans-mode').value;
     if (mode === 'add') {
         const titleMap = { expense: '新增支出', income: '新增收入', transfer: '新增转账' };
-        $('editTransactionModalTitle').textContent = titleMap[tab] || '新增交易';
+        $('editTransactionModalTitle').textContent = _userTitle(titleMap[tab] || '新增交易');
     }
 
     // 切换时同步日期：把当前可见表单的日期复制到另一个
@@ -4107,11 +4122,16 @@ function switchTransTab(tab, skipReset) {
     }
 }
 
+// 弹窗标题加用户名
+function _userTitle(base) {
+    return currentUserName ? `${base} · ${currentUserName}` : base;
+}
+
 function _initNewTransModal(mode, title) {
     const today = new Date().toISOString().split('T')[0];
     $('edit-trans-id').value = '';
     $('edit-trans-mode').value = mode;
-    $('editTransactionModalTitle').textContent = title;
+    $('editTransactionModalTitle').textContent = _userTitle(title);
     $('edit-trans-submit-btn').textContent = '保存';
     $('edit-trans-delete-btn').style.setProperty('display','none','important');
     // 两个表单的日期同步初始化
@@ -4145,7 +4165,7 @@ function openNewTransFromDetail() {
 function openNewTransferFromDetail() {
     openedFromDetail = true;
     const today = new Date().toISOString().split('T')[0];
-    $('editTransactionModalTitle').textContent = '新增转账';
+    $('editTransactionModalTitle').textContent = _userTitle('新增转账');
     $('edit-transfer-id').value = '';
     $('edit-transfer-mode').value = 'add';
     $('edit-transfer-submit-btn').textContent = '保存';
