@@ -1091,8 +1091,9 @@ select.compact-form-control { height: 2.1rem; }
                         <div class="btn-group flex-nowrap" id="stats-currency-btns" style="white-space:nowrap;"></div>
                     </div>
                 </div>
-                <!-- 行2：月份导航 + 快速范围 + 自定义按钮 -->
-                <div class="d-flex align-items-center gap-2 flex-wrap" id="stats-filter-row">
+                <!-- 行2：月份导航 + 快速范围 + 自定义按钮（单行，横向滚动） -->
+                <div style="overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;" id="stats-filter-row">
+                <div class="d-flex align-items-center gap-2 flex-nowrap" style="white-space:nowrap;min-width:max-content;">
                     <!-- 月份导航 -->
                     <div class="d-flex align-items-center flex-shrink-0" id="stats-month-nav">
                         <button class="btn btn-sm btn-outline-secondary px-2" id="stats-prev-month-btn"
@@ -1103,8 +1104,8 @@ select.compact-form-control { height: 2.1rem; }
                         <button class="btn btn-sm btn-outline-secondary px-2" id="stats-next-month-btn"
                                 onclick="navigateStatsMonth(1)" title="下月">&#8250;</button>
                     </div>
-                    <!-- 快速范围按钮（合并原两组） -->
-                    <div id="quick-stats-filter-group-1">
+                    <!-- 快速范围按钮 -->
+                    <div id="quick-stats-filter-group-1" class="flex-shrink-0">
                         <div class="btn-group btn-group-sm">
                             <button class="btn btn-outline-secondary" data-range="30days"  onclick="quickStatsDateFilter('30days')">近30天</button>
                             <button class="btn btn-outline-secondary" data-range="year"    onclick="quickStatsDateFilter('year')">本年</button>
@@ -1119,6 +1120,7 @@ select.compact-form-control { height: 2.1rem; }
                             id="stats-custom-toggle" onclick="toggleStatsCustomDate()" title="自定义日期范围">
                         <i class="bi bi-calendar3"></i> 自定义
                     </button>
+                </div>
                 </div>
                 <!-- 自定义日期面板（默认折叠） -->
                 <div id="stats-custom-date-panel" class="d-flex gap-2 mt-2" style="display:none!important;">
