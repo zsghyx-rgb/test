@@ -820,7 +820,7 @@ select.compact-form-control { height: 2.1rem; }
         </div>
     </div>
     <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;pointer-events:none;">
-        <span class="text-muted" style="font-size:0.7rem;">version 2.1.7</span>
+        <span class="text-muted" style="font-size:0.7rem;">version 2.1.8</span>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
@@ -971,44 +971,50 @@ select.compact-form-control { height: 2.1rem; }
             </div>
 
             <!-- 筛选栏 -->
-            <div class="card mb-3 border-0 shadow-sm" style="background-color: var(--bs-tertiary-bg);">
+                <div class="card mb-3 border-0 shadow-sm" style="background-color: var(--bs-tertiary-bg);">
                     <div class="card-body py-2">
+                        <!-- 主筛选行（单行不换行） -->
                         <div class="filter-bar-row">
-                            <button class="btn btn-sm btn-outline-secondary" onclick="clearTransactionFilters()" title="清除所有筛选">
+                            <button class="btn btn-sm btn-outline-secondary flex-shrink-0" onclick="clearTransactionFilters()" title="清除所有筛选">
                                 <i class="bi bi-x-circle"></i>
                             </button>
-                            <div style="width: 150px;">
+                            <div style="width: 150px;" class="flex-shrink-0">
                                 <div class="input-group input-group-sm">
                                     <span class="input-group-text"><i class="bi bi-search"></i></span>
                                     <input type="text" class="form-control" id="trans-search-input" placeholder="搜索..." oninput="handleSearchInput()">
                                 </div>
                             </div>
-                            <div>
+                            <div class="flex-shrink-0">
                                 <button class="btn btn-sm btn-outline-secondary" id="trans-user-filter-btn" onclick="cycleUserFilter()" title="点击切换用户筛选">
                                     <i class="bi bi-person"></i> <span id="trans-user-filter-text">所有用户</span>
                                 </button>
                             </div>
-                            <div>
+                            <div class="flex-shrink-0">
                                 <button class="btn btn-sm btn-primary" id="transfer-mode-toggle" onclick="toggleDisplayMode()" title="点击切换显示模式">
                                     <i class="bi bi-eye" id="transfer-mode-icon"></i>
                                     <span id="transfer-mode-text">收支+转账</span>
                                 </button>
                             </div>
-                            <div style="width: 120px;">
-                                <input type="date" class="form-control form-control-sm" id="filter-start-date" onchange="applyTransactionFilter()">
-                            </div>
-                            <div style="width: 120px;">
-                                <input type="date" class="form-control form-control-sm" id="filter-end-date" onchange="applyTransactionFilter()">
-                            </div>
-                            <div id="quick-date-filter-group">
+                            <!-- 快速日期筛选 -->
+                            <div id="quick-date-filter-group" class="flex-shrink-0">
                                 <div class="btn-group btn-group-sm">
-                                    <button class="btn btn-outline-secondary" onclick="quickDateFilter('30days')">近30天</button>
-                                    <button class="btn btn-outline-secondary" onclick="quickDateFilter('month')">本月</button>
-                                    <button class="btn btn-outline-secondary" onclick="quickDateFilter('lastmonth')">上月</button>
-                                    <button class="btn btn-outline-secondary" onclick="quickDateFilter('year')">本年</button>
-                                    <button class="btn btn-outline-secondary" onclick="quickDateFilter('all')">全部</button>
+                                    <button class="btn btn-outline-secondary" data-range="30days"   onclick="quickDateFilter('30days')">近30天</button>
+                                    <button class="btn btn-outline-secondary" data-range="month"    onclick="quickDateFilter('month')">本月</button>
+                                    <button class="btn btn-outline-secondary" data-range="lastmonth"onclick="quickDateFilter('lastmonth')">上月</button>
+                                    <button class="btn btn-outline-secondary" data-range="year"     onclick="quickDateFilter('year')">本年</button>
+                                    <button class="btn btn-outline-secondary" data-range="all"      onclick="quickDateFilter('all')">全部</button>
                                 </div>
                             </div>
+                            <!-- 自定义日期折叠按钮 -->
+                            <button class="btn btn-sm btn-outline-secondary flex-shrink-0"
+                                    id="trans-custom-toggle" onclick="toggleTransCustomDate()" title="自定义日期范围">
+                                <i class="bi bi-calendar3"></i> 自定义
+                            </button>
+                        </div>
+                        <!-- 自定义日期面板（默认折叠） -->
+                        <div id="trans-custom-date-panel" class="d-flex gap-2 mt-2" style="display:none!important;">
+                            <input type="date" class="form-control form-control-sm" id="filter-start-date" onchange="applyTransactionFilter()" style="width:140px;">
+                            <input type="date" class="form-control form-control-sm" id="filter-end-date"   onchange="applyTransactionFilter()" style="width:140px;">
                         </div>
                     </div>
                 </div>
@@ -2758,7 +2764,7 @@ async function loadHistoryYear(year) {
         const banner = $('history-mode-banner');
         if (banner) { banner.classList.remove('d-none'); $('history-year-label').textContent = year; }
         // 隐藏快速日期筛选按钮组
-        ['quick-date-filter-group', 'quick-stats-filter-group-1', 'stats-month-nav', 'stats-custom-toggle']
+        ['quick-date-filter-group', 'trans-custom-toggle', 'quick-stats-filter-group-1', 'stats-month-nav', 'stats-custom-toggle']
             .forEach(id => { const el = $(id); if (el) el.style.display = 'none'; });
         // 隐藏账户导航按钮
         const navAccounts = $('nav-btn-accounts');
@@ -2820,7 +2826,7 @@ function exitHistoryMode() {
     const navAccounts = $('nav-btn-accounts');
     if (navAccounts) navAccounts.style.display = '';
     // 恢复快速日期筛选按钮组
-    ['quick-date-filter-group', 'quick-stats-filter-group-1', 'stats-month-nav', 'stats-custom-toggle']
+    ['quick-date-filter-group', 'trans-custom-toggle', 'quick-stats-filter-group-1', 'stats-month-nav', 'stats-custom-toggle']
         .forEach(id => { const el = $(id); if (el) el.style.display = ''; });
     filterUserData();
     renderAllTransactions();
@@ -5146,7 +5152,29 @@ function clearTransactionFilters() {
     currentUserFilterValue = 'all';
     updateUserFilterBtn();
     displayedTransactionCount = 100;
+    // 清除快速按钮高亮、关闭自定义面板
+    $$('#quick-date-filter-group button').forEach(b => b.classList.remove('active'));
+    const panel = $('trans-custom-date-panel');
+    if (panel) panel.style.setProperty('display', 'none', 'important');
+    const toggle = $('trans-custom-toggle');
+    if (toggle) toggle.classList.remove('active');
     applyTransactionFilter();
+}
+
+function toggleTransCustomDate() {
+    const panel  = $('trans-custom-date-panel');
+    const toggle = $('trans-custom-toggle');
+    if (!panel) return;
+    const isHidden = panel.style.cssText.includes('none');
+    if (isHidden) {
+        panel.style.setProperty('display', 'flex', 'important');
+        toggle.classList.add('active');
+        // 展开时清除快速按钮高亮
+        $$('#quick-date-filter-group button').forEach(b => b.classList.remove('active'));
+    } else {
+        panel.style.setProperty('display', 'none', 'important');
+        toggle.classList.remove('active');
+    }
 }
 
 function handleSearchInput() {
@@ -5172,15 +5200,23 @@ function applyTransactionFilter() {
 }
 
 function quickDateFilter(p) {
-    if (historyMode) return; // 历史模式下快捷日期按钮无效
+    if (historyMode) return;
     const today = new Date();
     let start = '', end = '';
-    if (p === '30days') { start = new Date(today); start.setDate(start.getDate() - 30); end = today; }
-    else if (p === 'month') { start = new Date(today.getFullYear(), today.getMonth(), 1); end = new Date(today.getFullYear(), today.getMonth() + 1, 0); }
-    else if (p === 'lastmonth') { start = new Date(today.getFullYear(), today.getMonth() - 1, 1); end = new Date(today.getFullYear(), today.getMonth(), 0); }
-    else if (p === 'year') { start = new Date(today.getFullYear(), 0, 1); end = new Date(today.getFullYear(), 11, 31); }
+    if      (p === '30days')   { start = new Date(today); start.setDate(start.getDate() - 30); end = today; }
+    else if (p === 'month')    { start = new Date(today.getFullYear(), today.getMonth(), 1); end = new Date(today.getFullYear(), today.getMonth() + 1, 0); }
+    else if (p === 'lastmonth'){ start = new Date(today.getFullYear(), today.getMonth() - 1, 1); end = new Date(today.getFullYear(), today.getMonth(), 0); }
+    else if (p === 'year')     { start = new Date(today.getFullYear(), 0, 1); end = new Date(today.getFullYear(), 11, 31); }
     $('filter-start-date').value = start ? formatLocal(start) : '';
-    $('filter-end-date').value = end ? formatLocal(end) : '';
+    $('filter-end-date').value   = end   ? formatLocal(end)   : '';
+    // 高亮当前按钮
+    $$('#quick-date-filter-group button').forEach(b =>
+        b.classList.toggle('active', b.dataset.range === p));
+    // 关闭自定义面板
+    const panel = $('trans-custom-date-panel');
+    if (panel) panel.style.setProperty('display', 'none', 'important');
+    const toggle = $('trans-custom-toggle');
+    if (toggle) toggle.classList.remove('active');
     displayedTransactionCount = 100;
     applyTransactionFilter();
 }
