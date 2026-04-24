@@ -363,8 +363,6 @@ select.compact-form-control { height: 2.1rem; }
 
 .chart-scroll-container { overflow-x: auto; overflow-y: hidden; }
 .chart-scroll-container canvas { min-width: 100%; }
-#expenseCategoryChart, #tagStatsChart, #categoryTrendChart,
-#totalExpenseTrendChart, #monthlyTrendChart { cursor: pointer; }
 
 /* 多图缩略图样式 */
 .thumb-wrapper {
@@ -701,6 +699,50 @@ select.compact-form-control { height: 2.1rem; }
 
 
 
+/* ── 图表钻取底部抽屉 ── */
+#chart-drawer-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+    z-index: 1055; opacity: 0; transition: opacity .25s;
+    pointer-events: none;
+}
+#chart-drawer-backdrop.show { opacity: 1; pointer-events: auto; }
+#chart-drawer {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    z-index: 1056;
+    background: var(--bs-body-bg);
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.18);
+    max-height: 80vh;
+    display: flex; flex-direction: column;
+    transform: translateY(100%);
+    transition: transform .28s cubic-bezier(.4,0,.2,1);
+}
+#chart-drawer.show { transform: translateY(0); }
+#chart-drawer-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid var(--bs-border-color);
+    flex-shrink: 0;
+}
+#chart-drawer-title { font-weight: 600; font-size: 1rem; flex: 1; }
+#chart-drawer-summary { font-size: 0.8rem; color: var(--bs-secondary); }
+#chart-drawer-body {
+    overflow-y: auto; flex: 1;
+    padding: 8px 12px 16px;
+    -webkit-overflow-scrolling: touch;
+}
+#chart-drawer-body .mobile-transaction-card {
+    margin-bottom: 6px;
+    border-radius: 10px;
+    border: 1px solid var(--bs-border-color);
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: background .15s;
+}
+#chart-drawer-body .mobile-transaction-card:active { background: var(--bs-tertiary-bg); }
+#chart-drawer-empty { text-align:center; color:var(--bs-secondary); padding: 32px 0; font-size:0.9rem; }
+#expenseCategoryChart, #tagStatsChart, #categoryTrendChart,
+#totalExpenseTrendChart, #monthlyTrendChart { cursor: pointer; }
 </style>
 </head>
 <body>
@@ -988,7 +1030,7 @@ select.compact-form-control { height: 2.1rem; }
                             <button class="btn btn-sm btn-outline-secondary flex-shrink-0" onclick="clearTransactionFilters()" title="清除所有筛选">
                                 <i class="bi bi-x-circle"></i>
                             </button>
-                            <div style="width: 50px;" class="flex-shrink-0">
+                            <div style="width: 150px;" class="flex-shrink-0">
                                 <div class="input-group input-group-sm">
                                     <span class="input-group-text"><i class="bi bi-search"></i></span>
                                     <input type="text" class="form-control" id="trans-search-input" placeholder="搜索..." oninput="handleSearchInput()">
@@ -1010,9 +1052,9 @@ select.compact-form-control { height: 2.1rem; }
                                 <div class="btn-group btn-group-sm">
                                     <button class="btn btn-outline-secondary" data-range="30days"   onclick="quickDateFilter('30days')">近30天</button>
                                     <button class="btn btn-outline-secondary" data-range="month"    onclick="quickDateFilter('month')">本月</button>
-                                     <!--<button class="btn btn-outline-secondary" data-range="lastmonth"onclick="quickDateFilter('lastmonth')">上月</button> -->
+                                    <button class="btn btn-outline-secondary" data-range="lastmonth"onclick="quickDateFilter('lastmonth')">上月</button>
                                     <button class="btn btn-outline-secondary" data-range="year"     onclick="quickDateFilter('year')">本年</button>
-                                     <!--<button class="btn btn-outline-secondary" data-range="all"      onclick="quickDateFilter('all')">全部</button> -->
+                                    <button class="btn btn-outline-secondary" data-range="all"      onclick="quickDateFilter('all')">全部</button>
                                 </div>
                             </div>
                             <!-- 自定义日期折叠按钮 -->
@@ -1889,8 +1931,6 @@ let displayedTransactionCount = 100;
 let currentAssetAggregation = 'month';
 let transactionDisplayMode = 'all';
 let currentUserFilterValue = 'all';
-// 图表钻取筛选状态（点击图表后激活，清除筛选时重置）
-let drillDownFilter = null; // null | { category, tag, type, label }
 
 const $ = id => document.getElementById(id);
 const $$ = selector => document.querySelectorAll(selector);
@@ -5198,34 +5238,18 @@ function cycleUserFilter() {
 }
 
 function clearTransactionFilters() {
-    // 1. 清空所有输入框
     $('trans-search-input').value = '';
     $('filter-start-date').value = '';
     $('filter-end-date').value = '';
-    
-    // 2. 重置用户筛选（如果有）
     currentUserFilterValue = 'all';
     updateUserFilterBtn();
-    
-    // 3. 取消快速日期按钮的激活状态（高亮）
-    const quickBtns = document.querySelectorAll('#quick-date-filter-group button');
-    quickBtns.forEach(b => b.classList.remove('active'));
-    
-    // 4. 【核心修复】收回自定义日期面板
-    const panel = $('trans-custom-date-panel');
-    if (panel) {
-        panel.style.display = 'none'; // 关键：隐藏面板
-    }
-    
-    // 5. 【辅助修复】取消切换按钮的激活状态（让图标颜色恢复）
-    const toggle = $('trans-custom-toggle');
-    if (toggle) {
-        toggle.classList.remove('active');
-    }
-
-    // 6. 重置钻取筛选器并刷新页面
-    drillDownFilter = null; 
     displayedTransactionCount = 100;
+    // 清除快速按钮高亮、关闭自定义面板
+    $$('#quick-date-filter-group button').forEach(b => b.classList.remove('active'));
+    const panel = $('trans-custom-date-panel');
+    if (panel) panel.style.setProperty('display', 'none', 'important');
+    const toggle = $('trans-custom-toggle');
+    if (toggle) toggle.classList.remove('active');
     applyTransactionFilter();
 }
 
@@ -5251,32 +5275,6 @@ function handleSearchInput() {
         displayedTransactionCount = 100;
         applyTransactionFilter();
     }, 300);
-}
-
-function drillDownToTransactions({ startDate, endDate, category, tag, type, label }) {
-    // 1. 设置日期范围
-    $('filter-start-date').value = startDate || '';
-    $('filter-end-date').value   = endDate   || '';
-    // 2. 清除快速按钮高亮
-    $$('#quick-date-filter-group button').forEach(b => b.classList.remove('active'));
-    // 3. 设置钻取状态
-    drillDownFilter = { category: category || null, tag: tag || null, type: type || null };
-    // 4. 更新提示条
-    const banner = $('drilldown-banner');
-    const labelEl = $('drilldown-label');
-    if (banner && labelEl) {
-        labelEl.textContent = `来自统计图表：${label}`;
-        banner.style.display = 'flex';
-    }
-    // 5. 跳转到交易页并刷新
-    switchTab('transactions', document.querySelector('.nav-link[onclick*="transactions"]'));
-    displayedTransactionCount = 100;
-    renderAllTransactions();
-}
-
-function clearDrillDown() {
-    // 直接调用通用的清除函数
-    clearTransactionFilters();
 }
 
 function applyTransactionFilter() {
@@ -5375,23 +5373,6 @@ function getFilteredTransactions() {
             const accName = acc ? acc.name.toLowerCase() : '';
             if (!JSON.stringify(t).toLowerCase().includes(search) && !accName.includes(search)) return false;
         }
-
-        // 图表钻取筛选
-        if (drillDownFilter) {
-            if (drillDownFilter.type && drillDownFilter.type !== 'all') {
-                if (drillDownFilter.type === 'income'  && t.amount <= 0) return false;
-                if (drillDownFilter.type === 'expense' && t.amount >= 0) return false;
-            }
-            if (drillDownFilter.category) {
-                const matches = t.category === drillDownFilter.category ||
-                    (t.items && t.items.some(it => it.category === drillDownFilter.category));
-                if (!matches) return false;
-            }
-            if (drillDownFilter.tag) {
-                if (!t.tags || !t.tags.split(' ').includes(drillDownFilter.tag)) return false;
-            }
-        }
-
         return true;
     });
 }
@@ -6158,6 +6139,98 @@ function renderStats() {
     }
 }
 
+// ── 图表钻取底部抽屉 ─────────────────────────────────────────
+function showChartDrawer(title, txList) {
+    const drawer   = $('chart-drawer');
+    const backdrop = $('chart-drawer-backdrop');
+    const titleEl  = $('chart-drawer-title');
+    const summaryEl= $('chart-drawer-summary');
+    const body     = $('chart-drawer-body');
+
+    titleEl.textContent = title;
+    body.innerHTML = '';
+
+    if (!txList || txList.length === 0) {
+        body.innerHTML = '<div id="chart-drawer-empty"><i class="bi bi-inbox" style="font-size:2rem;opacity:.4;"></i><br>暂无相关流水</div>';
+        summaryEl.textContent = '';
+    } else {
+        // 汇总金额（换算为当前统计货币）
+        let total = 0;
+        txList.forEach(t => {
+            const acc = accounts.find(a => a.id == t.accountId);
+            if (acc) total += convertAmt(Math.abs(t.amount), acc.currency);
+        });
+        summaryEl.textContent = `共 ${txList.length} 笔  合计 ${formatAmount(total)}`;
+
+        // 按日期倒序
+        const sorted = [...txList].sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
+        sorted.forEach(t => {
+            const acc = accounts.find(a => a.id == t.accountId);
+            if (!acc) return;
+            if (t.isTransfer && t.type === 'income') return;
+
+            const card = document.createElement('div');
+            card.className = 'mobile-transaction-card';
+
+            const accDisplayName = getAccountDisplayName(acc);
+            const descClean = t.desc || '';
+            const tagsHtml = t.tags
+                ? `<span style="color:var(--bs-secondary);font-size:0.78rem;"> <i class="bi bi-tag" style="font-size:0.62rem;"></i> ${t.tags}</span>` : '';
+            const noteHtml = descClean
+                ? `<span style="color:var(--bs-secondary);font-size:0.78rem;"> <i class="bi bi-chat-left-text" style="font-size:0.62rem;"></i> ${descClean}</span>` : '';
+            const attachIconHtml = t.attachmentId
+                ? ` <i class="bi bi-paperclip" style="color:var(--bs-secondary);font-size:0.72rem;"></i>` : '';
+
+            if (t.isTransfer && t.type === 'expense') {
+                const accTo = accounts.find(a => a.id == t.relatedAccountId);
+                if (!accTo) return;
+                card.innerHTML = `
+                <div class="card-line-1">
+                    <div class="fw-bold flex-grow-1" style="font-size:0.85rem;">${accDisplayName} <i class="bi bi-arrow-right-short text-primary"></i> ${getAccountDisplayName(accTo)}</div>
+                    <div class="amount-transfer fw-bold">${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}</div>
+                </div>
+                <div class="card-line-2"><span class="text-muted small">${t.date}${descClean ? ` · ${descClean}` : ''}</span></div>`;
+            } else {
+                const amountClass = t.amount < 0 ? 'amount-expense' : 'amount-income';
+                const catDisplay = t.items && t.items.length > 1
+                    ? t.items[0].category + '等' + (t.items.length - 1) + '项'
+                    : (t.category || '');
+                card.innerHTML = `
+                <div class="card-line-1">
+                    <span class="category-text">${catDisplay}${tagsHtml}${attachIconHtml}</span>
+                    <div class="${amountClass} fw-bold">${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}</div>
+                </div>
+                <div class="card-line-2">
+                    <span class="text-muted small">${t.date} · ${accDisplayName}${noteHtml}</span>
+                </div>`;
+            }
+
+            // 点击卡片打开编辑
+            card.addEventListener('click', () => {
+                closeChartDrawer();
+                setTimeout(() => {
+                    if (t.isTransfer) openEditTransfer(t.id);
+                    else openEditTransaction(t.id);
+                }, 280);
+            });
+
+            body.appendChild(card);
+        });
+    }
+
+    // 显示
+    backdrop.classList.add('show');
+    drawer.classList.add('show');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeChartDrawer() {
+    $('chart-drawer').classList.remove('show');
+    $('chart-drawer-backdrop').classList.remove('show');
+    document.body.style.overflow = '';
+}
+
+// ─────────────────────────────────────────────────────────────
 function renderExpenseChart(data) {
     const ctx = $('expenseCategoryChart');
     if (!ctx) return;
@@ -6180,12 +6253,18 @@ function renderExpenseChart(data) {
         type: 'bar',
         data: { labels: sorted.map(x => x[0]), datasets: [{ label: '支出', data: sorted.map(x => x[1]), backgroundColor: '#dc3545' }] },
         options: {
-            indexAxis: 'y', maintainAspectRatio: false, plugins: { legend: { display: false } },
+            indexAxis: 'y', maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
             scales: { x: { beginAtZero: true } }, animation: { duration: 500 },
-            onClick(e, elements) {
-                if (!elements.length) return;
-                const cat = sorted[elements[0].index][0];
-                drillDownToTransactions({ startDate: currentStatsFilter.startDate, endDate: currentStatsFilter.endDate, category: cat, type: 'expense', label: `支出·${cat}` });
+            onClick(e, els) {
+                if (!els.length) return;
+                const cat = sorted[els[0].index][0];
+                const txs = data.filter(t => {
+                    if (t.amount >= 0 || t.isTransfer) return false;
+                    if (t.items && t.items.length > 1) return t.items.some(it => it.category === cat);
+                    return t.category === cat;
+                });
+                showChartDrawer(`支出排行 · ${cat}`, txs);
             }
         }
     });
@@ -6208,12 +6287,14 @@ function renderTagChart(data) {
         type: 'bar',
         data: { labels: sorted.map(x => x[0]), datasets: [{ label: '金额', data: sorted.map(x => x[1]), backgroundColor: '#0d6efd' }] },
         options: {
-            maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } },
+            maintainAspectRatio: false, indexAxis: 'y',
+            plugins: { legend: { display: false } },
             scales: { x: { beginAtZero: true } }, animation: { duration: 500 },
-            onClick(e, elements) {
-                if (!elements.length) return;
-                const tag = sorted[elements[0].index][0];
-                drillDownToTransactions({ startDate: currentStatsFilter.startDate, endDate: currentStatsFilter.endDate, tag, label: `标签·${tag}` });
+            onClick(e, els) {
+                if (!els.length) return;
+                const tag = sorted[els[0].index][0];
+                const txs = data.filter(t => t.tags && t.tags.split(' ').includes(tag));
+                showChartDrawer(`标签统计 · #${tag}`, txs);
             }
         }
     });
@@ -6247,15 +6328,19 @@ function renderTrendChart(data) {
         },
         options: {
             maintainAspectRatio: false, plugins: { legend: { display: true } }, animation: { duration: 500 },
-            onClick(e, elements) {
-                if (!elements.length) return;
-                const el = elements[0];
+            onClick(e, els) {
+                if (!els.length) return;
+                const el = els[0];
                 const month = labels[el.index];
                 const dsLabel = chartInstances.trend.data.datasets[el.datasetIndex].label;
                 if (dsLabel === '结余') return;
-                const type = dsLabel === '收入' ? 'income' : 'expense';
-                const lastDay = new Date(+month.split('-')[0], +month.split('-')[1], 0).getDate().toString().padStart(2, '0');
-                drillDownToTransactions({ startDate: `${month}-01`, endDate: `${month}-${lastDay}`, type, label: `${month}·${dsLabel}` });
+                const isIncome = dsLabel === '收入';
+                const txs = data.filter(t => {
+                    if (t.isTransfer) return false;
+                    if (!t.date.startsWith(month)) return false;
+                    return isIncome ? t.amount > 0 : t.amount < 0;
+                });
+                showChartDrawer(`月度收支趋势 · ${month} · ${dsLabel}`, txs);
             }
         }
     });
@@ -6341,11 +6426,15 @@ function renderCategoryTrendChart(data) {
         data: { labels, datasets: [{ label: cat, data: labels.map(m => months[m]), borderColor: '#fd7e14', backgroundColor: 'rgba(253,126,20,0.5)', fill: true, tension: 0.4 }] },
         options: {
             maintainAspectRatio: false, plugins: { legend: { display: true } }, animation: { duration: 500 },
-            onClick(e, elements) {
-                if (!elements.length) return;
-                const month = labels[elements[0].index];
-                const lastDay = new Date(+month.split('-')[0], +month.split('-')[1], 0).getDate().toString().padStart(2, '0');
-                drillDownToTransactions({ startDate: `${month}-01`, endDate: `${month}-${lastDay}`, category: cat, type: 'expense', label: `${month}·${cat}` });
+            onClick(e, els) {
+                if (!els.length) return;
+                const month = labels[els[0].index];
+                const txs = (data || []).filter(t => {
+                    if (t.amount >= 0 || t.isTransfer || !t.date.startsWith(month)) return false;
+                    if (t.items && t.items.length > 1) return t.items.some(it => it.category === cat);
+                    return t.category === cat;
+                });
+                showChartDrawer(`单类别趋势 · ${cat} · ${month}`, txs);
             }
         }
     });
@@ -6369,12 +6458,13 @@ function renderTotalExpenseTrendChart(data) {
         type: 'bar',
         data: { labels, datasets: [{ label: '总支出', data: labels.map(m => months[m]), borderColor: '#dc3545', backgroundColor: 'rgba(220,53,69,0.5)', fill: true, tension: 0.4 }] },
         options: {
-            maintainAspectRatio: false, plugins: { legend: { display: true } }, scales: { y: { beginAtZero: true } }, animation: { duration: 500 },
-            onClick(e, elements) {
-                if (!elements.length) return;
-                const month = labels[elements[0].index];
-                const lastDay = new Date(+month.split('-')[0], +month.split('-')[1], 0).getDate().toString().padStart(2, '0');
-                drillDownToTransactions({ startDate: `${month}-01`, endDate: `${month}-${lastDay}`, type: 'expense', label: `${month}·总支出` });
+            maintainAspectRatio: false, plugins: { legend: { display: true } },
+            scales: { y: { beginAtZero: true } }, animation: { duration: 500 },
+            onClick(e, els) {
+                if (!els.length) return;
+                const month = labels[els[0].index];
+                const txs = (data || []).filter(t => t.amount < 0 && !t.isTransfer && t.date.startsWith(month));
+                showChartDrawer(`总支出趋势 · ${month}`, txs);
             }
         }
     });
@@ -6406,51 +6496,6 @@ function updateSelectOptions() {
 
     updateUserFilterBtn();
 }
-
-// ── 图表下钻：跳转到交易页并自动设置筛选 ────────────────────
-function drillDownToTransactions({ startDate, endDate, category, tag, type, label }) {
-    $('filter-start-date').value = startDate || '';
-    $('filter-end-date').value   = endDate   || '';
-    if (startDate || endDate) {
-        const panel  = $('trans-custom-date-panel');
-        const toggle = $('trans-custom-toggle');
-        if (panel)  panel.style.setProperty('display', 'flex', 'important');
-        if (toggle) toggle.classList.add('active');
-        $$('#quick-date-filter-group button').forEach(b => b.classList.remove('active'));
-    }
-    drillDownFilter = (category || tag || type) ? { category, tag, type, label } : null;
-    renderDrillDownBadge();
-    displayedTransactionCount = 100;
-    const transBtn = document.querySelector('.nav-link[onclick*="transactions"]');
-    switchTab('transactions', transBtn);
-    applyTransactionFilter();
-}
-
-function renderDrillDownBadge() {
-    let badge = $('drilldown-badge');
-    if (!drillDownFilter) {
-        if (badge) badge.remove();
-        return;
-    }
-    if (!badge) {
-        badge = document.createElement('div');
-        badge.id = 'drilldown-badge';
-        badge.style.cssText = 'display:flex;align-items:center;gap:6px;background:#fff3cd;border:1px solid #ffda6a;color:#664d03;border-radius:20px;padding:2px 10px;font-size:0.8rem;cursor:pointer;white-space:nowrap;flex-shrink:0;';
-        badge.title = '点击清除下钻筛选';
-        badge.onclick = clearDrillDown;
-        const filterRow = document.querySelector('.filter-bar-row');
-        if (filterRow) filterRow.insertBefore(badge, filterRow.children[1]);
-    }
-    badge.innerHTML = `<i class="bi bi-funnel-fill"></i> ${drillDownFilter.label || ''} <i class="bi bi-x-lg" style="font-size:0.65rem;"></i>`;
-}
-
-function clearDrillDown() {
-    drillDownFilter = null;
-    renderDrillDownBadge();
-    displayedTransactionCount = 100;
-    renderAllTransactions();
-}
-// ────────────────────────────────────────────────────────────
 
 function switchTab(t, el) {
     // 历史模式下禁止进入账户页
@@ -7150,5 +7195,17 @@ window.addEventListener('online', () => {
 });
 </script>
 
+<!-- 图表钻取底部抽屉 -->
+<div id="chart-drawer-backdrop" onclick="closeChartDrawer()"></div>
+<div id="chart-drawer">
+    <div id="chart-drawer-header">
+        <span id="chart-drawer-title"></span>
+        <span id="chart-drawer-summary"></span>
+        <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="closeChartDrawer()">
+            <i class="bi bi-x-lg"></i>
+        </button>
+    </div>
+    <div id="chart-drawer-body"></div>
+</div>
 
 </body></html>
