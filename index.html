@@ -1029,15 +1029,6 @@ select.compact-form-control { height: 2.1rem; }
                     </div>
                 </div>
 
-                <!-- 钻取筛选提示条（点击统计图表后显示） -->
-                <div id="drilldown-banner" class="alert alert-warning py-1 px-3 mb-2 d-flex align-items-center gap-2" style="display:none;font-size:0.85rem;">
-                    <i class="bi bi-funnel-fill"></i>
-                    <span id="drilldown-label" class="flex-grow-1"></span>
-                    <button class="btn btn-sm btn-outline-warning py-0" onclick="clearDrillDown()">
-                        <i class="bi bi-x"></i> 清除筛选
-                    </button>
-                </div>
-
             <!-- 桌面端表格 -->
             <div class="excel-table-container">
                 <div id="transaction-table-container">
@@ -5207,22 +5198,29 @@ function cycleUserFilter() {
 }
 
 function clearTransactionFilters() {
+    // 1. 清空搜索框和日期
     $('trans-search-input').value = '';
     $('filter-start-date').value = '';
     $('filter-end-date').value = '';
+    
+    // 2. 重置用户筛选（如果有）
     currentUserFilterValue = 'all';
     updateUserFilterBtn();
-    displayedTransactionCount = 100;
-    // 清除快速按钮高亮、关闭自定义面板
+    
+    // 3. 重置快速日期按钮状态
     $$('#quick-date-filter-group button').forEach(b => b.classList.remove('active'));
+    
+    // 4. 收回自定义日期面板
     const panel = $('trans-custom-date-panel');
-    if (panel) panel.style.setProperty('display', 'none', 'important');
+    if (panel) panel.style.display = 'none';
     const toggle = $('trans-custom-toggle');
     if (toggle) toggle.classList.remove('active');
-    // 清除钻取筛选
-    drillDownFilter = null;
-    const banner = $('drilldown-banner');
-    if (banner) banner.style.display = 'none';
+
+    // 5. 【关键修改】直接在这里重置钻取筛选器
+    drillDownFilter = null; 
+
+    // 6. 重新执行筛选并渲染
+    displayedTransactionCount = 100;
     applyTransactionFilter();
 }
 
@@ -5272,10 +5270,8 @@ function drillDownToTransactions({ startDate, endDate, category, tag, type, labe
 }
 
 function clearDrillDown() {
-    drillDownFilter = null;
-    renderDrillDownBadge();
-    displayedTransactionCount = 100;
-    renderAllTransactions();
+    // 直接调用通用的清除函数
+    clearTransactionFilters();
 }
 
 function applyTransactionFilter() {
