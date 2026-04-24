@@ -363,6 +363,8 @@ select.compact-form-control { height: 2.1rem; }
 
 .chart-scroll-container { overflow-x: auto; overflow-y: hidden; }
 .chart-scroll-container canvas { min-width: 100%; }
+#expenseCategoryChart, #tagStatsChart, #categoryTrendChart,
+#totalExpenseTrendChart, #monthlyTrendChart { cursor: pointer; }
 
 /* 多图缩略图样式 */
 .thumb-wrapper {
@@ -486,7 +488,6 @@ select.compact-form-control { height: 2.1rem; }
     flex-shrink: 0;
 }
 .fab-btn:active { transform: scale(0.92); box-shadow: 0 2px 8px rgba(0,0,0,0.18); }
-.fab-btn-transfer { background: #fd7e14; color: #fff; }
 .fab-btn-add      { background: #0d6efd; color: #fff; }
 
 
@@ -767,16 +768,28 @@ select.compact-form-control { height: 2.1rem; }
 
             <hr class="my-2">
 
-            <!-- 离线模式 -->
+            <!-- 数据来源（离线/在线切换） -->
             <div class="d-flex align-items-center justify-content-between mb-2">
                 <span class="small text-muted">数据来源</span>
-                <button id="offline-mode-btn" class="btn btn-sm btn-warning" onclick="toggleOfflineMode()" style="font-size:0.72rem; padding:0.2rem 0.6rem;"><i class="bi bi-wifi-off"></i> 离线模式</button>
+                <button id="offline-mode-btn" class="btn btn-sm btn-warning" onclick="toggleOfflineMode()"
+                        style="font-size:0.75rem;padding:0.25rem 0.75rem;min-width:110px;text-align:center;">
+                    <i class="bi bi-wifi-off"></i> 离线模式
+                </button>
             </div>
 
-            <!-- 新建数据文件 -->
+            <!-- 同步通知 -->
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="small text-muted">操作反馈</span>
+                <button id="verbose-toast-btn" onclick="toggleVerboseToast()"
+                        class="btn btn-sm btn-outline-secondary"
+                        style="font-size:0.75rem;padding:0.25rem 0.75rem;min-width:110px;text-align:center;"></button>
+            </div>
+
+            <!-- 初始化 -->
             <div class="d-flex align-items-center justify-content-between">
                 <span class="small text-muted">初始化</span>
-                <button class="btn btn-outline-success btn-sm" onclick="createNewDataFile()">
+                <button class="btn btn-sm btn-outline-success" onclick="createNewDataFile()"
+                        style="font-size:0.75rem;padding:0.25rem 0.75rem;min-width:110px;text-align:center;">
                     <i class="bi bi-file-earmark-plus"></i> 新建数据文件
                 </button>
             </div>
@@ -820,7 +833,7 @@ select.compact-form-control { height: 2.1rem; }
         </div>
     </div>
     <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;pointer-events:none;">
-        <span class="text-muted" style="font-size:0.7rem;">version 2.1.8</span>
+        <span class="text-muted" style="font-size:0.7rem;">version 2.0.3</span>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
@@ -877,10 +890,7 @@ select.compact-form-control { height: 2.1rem; }
 
         <!-- 手机端悬浮操作按钮 (仅交易页显示) -->
         <div id="mobile-fab-group" class="d-none d-md-none">
-            <button class="fab-btn fab-btn-transfer" onclick="openNewTransfer()" title="新增转账">
-                <i class="bi bi-arrow-left-right"></i>
-            </button>
-            <button class="fab-btn fab-btn-add" onclick="openNewTransaction()" title="新增收支">
+            <button class="fab-btn fab-btn-add" onclick="openNewTransaction()" title="新增交易">
                 <i class="bi bi-plus-lg"></i>
             </button>
         </div>
@@ -1017,6 +1027,15 @@ select.compact-form-control { height: 2.1rem; }
                             <input type="date" class="form-control form-control-sm" id="filter-end-date"   onchange="applyTransactionFilter()" style="width:140px;">
                         </div>
                     </div>
+                </div>
+
+                <!-- 钻取筛选提示条（点击统计图表后显示） -->
+                <div id="drilldown-banner" class="alert alert-warning py-1 px-3 mb-2 d-flex align-items-center gap-2" style="display:none;font-size:0.85rem;">
+                    <i class="bi bi-funnel-fill"></i>
+                    <span id="drilldown-label" class="flex-grow-1"></span>
+                    <button class="btn btn-sm btn-outline-warning py-0" onclick="clearDrillDown()">
+                        <i class="bi bi-x"></i> 清除筛选
+                    </button>
                 </div>
 
             <!-- 桌面端表格 -->
@@ -1832,6 +1851,8 @@ const DEFAULT_RATES = { 'EUR_RMB': 7.8, 'USD_RMB': 7.2, 'HKD_RMB': 0.92, 'JPY_RM
 
 // GAS_URL 不再硬编码，从 localStorage 读取，首次使用时在登录界面填写
 let GAS_URL = localStorage.getItem('APP_gas_url') || '';
+// 详细同步通知开关（默认关闭，减少打扰）
+let verboseToast = localStorage.getItem('APP_verbose_toast') === 'true';
 let GAS_TOKEN = localStorage.getItem('APP_gas_token') || '';
 const CURRENCY_SYMBOLS = { 'RMB': '¥', 'EUR': '€', 'USD': '$', 'HKD': 'HK$', 'JPY': '¥', 'GBP': '£' };
 
@@ -1877,6 +1898,8 @@ let displayedTransactionCount = 100;
 let currentAssetAggregation = 'month';
 let transactionDisplayMode = 'all';
 let currentUserFilterValue = 'all';
+// 图表钻取筛选状态（点击图表后激活，清除筛选时重置）
+let drillDownFilter = null; // null | { category, tag, type, label }
 
 const $ = id => document.getElementById(id);
 const $$ = selector => document.querySelectorAll(selector);
@@ -1958,6 +1981,26 @@ function initLoginSettingsUI() {
     initGasUrlUI();
     initGasTokenUI();
     initDeviceNameUI();
+    renderVerboseToastBtn();
+}
+
+function renderVerboseToastBtn() {
+    const btn = $('verbose-toast-btn');
+    if (!btn) return;
+    if (verboseToast) {
+        btn.className = 'btn btn-sm btn-success';
+        btn.innerHTML = '<i class="bi bi-bell-fill"></i> 详细提示：开';
+    } else {
+        btn.className = 'btn btn-sm btn-outline-secondary';
+        btn.innerHTML = '<i class="bi bi-bell-slash"></i> 详细提示：关';
+    }
+    btn.style.cssText = 'font-size:0.75rem;padding:0.25rem 0.75rem;min-width:110px;text-align:center;';
+}
+
+function toggleVerboseToast() {
+    verboseToast = !verboseToast;
+    localStorage.setItem('APP_verbose_toast', verboseToast ? 'true' : 'false');
+    renderVerboseToastBtn();
 }
 
 function initGasUrlUI() {
@@ -2067,7 +2110,7 @@ function saveDeviceName() {
     $('device-name-input').value = val;
     const hint = $('device-name-hint');
     if (hint) hint.textContent = `已保存：${val}`;
-    showToast(`设备昵称已保存：${val}`, 'success', 2000);
+    if (verboseToast) showToast(`设备昵称已保存：${val}`, 'success', 2000);
 }
 
 
@@ -2102,14 +2145,24 @@ function toggleOfflineMode() {
     if (!offlineMode && GAS_URL) {
         loadFromDrive();
     } else if (offlineMode) {
-        // 切换到离线模式：清空 Drive 数据，强制手动选文件
+        // 切换到离线模式：清除所有网络缓存，防止下次误用旧云端数据
+        localStorage.removeItem('APP_raw_cache');
+        localStorage.removeItem('APP_drive_version');
+        // 同时清除所有本地草稿
+        const draftKeys = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k && k.startsWith('APP_local_draft_')) draftKeys.push(k);
+        }
+        draftKeys.forEach(k => localStorage.removeItem(k));
+        // 清空内存数据，强制手动选文件
         inMemoryLoadedData = null;
         userPassword = ''; dataUsers = [];
         accounts = []; transactions = []; plannedTransactions = [];
         userAccounts = []; userTransactions = []; userPlannedTransactions = [];
         $('user-section').style.display = 'none';
         $('password-section').style.display = 'none';
-        showToast('离线模式：已清空在线数据，请手动选择本地文件', 'warning', 0);
+        showToast('已切换离线模式，本地缓存已清除，请手动选择文件', 'warning', 4000);
     }
 }
 
@@ -2129,7 +2182,7 @@ function switchUser() {
     if (inMemoryLoadedData) {
         window._suppressAutoLogin = true;  // 手动切换时不自动选用户
         onDataLoaded();
-        showToast('数据已就绪，请选择用户0', 'success', 3000);
+        if (verboseToast) showToast('数据已就绪，请选择用户', 'success', 3000);
     }
 }
 
@@ -2150,7 +2203,7 @@ function onFileSelected() {
     const file = $('data-import-file').files[0];
     if (!file) return;
 
-    showToast(`已选择：${file.name}`, 'info', 2000);
+    if (verboseToast) showToast(`已选择：${file.name}`, 'info', 2000);
     const usernameHint = $('login-username-hint');
     if (usernameHint) usernameHint.value = file.name;
     $('password-error').classList.add('d-none');
@@ -2211,7 +2264,7 @@ function decryptAndLoadData() {
             categories = data.categories || DEFAULT_CATEGORIES;
             exchangeRates = data.exchangeRates || DEFAULT_RATES;
             $('password-error').classList.add('d-none');
-            showToast('Drive 数据解密成功，自动选择用户1', 'success', 3000);
+            if (verboseToast) showToast('Drive 数据解密成功，请选择用户', 'success', 3000);
             window._driveMode = false;
             window._driveRawContent = null;
             onDataLoaded();
@@ -2287,7 +2340,7 @@ function onDataLoaded() {
         }
     });
 
-    showToast('数据加载成功，自动选择用户2', 'success', 3000);
+    if (verboseToast) showToast('数据加载成功，请选择用户', 'success', 3000);
     $('user-section').style.display = 'block';
 
     // 渲染用户按钮
@@ -2347,7 +2400,7 @@ function createNewDataFile() {
     userPassword = pwd;
     dataUsers = users;
 
-    showToast('新数据文件已创建，请选择用户3', 'success', 3000);
+    if (verboseToast) showToast('新数据文件已创建，请选择用户', 'success', 3000);
     $('password-section').style.display = 'none';
     onDataLoaded();
 }
@@ -2639,7 +2692,7 @@ async function archiveYear(year) {
         }
 
         filterUserData(); loadAllData(); renderAccounts(); renderAllTransactions(); renderArchiveManagementUI();
-        showToast(`${year} 年数据存档成功`, 'success');
+        if (verboseToast) showToast(`${year} 年数据存档成功`, 'success');
     } catch (err) {
         showToast(`存档失败：${err.message}`, 'error');
     }
@@ -2703,7 +2756,7 @@ async function unarchiveYear(year) {
         } catch(e) { console.warn('[unarchiveYear] 删除归档文件失败（非致命）:', e); }
 
         filterUserData(); loadAllData(); renderAccounts(); renderAllTransactions(); renderArchiveManagementUI();
-        showToast(`${year} 年数据解档成功`, 'success');
+        if (verboseToast) showToast(`${year} 年数据解档成功`, 'success');
     } catch (err) {
         showToast(`解档失败：${err.message}`, 'error');
     }
@@ -2779,7 +2832,7 @@ async function loadHistoryYear(year) {
         if (fab) fab.classList.add('d-none');
 
         renderAllTransactions(); renderStats();
-        showToast(`已加载 ${year} 年存档（只读）`, 'success');
+        if (verboseToast) showToast(`已加载 ${year} 年存档（只读）`, 'success');
     } catch (err) {
         historyMode = false; historyYear = null;
         showToast(`加载失败：${err.message}`, 'error');
@@ -2832,7 +2885,7 @@ function exitHistoryMode() {
     renderAllTransactions();
     renderAccounts();
     renderStats();
-    showToast('已退出历史模式', 'info');
+    if (verboseToast) showToast('已退出历史模式', 'info');
 }
 
 /**
@@ -3245,9 +3298,11 @@ async function syncToDrive(manual = false, forcePush = false) {
             } catch(_) {}
             window._driveRawContent = content;
             try { localStorage.setItem('APP_raw_cache', content); } catch(_) {}
-            // 只在云端确实有新数据时才提示
+            // 同步成功：有新数据时提示条数；无新数据时详细模式提示「已同步」，否则静默关闭
             if (pulledNewCount > 0) {
                 showToast(`已同步 ${pulledNewCount} 条新数据`, 'success');
+            } else {
+                showToast('已同步', 'success');
             }
         } else {
             throw new Error('GAS 返回：' + text);
@@ -3280,12 +3335,12 @@ async function loadFromDrive() {
             categories = parsed.categories || DEFAULT_CATEGORIES;
             exchangeRates = parsed.exchangeRates || DEFAULT_RATES;
             $('password-section').style.display = 'none';
-            showToast('已加载本地缓存', 'info', 3000);
+            if (verboseToast) showToast('已加载本地缓存', 'info', 3000);
             onDataLoaded();
         } catch(_) {
             // 加密缓存：立即让用户输密码，完全不等网络
             window._driveMode = true;
-            showToast('请输入密码', 'info', 0);
+            showToast('请输入密码', 'info', 3000);
             $('user-section').style.display = 'none';
             $('user-buttons').innerHTML = '';
             $('password-error').classList.add('d-none');
@@ -3333,7 +3388,7 @@ async function loadFromDrive() {
             categories = parsed.categories || DEFAULT_CATEGORIES;
             exchangeRates = parsed.exchangeRates || DEFAULT_RATES;
             $('password-section').style.display = 'none';
-            showToast('已从 Drive 加载，自动选择用户4', 'success', 3000);
+            if (verboseToast) showToast('已从 Drive 加载数据', 'success', 3000);
             onDataLoaded();
             return;
         } catch(_) {}
@@ -3367,7 +3422,8 @@ async function backgroundSyncAfterLogin() {
         } catch (_) { return; } // 无网络，静默放弃
 
         if (remoteVersion === '0' || remoteVersion === localVersion) {
-            // 版本一致，无需更新，静默不提示
+            // 版本一致，无需更新
+            if (verboseToast) showToast('数据已是最新', 'success', 2000);
             return;
         }
 
@@ -3399,15 +3455,15 @@ async function backgroundSyncAfterLogin() {
         const isFormOpen = $('add-transaction-section') && $('add-transaction-section').classList.contains('show');
 
         if (isFormOpen) {
-            // 用户正在填表单：只更新内存，弹提示，不刷UI
             inMemoryLoadedData = merged;
             saveUserData();
             if (newCount > 0) {
                 showToast(`后台已同步 ${newCount} 条新数据，关闭表单后自动刷新`, 'info', 4000);
+            } else {
+                showToast('后台已同步', 'info', 2000);
             }
             window._pendingUIRefresh = true;
         } else {
-            // 用户没在填表单：合并后刷新列表
             inMemoryLoadedData = merged;
             loadAllData();
             filterUserData();
@@ -3415,6 +3471,8 @@ async function backgroundSyncAfterLogin() {
             renderAccounts();
             if (newCount > 0) {
                 showToast(`已同步 ${newCount} 条新数据`, 'success', 3000);
+            } else {
+                showToast('已同步', 'success', 2000);
             }
         }
     } catch(e) {
@@ -3457,7 +3515,7 @@ function exportEncData() {
     a.click();
 
     clearUnsavedFlag();
-    showToast('加密文件已导出', 'success');
+    if (verboseToast) showToast('加密文件已导出', 'success');
 }
 
 function exportJsonData() {
@@ -3469,7 +3527,7 @@ function exportJsonData() {
     a.download = `ledger_backup_${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     clearUnsavedFlag();
-    showToast('JSON已导出', 'success');
+    if (verboseToast) showToast('JSON已导出', 'success');
 }
 
 function exportTransactionCsv() {
@@ -3791,7 +3849,7 @@ function deleteAccount(id) {
             renderAccounts();
             updateSelectOptions();
             triggerAutoSave();
-            showToast('账户已删除', 'success');
+            if (verboseToast) showToast('账户已删除', 'success');
         }
     }
 }
@@ -3849,7 +3907,7 @@ $('account-form').addEventListener('submit', (e) => {
         saveUserData(); triggerAutoSave(); loadAllData(); filterUserData(); renderAccounts();
         bootstrap.Modal.getInstance($('accountModal')).hide();
         e.target.reset();
-        showToast('账户已添加', 'success');
+        if (verboseToast) showToast('账户已添加', 'success');
     } else {
         const id = parseInt($('acc-id').value);
         const acc = accounts.find(a => a.id === id);
@@ -3874,7 +3932,7 @@ $('account-form').addEventListener('submit', (e) => {
             saveUserData(); triggerAutoSave(); loadAllData(); filterUserData(); renderAccounts();
             displayedTransactionCount = 100; renderAllTransactions();
             bootstrap.Modal.getInstance($('accountModal')).hide();
-            showToast('账户已更新', 'success');
+            if (verboseToast) showToast('账户已更新', 'success');
             if (currentDetailAccountId === id) refreshDetailContent(id);
         }
     }
@@ -4183,6 +4241,9 @@ function _initNewTransModal(mode, title) {
     const today = new Date().toISOString().split('T')[0];
     $('edit-trans-id').value = '';
     $('edit-trans-mode').value = mode;
+    // 同步重置转账表单状态，防止切 tab 后误走编辑分支
+    $('edit-transfer-id').value = '';
+    $('edit-transfer-mode').value = mode;
     $('editTransactionModalTitle').textContent = _userTitle(title);
     $('edit-trans-submit-btn').textContent = '保存';
     $('edit-trans-delete-btn').style.setProperty('display','none','important');
@@ -5035,7 +5096,7 @@ $('edit-transaction-form').addEventListener('submit', (e) => {
         const hintEl = $('edit-trans-desc-hint');
         if (hintEl) hintEl.style.display = 'none';
         resetAttachmentUI();
-        showToast('已添加', 'success', 1500);
+        if (verboseToast) showToast('已添加', 'success', 1500);
     } else {
         const id = parseFloat($('edit-trans-id').value);
         const t = transactions.find(x => x.id === id);
@@ -5094,7 +5155,7 @@ $('edit-transfer-form').addEventListener('submit', (e) => {
         $('edit-transfer-amount-out').value = '';
         $('edit-transfer-amount-in').value = '';
         $('edit-transfer-desc').value = '';
-        showToast('已添加', 'success', 1500);
+        if (verboseToast) showToast('已添加', 'success', 1500);
     } else {
         const id = parseFloat($('edit-transfer-id').value);
         const tOut = transactions.find(x => x.id === id);
@@ -5158,6 +5219,10 @@ function clearTransactionFilters() {
     if (panel) panel.style.setProperty('display', 'none', 'important');
     const toggle = $('trans-custom-toggle');
     if (toggle) toggle.classList.remove('active');
+    // 清除钻取筛选
+    drillDownFilter = null;
+    const banner = $('drilldown-banner');
+    if (banner) banner.style.display = 'none';
     applyTransactionFilter();
 }
 
@@ -5185,7 +5250,36 @@ function handleSearchInput() {
     }, 300);
 }
 
-function applyTransactionFilter() {
+function drillDownToTransactions({ startDate, endDate, category, tag, type, label }) {
+    // 1. 设置日期范围
+    $('filter-start-date').value = startDate || '';
+    $('filter-end-date').value   = endDate   || '';
+    // 2. 清除快速按钮高亮
+    $$('#quick-date-filter-group button').forEach(b => b.classList.remove('active'));
+    // 3. 设置钻取状态
+    drillDownFilter = { category: category || null, tag: tag || null, type: type || null };
+    // 4. 更新提示条
+    const banner = $('drilldown-banner');
+    const labelEl = $('drilldown-label');
+    if (banner && labelEl) {
+        labelEl.textContent = `来自统计图表：${label}`;
+        banner.style.display = 'flex';
+    }
+    // 5. 跳转到交易页并刷新
+    switchTab('transactions', document.querySelector('.nav-link[onclick*="transactions"]'));
+    displayedTransactionCount = 100;
+    renderAllTransactions();
+}
+
+function clearDrillDown() {
+    drillDownFilter = null;
+    const banner = $('drilldown-banner');
+    if (banner) banner.style.display = 'none';
+    displayedTransactionCount = 100;
+    renderAllTransactions();
+}
+
+
     // 历史模式：强制将日期限制在该年范围内（JS 层二次校验，防止绕过 min/max）
     if (historyMode && historyYear) {
         const yStart = `${historyYear}-01-01`;
@@ -5281,6 +5375,23 @@ function getFilteredTransactions() {
             const accName = acc ? acc.name.toLowerCase() : '';
             if (!JSON.stringify(t).toLowerCase().includes(search) && !accName.includes(search)) return false;
         }
+
+        // 图表钻取筛选
+        if (drillDownFilter) {
+            if (drillDownFilter.type && drillDownFilter.type !== 'all') {
+                if (drillDownFilter.type === 'income'  && t.amount <= 0) return false;
+                if (drillDownFilter.type === 'expense' && t.amount >= 0) return false;
+            }
+            if (drillDownFilter.category) {
+                const matches = t.category === drillDownFilter.category ||
+                    (t.items && t.items.some(it => it.category === drillDownFilter.category));
+                if (!matches) return false;
+            }
+            if (drillDownFilter.tag) {
+                if (!t.tags || !t.tags.split(' ').includes(drillDownFilter.tag)) return false;
+            }
+        }
+
         return true;
     });
 }
@@ -5633,7 +5744,7 @@ window.addEventListener('load', () => {
             filterUserData();
             renderAllTransactions();
             renderAccounts();
-            showToast('已刷新最新数据', 'success', 2500);
+            if (verboseToast) showToast('已刷新最新数据', 'success', 2500);
         }
     });
     updateTransferModeButton();
@@ -5697,7 +5808,7 @@ async function handleAttachmentSelected(input) {
             currentIds.push(storedId);
             $('edit-trans-attachment-id').value = currentIds.join(',');
             renderAttachmentThumbs(currentIds);
-            showToast(`已上传（${fileSizeKB}KB）`, 'success', 3000);
+            if (verboseToast) showToast(`已上传（${fileSizeKB}KB）`, 'success', 3000);
         } else {
             showToast('上传失败：' + (result.error || '未知错误'), 'error');
         }
@@ -6068,7 +6179,15 @@ function renderExpenseChart(data) {
     chartInstances.expense = new Chart(ctx, {
         type: 'bar',
         data: { labels: sorted.map(x => x[0]), datasets: [{ label: '支出', data: sorted.map(x => x[1]), backgroundColor: '#dc3545' }] },
-        options: { indexAxis: 'y', maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } }, animation: { duration: 500 } }
+        options: {
+            indexAxis: 'y', maintainAspectRatio: false, plugins: { legend: { display: false } },
+            scales: { x: { beginAtZero: true } }, animation: { duration: 500 },
+            onClick(e, elements) {
+                if (!elements.length) return;
+                const cat = sorted[elements[0].index][0];
+                drillDownToTransactions({ startDate: currentStatsFilter.startDate, endDate: currentStatsFilter.endDate, category: cat, type: 'expense', label: `支出·${cat}` });
+            }
+        }
     });
 }
 
@@ -6088,7 +6207,15 @@ function renderTagChart(data) {
     chartInstances.tags = new Chart(ctx, {
         type: 'bar',
         data: { labels: sorted.map(x => x[0]), datasets: [{ label: '金额', data: sorted.map(x => x[1]), backgroundColor: '#0d6efd' }] },
-        options: { maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } }, animation: { duration: 500 } }
+        options: {
+            maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } },
+            scales: { x: { beginAtZero: true } }, animation: { duration: 500 },
+            onClick(e, elements) {
+                if (!elements.length) return;
+                const tag = sorted[elements[0].index][0];
+                drillDownToTransactions({ startDate: currentStatsFilter.startDate, endDate: currentStatsFilter.endDate, tag, label: `标签·${tag}` });
+            }
+        }
     });
 }
 
@@ -6118,7 +6245,19 @@ function renderTrendChart(data) {
                 { label: '结余', data: labels.map(m => months[m].inc - months[m].exp), borderColor: '#0d6efd', type: 'line', fill: false, tension: 0.4 }
             ]
         },
-        options: { maintainAspectRatio: false, plugins: { legend: { display: true } }, animation: { duration: 500 } }
+        options: {
+            maintainAspectRatio: false, plugins: { legend: { display: true } }, animation: { duration: 500 },
+            onClick(e, elements) {
+                if (!elements.length) return;
+                const el = elements[0];
+                const month = labels[el.index];
+                const dsLabel = chartInstances.trend.data.datasets[el.datasetIndex].label;
+                if (dsLabel === '结余') return;
+                const type = dsLabel === '收入' ? 'income' : 'expense';
+                const lastDay = new Date(+month.split('-')[0], +month.split('-')[1], 0).getDate().toString().padStart(2, '0');
+                drillDownToTransactions({ startDate: `${month}-01`, endDate: `${month}-${lastDay}`, type, label: `${month}·${dsLabel}` });
+            }
+        }
     });
 }
 
@@ -6200,7 +6339,15 @@ function renderCategoryTrendChart(data) {
     chartInstances.cattrend = new Chart(ctx, {
         type: 'bar',
         data: { labels, datasets: [{ label: cat, data: labels.map(m => months[m]), borderColor: '#fd7e14', backgroundColor: 'rgba(253,126,20,0.5)', fill: true, tension: 0.4 }] },
-        options: { maintainAspectRatio: false, plugins: { legend: { display: true } }, animation: { duration: 500 } }
+        options: {
+            maintainAspectRatio: false, plugins: { legend: { display: true } }, animation: { duration: 500 },
+            onClick(e, elements) {
+                if (!elements.length) return;
+                const month = labels[elements[0].index];
+                const lastDay = new Date(+month.split('-')[0], +month.split('-')[1], 0).getDate().toString().padStart(2, '0');
+                drillDownToTransactions({ startDate: `${month}-01`, endDate: `${month}-${lastDay}`, category: cat, type: 'expense', label: `${month}·${cat}` });
+            }
+        }
     });
 }
 
@@ -6221,7 +6368,15 @@ function renderTotalExpenseTrendChart(data) {
     chartInstances.totalExpense = new Chart(ctx, {
         type: 'bar',
         data: { labels, datasets: [{ label: '总支出', data: labels.map(m => months[m]), borderColor: '#dc3545', backgroundColor: 'rgba(220,53,69,0.5)', fill: true, tension: 0.4 }] },
-        options: { maintainAspectRatio: false, plugins: { legend: { display: true } }, scales: { y: { beginAtZero: true } }, animation: { duration: 500 } }
+        options: {
+            maintainAspectRatio: false, plugins: { legend: { display: true } }, scales: { y: { beginAtZero: true } }, animation: { duration: 500 },
+            onClick(e, elements) {
+                if (!elements.length) return;
+                const month = labels[elements[0].index];
+                const lastDay = new Date(+month.split('-')[0], +month.split('-')[1], 0).getDate().toString().padStart(2, '0');
+                drillDownToTransactions({ startDate: `${month}-01`, endDate: `${month}-${lastDay}`, type: 'expense', label: `${month}·总支出` });
+            }
+        }
     });
 }
 
@@ -6251,6 +6406,51 @@ function updateSelectOptions() {
 
     updateUserFilterBtn();
 }
+
+// ── 图表下钻：跳转到交易页并自动设置筛选 ────────────────────
+function drillDownToTransactions({ startDate, endDate, category, tag, type, label }) {
+    $('filter-start-date').value = startDate || '';
+    $('filter-end-date').value   = endDate   || '';
+    if (startDate || endDate) {
+        const panel  = $('trans-custom-date-panel');
+        const toggle = $('trans-custom-toggle');
+        if (panel)  panel.style.setProperty('display', 'flex', 'important');
+        if (toggle) toggle.classList.add('active');
+        $$('#quick-date-filter-group button').forEach(b => b.classList.remove('active'));
+    }
+    drillDownFilter = (category || tag || type) ? { category, tag, type, label } : null;
+    renderDrillDownBadge();
+    displayedTransactionCount = 100;
+    const transBtn = document.querySelector('.nav-link[onclick*="transactions"]');
+    switchTab('transactions', transBtn);
+    applyTransactionFilter();
+}
+
+function renderDrillDownBadge() {
+    let badge = $('drilldown-badge');
+    if (!drillDownFilter) {
+        if (badge) badge.remove();
+        return;
+    }
+    if (!badge) {
+        badge = document.createElement('div');
+        badge.id = 'drilldown-badge';
+        badge.style.cssText = 'display:flex;align-items:center;gap:6px;background:#fff3cd;border:1px solid #ffda6a;color:#664d03;border-radius:20px;padding:2px 10px;font-size:0.8rem;cursor:pointer;white-space:nowrap;flex-shrink:0;';
+        badge.title = '点击清除下钻筛选';
+        badge.onclick = clearDrillDown;
+        const filterRow = document.querySelector('.filter-bar-row');
+        if (filterRow) filterRow.insertBefore(badge, filterRow.children[1]);
+    }
+    badge.innerHTML = `<i class="bi bi-funnel-fill"></i> ${drillDownFilter.label || ''} <i class="bi bi-x-lg" style="font-size:0.65rem;"></i>`;
+}
+
+function clearDrillDown() {
+    drillDownFilter = null;
+    renderDrillDownBadge();
+    displayedTransactionCount = 100;
+    renderAllTransactions();
+}
+// ────────────────────────────────────────────────────────────
 
 function switchTab(t, el) {
     // 历史模式下禁止进入账户页
@@ -6371,7 +6571,7 @@ function changeDataPassword() {
     triggerAutoSave();
     bootstrap.Modal.getInstance($('changePwdModal')).hide();
     initPasswordHint();
-    showToast('密码已更新，请导出加密文件保存', 'success');
+    if (verboseToast) showToast('密码已更新，请导出加密文件保存', 'success');
 }
 
 function initPasswordHint() {
@@ -6451,7 +6651,7 @@ function setExchangeRate(from, to, rate) {
     exchangeRates[key] = parseFloat(rate);
     saveUserData(); triggerAutoSave();
     renderExchangeRateSettings();
-    showToast('汇率已更新', 'success');
+    if (verboseToast) showToast('汇率已更新', 'success');
 }
 
 function renderCategorySettings() {
@@ -6512,7 +6712,7 @@ function removeCategory(type, cat) {
     if (plannedTransactions) plannedTransactions.forEach(p => { if (p.type === type && p.category === cat) p.category = '未分类'; });
     saveUserData(); triggerAutoSave(); renderCategorySettings();
     displayedTransactionCount = 100; renderAllTransactions(); renderStats();
-    showToast(`分类 "${cat}" 已删除`, 'success');
+    if (verboseToast) showToast(`分类 "${cat}" 已删除`, 'success');
 }
 
 function editCategoryName(type, oldName) {
@@ -6527,7 +6727,7 @@ function editCategoryName(type, oldName) {
     if (plannedTransactions) plannedTransactions.forEach(p => { if (p.type === type && p.category === oldName) p.category = trimmedName; });
     saveUserData(); triggerAutoSave(); renderCategorySettings();
     displayedTransactionCount = 100; renderAllTransactions(); renderStats();
-    showToast(`分类已重命名: "${oldName}" → "${trimmedName}"`, 'success');
+    if (verboseToast) showToast(`分类已重命名: "${oldName}" → "${trimmedName}"`, 'success');
 }
 
 let resizingColumn = null, startX = 0, startWidth = 0;
@@ -6687,7 +6887,7 @@ $('planned-form').addEventListener('submit', (e) => {
         saveUserData(); triggerAutoSave(); loadAllData(); filterUserData(); renderPlannedTransactions();
         bootstrap.Modal.getInstance($('plannedModal')).hide();
         e.target.reset();
-        showToast('计划已创建', 'success');
+        if (verboseToast) showToast('计划已创建', 'success');
     } else {
         const id = parseInt($('planned-id').value);
         const plan = plannedTransactions.find(p => p.id === id);
@@ -6706,7 +6906,7 @@ $('planned-form').addEventListener('submit', (e) => {
             plan.updatedAt = Date.now();
             saveUserData(); triggerAutoSave(); loadAllData(); filterUserData(); renderPlannedTransactions();
             bootstrap.Modal.getInstance($('plannedModal')).hide();
-            showToast('计划已更新', 'success');
+            if (verboseToast) showToast('计划已更新', 'success');
         }
     }
 });
@@ -6717,7 +6917,7 @@ function deletePlanned(id) {
     if (index > -1 && plannedTransactions[index].ownerName === currentUserName) {
         plannedTransactions.splice(index, 1);
         saveUserData(); triggerAutoSave(); loadAllData(); filterUserData(); renderPlannedTransactions();
-        showToast('计划已删除', 'success');
+        if (verboseToast) showToast('计划已删除', 'success');
     }
 }
 
@@ -6825,7 +7025,7 @@ function addUserFromSettings(e) {
     saveUserData(); triggerAutoSave();
     input.value = '';
     renderUserManagement();
-    showToast(`已添加用户 "${name}"`, 'success');
+    if (verboseToast) showToast(`已添加用户 "${name}"`, 'success');
 }
 
 function renameUser(oldName) {
@@ -6851,7 +7051,7 @@ function renameUser(oldName) {
     }
     saveUserData(); triggerAutoSave();
     renderUserManagement();
-    showToast(`已重命名为 "${trimmed}"`, 'success');
+    if (verboseToast) showToast(`已重命名为 "${trimmed}"`, 'success');
 }
 
 function removeUser(name) {
@@ -6863,7 +7063,7 @@ function removeUser(name) {
     delete inMemoryLoadedData.allUserData[name];
     saveUserData(); triggerAutoSave();
     renderUserManagement();
-    showToast(`已删除用户 "${name}"`, 'success');
+    if (verboseToast) showToast(`已删除用户 "${name}"`, 'success');
 }
 
 // ── 标签建议下拉（点击/聚焦触发） ──
