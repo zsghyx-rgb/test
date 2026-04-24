@@ -988,7 +988,7 @@ select.compact-form-control { height: 2.1rem; }
                             <button class="btn btn-sm btn-outline-secondary flex-shrink-0" onclick="clearTransactionFilters()" title="清除所有筛选">
                                 <i class="bi bi-x-circle"></i>
                             </button>
-                            <div style="width: 150px;" class="flex-shrink-0">
+                            <div style="width: 50px;" class="flex-shrink-0">
                                 <div class="input-group input-group-sm">
                                     <span class="input-group-text"><i class="bi bi-search"></i></span>
                                     <input type="text" class="form-control" id="trans-search-input" placeholder="搜索..." oninput="handleSearchInput()">
@@ -1010,9 +1010,9 @@ select.compact-form-control { height: 2.1rem; }
                                 <div class="btn-group btn-group-sm">
                                     <button class="btn btn-outline-secondary" data-range="30days"   onclick="quickDateFilter('30days')">近30天</button>
                                     <button class="btn btn-outline-secondary" data-range="month"    onclick="quickDateFilter('month')">本月</button>
-                                    <button class="btn btn-outline-secondary" data-range="lastmonth"onclick="quickDateFilter('lastmonth')">上月</button>
+                                     <!--<button class="btn btn-outline-secondary" data-range="lastmonth"onclick="quickDateFilter('lastmonth')">上月</button> -->
                                     <button class="btn btn-outline-secondary" data-range="year"     onclick="quickDateFilter('year')">本年</button>
-                                    <button class="btn btn-outline-secondary" data-range="all"      onclick="quickDateFilter('all')">全部</button>
+                                     <!--<button class="btn btn-outline-secondary" data-range="all"      onclick="quickDateFilter('all')">全部</button> -->
                                 </div>
                             </div>
                             <!-- 自定义日期折叠按钮 -->
@@ -5198,7 +5198,7 @@ function cycleUserFilter() {
 }
 
 function clearTransactionFilters() {
-    // 1. 清空搜索框和日期
+    // 1. 清空所有输入框
     $('trans-search-input').value = '';
     $('filter-start-date').value = '';
     $('filter-end-date').value = '';
@@ -5207,19 +5207,24 @@ function clearTransactionFilters() {
     currentUserFilterValue = 'all';
     updateUserFilterBtn();
     
-    // 3. 重置快速日期按钮状态
-    $$('#quick-date-filter-group button').forEach(b => b.classList.remove('active'));
+    // 3. 取消快速日期按钮的激活状态（高亮）
+    const quickBtns = document.querySelectorAll('#quick-date-filter-group button');
+    quickBtns.forEach(b => b.classList.remove('active'));
     
-    // 4. 收回自定义日期面板
+    // 4. 【核心修复】收回自定义日期面板
     const panel = $('trans-custom-date-panel');
-    if (panel) panel.style.display = 'none';
+    if (panel) {
+        panel.style.display = 'none'; // 关键：隐藏面板
+    }
+    
+    // 5. 【辅助修复】取消切换按钮的激活状态（让图标颜色恢复）
     const toggle = $('trans-custom-toggle');
-    if (toggle) toggle.classList.remove('active');
+    if (toggle) {
+        toggle.classList.remove('active');
+    }
 
-    // 5. 【关键修改】直接在这里重置钻取筛选器
+    // 6. 重置钻取筛选器并刷新页面
     drillDownFilter = null; 
-
-    // 6. 重新执行筛选并渲染
     displayedTransactionCount = 100;
     applyTransactionFilter();
 }
