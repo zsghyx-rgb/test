@@ -5273,13 +5273,12 @@ function drillDownToTransactions({ startDate, endDate, category, tag, type, labe
 
 function clearDrillDown() {
     drillDownFilter = null;
-    const banner = $('drilldown-banner');
-    if (banner) banner.style.display = 'none';
+    renderDrillDownBadge();
     displayedTransactionCount = 100;
     renderAllTransactions();
 }
 
-
+function applyTransactionFilter() {
     // 历史模式：强制将日期限制在该年范围内（JS 层二次校验，防止绕过 min/max）
     if (historyMode && historyYear) {
         const yStart = `${historyYear}-01-01`;
