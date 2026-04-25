@@ -699,7 +699,59 @@ select.compact-form-control { height: 2.1rem; }
 
 
 
-/* ── 图表钻取底部抽屉 ── */
+/* ── 交易页收起式筛选面板 ── */
+#trans-filter-panel {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height .25s ease, padding .25s ease;
+    padding: 0 0;
+}
+#trans-filter-panel.open {
+    max-height: 200px;
+    padding: 8px 0 4px;
+}
+#trans-search-panel {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height .2s ease;
+}
+#trans-search-panel.open { max-height: 56px; }
+
+/* ── 统计页收起式筛选面板 ── */
+#stats-filter-panel {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height .25s ease;
+}
+#stats-filter-panel.open { max-height: 120px; }
+
+/* ── 统计页子Tab ── */
+.stats-sub-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid var(--bs-border-color);
+    margin-bottom: 16px;
+}
+.stats-sub-tab-btn {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    padding: 6px 18px;
+    font-size: 0.9rem;
+    color: var(--bs-secondary);
+    cursor: pointer;
+    transition: color .15s, border-color .15s;
+}
+.stats-sub-tab-btn.active {
+    color: var(--bs-primary);
+    border-bottom-color: var(--bs-primary);
+    font-weight: 600;
+}
+.stats-sub-pane { display: none; }
+.stats-sub-pane.active { display: block; }
+</style>
+</head>
 #chart-drawer-backdrop {
     position: fixed; inset: 0; background: rgba(0,0,0,0.45);
     z-index: 1055; opacity: 0; transition: opacity .25s;
@@ -875,7 +927,7 @@ select.compact-form-control { height: 2.1rem; }
         </div>
     </div>
     <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;pointer-events:none;">
-        <span class="text-muted" style="font-size:0.7rem;">version 2.0.3</span>
+        <span class="text-muted" style="font-size:0.7rem;">version 2.0.4</span>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
@@ -1010,66 +1062,73 @@ select.compact-form-control { height: 2.1rem; }
         </div>
 
         <div id="view-transactions" class="view-section active-view">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h4 class="mb-0">交易管理</h4>
-                <div class="d-none d-md-flex gap-2">
-                    <button class="btn btn-outline-warning btn-sm px-3" onclick="openNewTransfer()" title="新增转账">
+            <div class="page-sticky-header pt-1">
+                <!-- 标题行：标题 + 搜索 + 筛选 + 新增 -->
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <h4 class="mb-0 flex-grow-1">交易管理</h4>
+                    <button class="btn btn-sm btn-outline-secondary" id="trans-search-btn" onclick="toggleTransSearch()" title="搜索">
+                        <i class="bi bi-search"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" id="trans-filter-btn" onclick="toggleTransFilter()" title="筛选">
+                        <i class="bi bi-sliders"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-warning d-none d-md-inline-flex" onclick="openNewTransfer()" title="新增转账">
                         <i class="bi bi-arrow-left-right"></i>
                     </button>
-                    <button class="btn btn-primary" onclick="openNewTransaction()" title="新增交易">
+                    <button class="btn btn-sm btn-primary d-none d-md-inline-flex" onclick="openNewTransaction()" title="新增交易">
                         <i class="bi bi-plus-lg"></i>
                     </button>
                 </div>
-            </div>
 
-            <!-- 筛选栏 -->
-                <div class="card mb-3 border-0 shadow-sm" style="background-color: var(--bs-tertiary-bg);">
-                    <div class="card-body py-2">
-                        <!-- 主筛选行（单行不换行） -->
-                        <div class="filter-bar-row">
+                <!-- 搜索展开行 -->
+                <div id="trans-search-panel">
+                    <div class="input-group input-group-sm mb-1">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control" id="trans-search-input" placeholder="搜索类别、备注、标签..." oninput="handleSearchInput()" autocomplete="off">
+                        <button class="btn btn-outline-secondary" onclick="clearSearchInput()"><i class="bi bi-x"></i></button>
+                    </div>
+                </div>
+
+                <!-- 筛选展开面板 -->
+                <div id="trans-filter-panel">
+                    <div style="overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;">
+                        <div class="d-flex align-items-center gap-2 flex-nowrap pb-1" style="white-space:nowrap;min-width:max-content;">
+                            <!-- 清除 -->
                             <button class="btn btn-sm btn-outline-secondary flex-shrink-0" onclick="clearTransactionFilters()" title="清除所有筛选">
                                 <i class="bi bi-x-circle"></i>
                             </button>
-                            <div style="width: 150px;" class="flex-shrink-0">
-                                <div class="input-group input-group-sm">
-                                    <span class="input-group-text"><i class="bi bi-search"></i></span>
-                                    <input type="text" class="form-control" id="trans-search-input" placeholder="搜索..." oninput="handleSearchInput()">
-                                </div>
-                            </div>
-                            <div class="flex-shrink-0">
-                                <button class="btn btn-sm btn-outline-secondary" id="trans-user-filter-btn" onclick="cycleUserFilter()" title="点击切换用户筛选">
-                                    <i class="bi bi-person"></i> <span id="trans-user-filter-text">所有用户</span>
-                                </button>
-                            </div>
-                            <div class="flex-shrink-0">
-                                <button class="btn btn-sm btn-primary" id="transfer-mode-toggle" onclick="toggleDisplayMode()" title="点击切换显示模式">
-                                    <i class="bi bi-eye" id="transfer-mode-icon"></i>
-                                    <span id="transfer-mode-text">收支+转账</span>
-                                </button>
-                            </div>
-                            <!-- 快速日期筛选 -->
+                            <!-- 用户 -->
+                            <button class="btn btn-sm btn-outline-secondary flex-shrink-0" id="trans-user-filter-btn" onclick="cycleUserFilter()">
+                                <i class="bi bi-person"></i> <span id="trans-user-filter-text">所有用户</span>
+                            </button>
+                            <!-- 显示模式 -->
+                            <button class="btn btn-sm btn-outline-secondary flex-shrink-0" id="transfer-mode-toggle" onclick="toggleDisplayMode()">
+                                <i class="bi bi-eye" id="transfer-mode-icon"></i>
+                                <span id="transfer-mode-text">收支+转账</span>
+                            </button>
+                            <!-- 快速日期 -->
                             <div id="quick-date-filter-group" class="flex-shrink-0">
                                 <div class="btn-group btn-group-sm">
-                                    <button class="btn btn-outline-secondary" data-range="30days"   onclick="quickDateFilter('30days')">近30天</button>
-                                    <button class="btn btn-outline-secondary" data-range="month"    onclick="quickDateFilter('month')">本月</button>
-                                    <button class="btn btn-outline-secondary" data-range="lastmonth"onclick="quickDateFilter('lastmonth')">上月</button>
-                                    <button class="btn btn-outline-secondary" data-range="year"     onclick="quickDateFilter('year')">本年</button>
-                                    <button class="btn btn-outline-secondary" data-range="all"      onclick="quickDateFilter('all')">全部</button>
+                                    <button class="btn btn-outline-secondary" data-range="30days"    onclick="quickDateFilter('30days')">近30天</button>
+                                    <button class="btn btn-outline-secondary" data-range="month"     onclick="quickDateFilter('month')">本月</button>
+                                    <button class="btn btn-outline-secondary" data-range="lastmonth" onclick="quickDateFilter('lastmonth')">上月</button>
+                                    <button class="btn btn-outline-secondary" data-range="year"      onclick="quickDateFilter('year')">本年</button>
+                                    <button class="btn btn-outline-secondary" data-range="all"       onclick="quickDateFilter('all')">全部</button>
                                 </div>
                             </div>
-                            <!-- 自定义日期折叠按钮 -->
-                            <button class="btn btn-sm btn-outline-secondary flex-shrink-0"
-                                    id="trans-custom-toggle" onclick="toggleTransCustomDate()" title="自定义日期范围">
+                            <!-- 自定义日期 -->
+                            <button class="btn btn-sm btn-outline-secondary flex-shrink-0" id="trans-custom-toggle" onclick="toggleTransCustomDate()">
                                 <i class="bi bi-calendar3"></i> 自定义
                             </button>
                         </div>
-                        <!-- 自定义日期面板（默认折叠） -->
-                        <div id="trans-custom-date-panel" class="d-flex gap-2 mt-2" style="display:none!important;">
-                            <input type="date" class="form-control form-control-sm" id="filter-start-date" onchange="applyTransactionFilter()" style="width:140px;">
-                            <input type="date" class="form-control form-control-sm" id="filter-end-date"   onchange="applyTransactionFilter()" style="width:140px;">
-                        </div>
+                    </div>
+                    <!-- 自定义日期面板 -->
+                    <div id="trans-custom-date-panel" class="d-flex gap-2 mt-1" style="display:none!important;">
+                        <input type="date" class="form-control form-control-sm" id="filter-start-date" onchange="applyTransactionFilter()" style="width:140px;">
+                        <input type="date" class="form-control form-control-sm" id="filter-end-date"   onchange="applyTransactionFilter()" style="width:140px;">
                     </div>
                 </div>
+            </div>
 
             <!-- 桌面端表格 -->
             <div class="excel-table-container">
@@ -1139,20 +1198,8 @@ select.compact-form-control { height: 2.1rem; }
 
         <div id="view-stats" class="view-section">
             <div class="page-sticky-header pt-1">
-                <!-- 行1：标题 + 消费类型 + 货币切换 -->
-                <div class="d-flex align-items-center mb-2 gap-2">
-                    <h4 class="mb-0 flex-shrink-0">数据分析</h4>
-                    <button class="btn btn-sm btn-outline-secondary ms-auto flex-shrink-0" onclick="openSpendingAnalysis()">
-                        <i class="bi bi-pie-chart-fill"></i> 消费类型
-                    </button>
-                    <div style="overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex:1;min-width:0;">
-                        <div class="btn-group flex-nowrap" id="stats-currency-btns" style="white-space:nowrap;"></div>
-                    </div>
-                </div>
-                <!-- 行2：月份导航 + 快速范围 + 自定义按钮（单行，横向滚动） -->
-                <div style="overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;" id="stats-filter-row">
-                <div class="d-flex align-items-center gap-2 flex-nowrap" style="white-space:nowrap;min-width:max-content;">
-                    <!-- 月份导航 -->
+                <!-- 标题行：月导航常驻 + 货币 + 筛选图标 -->
+                <div class="d-flex align-items-center gap-2 mb-1">
                     <div class="d-flex align-items-center flex-shrink-0" id="stats-month-nav">
                         <button class="btn btn-sm btn-outline-secondary px-2" id="stats-prev-month-btn"
                                 onclick="navigateStatsMonth(-1)" title="上月">&#8249;</button>
@@ -1162,121 +1209,174 @@ select.compact-form-control { height: 2.1rem; }
                         <button class="btn btn-sm btn-outline-secondary px-2" id="stats-next-month-btn"
                                 onclick="navigateStatsMonth(1)" title="下月">&#8250;</button>
                     </div>
-                    <!-- 快速范围按钮 -->
-                    <div id="quick-stats-filter-group-1" class="flex-shrink-0">
-                        <div class="btn-group btn-group-sm">
-                            <button class="btn btn-outline-secondary" data-range="30days"  onclick="quickStatsDateFilter('30days')">近30天</button>
-                            <button class="btn btn-outline-secondary" data-range="year"    onclick="quickStatsDateFilter('year')">本年</button>
-                            <button class="btn btn-outline-secondary" data-range="3months" onclick="quickStatsDateFilter('3months')">3个月</button>
-                            <button class="btn btn-outline-secondary" data-range="6months" onclick="quickStatsDateFilter('6months')">6个月</button>
-                            <button class="btn btn-outline-secondary" data-range="12months"onclick="quickStatsDateFilter('12months')">12个月</button>
-                            <button class="btn btn-outline-secondary" data-range="all"     onclick="quickStatsDateFilter('all')">全部</button>
-                        </div>
+                    <span class="flex-grow-1"></span>
+                    <div style="overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;max-width:160px;">
+                        <div class="btn-group btn-group-sm flex-nowrap" id="stats-currency-btns" style="white-space:nowrap;"></div>
                     </div>
-                    <!-- 自定义日期切换按钮 -->
-                    <button class="btn btn-sm btn-outline-secondary flex-shrink-0"
-                            id="stats-custom-toggle" onclick="toggleStatsCustomDate()" title="自定义日期范围">
-                        <i class="bi bi-calendar3"></i> 自定义
+                    <button class="btn btn-sm btn-outline-secondary flex-shrink-0" id="stats-filter-btn" onclick="toggleStatsFilter()" title="日期范围筛选">
+                        <i class="bi bi-sliders"></i>
                     </button>
                 </div>
-                </div>
-                <!-- 自定义日期面板（默认折叠） -->
-                <div id="stats-custom-date-panel" class="d-flex gap-2 mt-2" style="display:none!important;">
-                    <input type="date" class="form-control form-control-sm" id="stats-start-date" onchange="applyStatsFilter()" style="width:130px;">
-                    <input type="date" class="form-control form-control-sm" id="stats-end-date"   onchange="applyStatsFilter()" style="width:130px;">
-                </div>
-            </div>
-
-            <div class="alert alert-light border shadow-sm mb-4 clickable-amount" onclick="toggleAmountVisibility()">
-                <div class="row text-center">
-                    <div class="col-4">期间收入: <b class="text-success" id="stat-income-display">0.00</b></div>
-                    <div class="col-4">期间支出: <b class="text-danger" id="stat-expense-display">0.00</b></div>
-                    <div class="col-4">期间结余: <b class="text-primary" id="stat-net-display">0.00</b></div>
-                </div>
-            </div>
-
-            <div class="row g-3" id="charts-container">
-                <div class="col-md-6">
-                    <div class="card shadow-sm chart-card">
-                        <div class="card-body">
-                            <h6 class="card-title">支出排行</h6>
-                            <div style="height: 350px;"><canvas id="expenseCategoryChart"></canvas></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="card shadow-sm chart-card">
-                        <div class="card-body">
-                            <h6 class="card-title">标签统计</h6>
-                            <div style="height: 350px;"><canvas id="tagStatsChart"></canvas></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-6">
-                    <div class="card shadow-sm chart-card">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <h6 class="card-title mb-0">单类别趋势</h6>
-                                <select class="form-select form-select-sm w-auto" id="category-trend-select" onchange="renderCategoryTrendChart()"></select>
-                            </div>
-                            <div class="chart-scroll-container" style="height: 300px;">
-                                <canvas id="categoryTrendChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-6">
-                    <div class="card shadow-sm chart-card">
-                        <div class="card-body">
-                            <h6 class="card-title">总支出趋势</h6>
-                            <div class="chart-scroll-container" style="height: 350px;">
-                                <canvas id="totalExpenseTrendChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-12">
-                    <div class="card shadow-sm chart-card">
-                        <div class="card-body">
-                            <h6 class="card-title">月度收支趋势</h6>
-                            <div class="chart-scroll-container" style="height: 350px;">
-                                <canvas id="monthlyTrendChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-12">
-                    <div class="card shadow-sm chart-card">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <h6 class="card-title mb-0">历史资产趋势</h6>
-                                <div class="d-flex gap-2">
-                                    <button class="btn btn-sm btn-primary" onclick="toggleChartVisibility('history-chart-wrapper', this)">
-                                        <i class="bi bi-eye"></i> 显示图表
-                                    </button>
-                                    <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-secondary" onclick="switchAssetAggregation('day', this)">按天</button>
-                                        <button class="btn btn-outline-secondary" onclick="switchAssetAggregation('week', this)">按周</button>
-                                        <button class="btn btn-outline-secondary active" onclick="switchAssetAggregation('month', this)">按月</button>
-                                    </div>
+                <!-- 筛选展开面板 -->
+                <div id="stats-filter-panel">
+                    <div style="overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:6px;">
+                        <div class="d-flex align-items-center gap-2 flex-nowrap" style="white-space:nowrap;min-width:max-content;">
+                            <div id="quick-stats-filter-group-1" class="flex-shrink-0">
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-secondary" data-range="30days"   onclick="quickStatsDateFilter('30days')">近30天</button>
+                                    <button class="btn btn-outline-secondary" data-range="year"     onclick="quickStatsDateFilter('year')">本年</button>
+                                    <button class="btn btn-outline-secondary" data-range="3months"  onclick="quickStatsDateFilter('3months')">3个月</button>
+                                    <button class="btn btn-outline-secondary" data-range="6months"  onclick="quickStatsDateFilter('6months')">6个月</button>
+                                    <button class="btn btn-outline-secondary" data-range="12months" onclick="quickStatsDateFilter('12months')">12个月</button>
+                                    <button class="btn btn-outline-secondary" data-range="all"      onclick="quickStatsDateFilter('all')">全部</button>
                                 </div>
                             </div>
-                            <div id="history-chart-archive-notice" class="d-none alert alert-warning py-2 px-3 mb-2" style="font-size:0.85rem;">
-                                <i class="bi bi-archive me-1"></i>
-                                <span id="history-chart-archive-text"></span>
-                                <a href="#" class="ms-2" onclick="switchTab('settings', document.querySelector('[onclick*=settings]')); return false;">前往设置查看存档</a>
+                            <button class="btn btn-sm btn-outline-secondary flex-shrink-0" id="stats-custom-toggle" onclick="toggleStatsCustomDate()">
+                                <i class="bi bi-calendar3"></i> 自定义
+                            </button>
+                        </div>
+                    </div>
+                    <div id="stats-custom-date-panel" class="d-flex gap-2 mt-1" style="display:none!important;">
+                        <input type="date" class="form-control form-control-sm" id="stats-start-date" onchange="applyStatsFilter()" style="width:130px;">
+                        <input type="date" class="form-control form-control-sm" id="stats-end-date"   onchange="applyStatsFilter()" style="width:130px;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 子Tab -->
+            <div class="stats-sub-tabs mt-2">
+                <button class="stats-sub-tab-btn active" id="stats-tab-overview" onclick="switchStatsTab('overview')">
+                    <i class="bi bi-bar-chart-line"></i> 概览
+                </button>
+                <button class="stats-sub-tab-btn" id="stats-tab-spending" onclick="switchStatsTab('spending')">
+                    <i class="bi bi-pie-chart-fill"></i> 消费类型
+                </button>
+            </div>
+
+            <!-- 概览子页 -->
+            <div id="stats-pane-overview" class="stats-sub-pane active">
+                <div class="alert alert-light border shadow-sm mb-4 clickable-amount" onclick="toggleAmountVisibility()">
+                    <div class="row text-center">
+                        <div class="col-4">期间收入: <b class="text-success" id="stat-income-display">0.00</b></div>
+                        <div class="col-4">期间支出: <b class="text-danger" id="stat-expense-display">0.00</b></div>
+                        <div class="col-4">期间结余: <b class="text-primary" id="stat-net-display">0.00</b></div>
+                    </div>
+                </div>
+                <div class="row g-3" id="charts-container">
+                    <div class="col-md-6">
+                        <div class="card shadow-sm chart-card">
+                            <div class="card-body">
+                                <h6 class="card-title">支出排行</h6>
+                                <div style="height:350px;"><canvas id="expenseCategoryChart"></canvas></div>
                             </div>
-                            <div id="history-chart-wrapper" class="d-none" style="height: 350px;">
-                                <canvas id="assetHistoryChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card shadow-sm chart-card">
+                            <div class="card-body">
+                                <h6 class="card-title">标签统计</h6>
+                                <div style="height:350px;"><canvas id="tagStatsChart"></canvas></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="card shadow-sm chart-card">
+                            <div class="card-body">
+                                <h6 class="card-title">月度收支趋势</h6>
+                                <div class="chart-scroll-container" style="height:350px;"><canvas id="monthlyTrendChart"></canvas></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="card shadow-sm chart-card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="card-title mb-0">单类别趋势</h6>
+                                    <select class="form-select form-select-sm" style="width:auto;" id="category-trend-select" onchange="renderStats()"></select>
+                                </div>
+                                <div class="chart-scroll-container" style="height:300px;"><canvas id="categoryTrendChart"></canvas></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="card shadow-sm chart-card">
+                            <div class="card-body">
+                                <h6 class="card-title">总支出趋势</h6>
+                                <div class="chart-scroll-container" style="height:300px;"><canvas id="totalExpenseTrendChart"></canvas></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="card shadow-sm chart-card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="card-title mb-0">历史资产趋势</h6>
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-sm btn-primary" onclick="toggleChartVisibility('history-chart-wrapper', this)">
+                                            <i class="bi bi-eye"></i> 显示图表
+                                        </button>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-secondary" onclick="switchAssetAggregation('day', this)">按天</button>
+                                            <button class="btn btn-outline-secondary" onclick="switchAssetAggregation('week', this)">按周</button>
+                                            <button class="btn btn-outline-secondary active" onclick="switchAssetAggregation('month', this)">按月</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="history-chart-archive-notice" class="d-none alert alert-warning py-2 px-3 mb-2" style="font-size:0.85rem;">
+                                    <i class="bi bi-archive me-1"></i>
+                                    <span id="history-chart-archive-text"></span>
+                                    <a href="#" class="ms-2" onclick="switchTab('settings', document.querySelector('[onclick*=settings]')); return false;">前往设置查看存档</a>
+                                </div>
+                                <div id="history-chart-wrapper" class="d-none" style="height:350px;">
+                                    <canvas id="assetHistoryChart"></canvas>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
 
+            <!-- 消费类型子页 -->
+            <div id="stats-pane-spending" class="stats-sub-pane">
+                <div class="d-flex gap-2 align-items-center mb-3 flex-wrap">
+                    <button class="btn btn-sm btn-outline-secondary flex-shrink-0" id="sa-user-filter-btn" onclick="saCycleUser()">
+                        <i class="bi bi-person"></i> <span id="sa-user-filter-text">所有用户</span>
+                    </button>
+                    <div class="btn-group btn-group-sm flex-shrink-0">
+                        <button class="btn btn-outline-secondary" onclick="saQuickDate('month')">本月</button>
+                        <button class="btn btn-outline-secondary" onclick="saQuickDate('3months')">3月</button>
+                        <button class="btn btn-outline-secondary" onclick="saQuickDate('year')">本年</button>
+                        <button class="btn btn-outline-secondary" onclick="saQuickDate('all')">全部</button>
+                    </div>
+                    <input type="date" class="form-control form-control-sm flex-shrink-0" id="sa-start-date" style="width:130px;" onchange="renderSpendingAnalysis()">
+                    <input type="date" class="form-control form-control-sm flex-shrink-0" id="sa-end-date"   style="width:130px;" onchange="renderSpendingAnalysis()">
+                </div>
+                <div class="row g-2 mb-3" id="sa-summary-cards"></div>
+                <div class="card shadow-sm mb-3">
+                    <div class="card-body">
+                        <h6 class="card-title">占比分布</h6>
+                        <div style="height:260px;"><canvas id="saTypeChart"></canvas></div>
+                    </div>
+                </div>
+                <div class="card shadow-sm mb-3">
+                    <div class="card-body">
+                        <h6 class="card-title">月度趋势</h6>
+                        <div style="height:260px;overflow-x:auto;"><canvas id="saTrendChart"></canvas></div>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mb-2 flex-wrap align-items-center">
+                    <h6 class="mb-0 me-1">支出明细</h6>
+                    <select class="form-select form-select-sm" id="sa-filter-type" style="width:110px;" onchange="renderSaDetailList()">
+                        <option value="">全部类型</option>
+                        <option value="need">必须的</option>
+                        <option value="want">想要的</option>
+                        <option value="regret">后悔的</option>
+                        <option value="none">未标记</option>
+                    </select>
+                    <input type="text" class="form-control form-control-sm" id="sa-filter-search" style="width:150px;" placeholder="搜索类别/备注..." oninput="renderSaDetailList()">
+                    <span class="text-muted small ms-auto" id="sa-detail-count"></span>
+                </div>
+                <div id="sa-detail-list" class="mb-4"></div>
             </div>
         </div>
 
@@ -2848,7 +2948,8 @@ async function loadHistoryYear(year) {
         const banner = $('history-mode-banner');
         if (banner) { banner.classList.remove('d-none'); $('history-year-label').textContent = year; }
         // 隐藏快速日期筛选按钮组
-        ['quick-date-filter-group', 'trans-custom-toggle', 'quick-stats-filter-group-1', 'stats-month-nav', 'stats-custom-toggle']
+        ['quick-date-filter-group', 'trans-custom-toggle', 'trans-filter-btn', 'trans-search-btn',
+         'quick-stats-filter-group-1', 'stats-month-nav', 'stats-custom-toggle', 'stats-filter-btn']
             .forEach(id => { const el = $(id); if (el) el.style.display = 'none'; });
         // 隐藏账户导航按钮
         const navAccounts = $('nav-btn-accounts');
@@ -2910,7 +3011,8 @@ function exitHistoryMode() {
     const navAccounts = $('nav-btn-accounts');
     if (navAccounts) navAccounts.style.display = '';
     // 恢复快速日期筛选按钮组
-    ['quick-date-filter-group', 'trans-custom-toggle', 'quick-stats-filter-group-1', 'stats-month-nav', 'stats-custom-toggle']
+    ['quick-date-filter-group', 'trans-custom-toggle', 'trans-filter-btn', 'trans-search-btn',
+     'quick-stats-filter-group-1', 'stats-month-nav', 'stats-custom-toggle', 'stats-filter-btn']
         .forEach(id => { const el = $(id); if (el) el.style.display = ''; });
     filterUserData();
     renderAllTransactions();
@@ -4823,19 +4925,14 @@ function saCycleUser() {
 }
 
 function openSpendingAnalysis() {
-    const view = $('view-spending-analysis');
-    view.style.display = 'flex';
-    // sync dates from stats filter
-    const sd = $('stats-start-date')?.value || '';
-    const ed = $('stats-end-date')?.value || '';
-    $('sa-start-date').value = sd;
-    $('sa-end-date').value = ed;
-    renderSpendingAnalysis();
+    // 切换到统计页消费类型子Tab
+    switchTab('stats', document.querySelector('.nav-link[onclick*="stats"]') || document.querySelector('.nav-link[onclick*=stats]'));
+    switchStatsTab('spending');
 }
 
 function closeSpendingAnalysis() {
-    const v = $('view-spending-analysis');
-    v.style.display = 'none';
+    // 兼容旧调用，切回概览
+    switchStatsTab('overview');
 }
 
 function saQuickDate(p) {
@@ -5960,7 +6057,63 @@ const myTrans = transactions.filter(t =>
     }
 }
 
-// ── 月份导航 ──────────────────────────────────────────────────
+// ── 交易页搜索/筛选面板收起展开 ────────────────────────────
+function toggleTransSearch() {
+    const panel = $('trans-search-panel');
+    const btn   = $('trans-search-btn');
+    const isOpen = panel.classList.toggle('open');
+    btn.classList.toggle('active', isOpen);
+    if (isOpen) {
+        setTimeout(() => $('trans-search-input')?.focus(), 50);
+        // 关闭筛选面板
+        $('trans-filter-panel').classList.remove('open');
+        $('trans-filter-btn').classList.remove('active');
+    }
+}
+
+function toggleTransFilter() {
+    const panel = $('trans-filter-panel');
+    const btn   = $('trans-filter-btn');
+    const isOpen = panel.classList.toggle('open');
+    btn.classList.toggle('active', isOpen);
+    if (isOpen) {
+        // 关闭搜索面板
+        $('trans-search-panel').classList.remove('open');
+        $('trans-search-btn').classList.remove('active');
+    }
+}
+
+function clearSearchInput() {
+    $('trans-search-input').value = '';
+    handleSearchInput();
+    $('trans-search-input').focus();
+}
+
+// ── 统计页筛选面板收起展开 ──────────────────────────────────
+function toggleStatsFilter() {
+    const panel = $('stats-filter-panel');
+    const btn   = $('stats-filter-btn');
+    const isOpen = panel.classList.toggle('open');
+    btn.classList.toggle('active', isOpen);
+}
+
+// ── 统计页子Tab切换 ─────────────────────────────────────────
+function switchStatsTab(tab) {
+    $$('.stats-sub-tab-btn').forEach(b => b.classList.remove('active'));
+    $$('.stats-sub-pane').forEach(p => p.classList.remove('active'));
+    $(`stats-tab-${tab}`).classList.add('active');
+    $(`stats-pane-${tab}`).classList.add('active');
+    if (tab === 'spending') {
+        // 同步统计页日期到消费类型
+        const sd = $('stats-start-date')?.value || '';
+        const ed = $('stats-end-date')?.value   || '';
+        if ($('sa-start-date')) $('sa-start-date').value = sd;
+        if ($('sa-end-date'))   $('sa-end-date').value   = ed;
+        renderSpendingAnalysis();
+    }
+}
+
+
 function navigateStatsMonth(delta) {
     if (historyMode) return;
     const now = new Date();
