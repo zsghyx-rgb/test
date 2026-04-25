@@ -723,7 +723,7 @@ select.compact-form-control { height: 2.1rem; }
     max-height: 0;
     transition: max-height .25s ease;
 }
-#stats-filter-panel.open { max-height: 120px; }
+#stats-filter-panel.open { max-height: 200px; padding-bottom: 4px; }
 
 /* ── 统计页子Tab ── */
 .stats-sub-tabs {
@@ -927,7 +927,7 @@ select.compact-form-control { height: 2.1rem; }
         </div>
     </div>
     <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;pointer-events:none;">
-        <span class="text-muted" style="font-size:0.7rem;">version 2.0.4</span>
+        <span class="text-muted" style="font-size:0.7rem;">version 2.0.5</span>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
@@ -1198,7 +1198,7 @@ select.compact-form-control { height: 2.1rem; }
 
         <div id="view-stats" class="view-section">
             <div class="page-sticky-header pt-1">
-                <!-- 标题行：月导航常驻 + 货币 + 筛选图标 -->
+                <!-- 标题行：月导航常驻 + 筛选图标 -->
                 <div class="d-flex align-items-center gap-2 mb-1">
                     <div class="d-flex align-items-center flex-shrink-0" id="stats-month-nav">
                         <button class="btn btn-sm btn-outline-secondary px-2" id="stats-prev-month-btn"
@@ -1210,35 +1210,44 @@ select.compact-form-control { height: 2.1rem; }
                                 onclick="navigateStatsMonth(1)" title="下月">&#8250;</button>
                     </div>
                     <span class="flex-grow-1"></span>
-                    <div style="overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;max-width:160px;">
-                        <div class="btn-group btn-group-sm flex-nowrap" id="stats-currency-btns" style="white-space:nowrap;"></div>
-                    </div>
-                    <button class="btn btn-sm btn-outline-secondary flex-shrink-0" id="stats-filter-btn" onclick="toggleStatsFilter()" title="日期范围筛选">
+                    <button class="btn btn-sm btn-outline-secondary flex-shrink-0" id="stats-filter-btn" onclick="toggleStatsFilter()" title="筛选">
                         <i class="bi bi-sliders"></i>
                     </button>
                 </div>
-                <!-- 筛选展开面板 -->
+                <!-- 筛选展开面板（三行） -->
                 <div id="stats-filter-panel">
-                    <div style="overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:6px;">
-                        <div class="d-flex align-items-center gap-2 flex-nowrap" style="white-space:nowrap;min-width:max-content;">
-                            <div id="quick-stats-filter-group-1" class="flex-shrink-0">
-                                <div class="btn-group btn-group-sm">
-                                    <button class="btn btn-outline-secondary" data-range="30days"   onclick="quickStatsDateFilter('30days')">近30天</button>
-                                    <button class="btn btn-outline-secondary" data-range="year"     onclick="quickStatsDateFilter('year')">本年</button>
-                                    <button class="btn btn-outline-secondary" data-range="3months"  onclick="quickStatsDateFilter('3months')">3个月</button>
-                                    <button class="btn btn-outline-secondary" data-range="6months"  onclick="quickStatsDateFilter('6months')">6个月</button>
-                                    <button class="btn btn-outline-secondary" data-range="12months" onclick="quickStatsDateFilter('12months')">12个月</button>
-                                    <button class="btn btn-outline-secondary" data-range="all"      onclick="quickStatsDateFilter('all')">全部</button>
-                                </div>
+                    <!-- 第一行：日期快速选 + 自定义 -->
+                    <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                        <span class="text-muted small flex-shrink-0" style="width:36px;">日期</span>
+                        <div id="quick-stats-filter-group-1" class="flex-shrink-0">
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-secondary" data-range="30days"   onclick="quickStatsDateFilter('30days')">近30天</button>
+                                <button class="btn btn-outline-secondary" data-range="year"     onclick="quickStatsDateFilter('year')">本年</button>
+                                <button class="btn btn-outline-secondary" data-range="3months"  onclick="quickStatsDateFilter('3months')">3个月</button>
+                                <button class="btn btn-outline-secondary" data-range="6months"  onclick="quickStatsDateFilter('6months')">6个月</button>
+                                <button class="btn btn-outline-secondary" data-range="12months" onclick="quickStatsDateFilter('12months')">12个月</button>
+                                <button class="btn btn-outline-secondary" data-range="all"      onclick="quickStatsDateFilter('all')">全部</button>
                             </div>
-                            <button class="btn btn-sm btn-outline-secondary flex-shrink-0" id="stats-custom-toggle" onclick="toggleStatsCustomDate()">
-                                <i class="bi bi-calendar3"></i> 自定义
-                            </button>
                         </div>
+                        <button class="btn btn-sm btn-outline-secondary flex-shrink-0" id="stats-custom-toggle" onclick="toggleStatsCustomDate()">
+                            <i class="bi bi-calendar3"></i> 自定义
+                        </button>
                     </div>
-                    <div id="stats-custom-date-panel" class="d-flex gap-2 mt-1" style="display:none!important;">
+                    <!-- 自定义日期展开 -->
+                    <div id="stats-custom-date-panel" class="d-flex gap-2 mb-2 ms-0 ps-0" style="display:none!important;">
+                        <span style="width:36px;"></span>
                         <input type="date" class="form-control form-control-sm" id="stats-start-date" onchange="applyStatsFilter()" style="width:130px;">
                         <input type="date" class="form-control form-control-sm" id="stats-end-date"   onchange="applyStatsFilter()" style="width:130px;">
+                    </div>
+                    <!-- 第二行：用户 -->
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="text-muted small flex-shrink-0" style="width:36px;">用户</span>
+                        <div class="btn-group btn-group-sm flex-shrink-0" id="stats-user-btns"></div>
+                    </div>
+                    <!-- 第三行：货币 -->
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <span class="text-muted small flex-shrink-0" style="width:36px;">货币</span>
+                        <div class="btn-group btn-group-sm flex-nowrap flex-shrink-0" id="stats-currency-btns"></div>
                     </div>
                 </div>
             </div>
@@ -1338,19 +1347,6 @@ select.compact-form-control { height: 2.1rem; }
 
             <!-- 消费类型子页 -->
             <div id="stats-pane-spending" class="stats-sub-pane">
-                <div class="d-flex gap-2 align-items-center mb-3 flex-wrap">
-                    <button class="btn btn-sm btn-outline-secondary flex-shrink-0" id="sa-user-filter-btn" onclick="saCycleUser()">
-                        <i class="bi bi-person"></i> <span id="sa-user-filter-text">所有用户</span>
-                    </button>
-                    <div class="btn-group btn-group-sm flex-shrink-0">
-                        <button class="btn btn-outline-secondary" onclick="saQuickDate('month')">本月</button>
-                        <button class="btn btn-outline-secondary" onclick="saQuickDate('3months')">3月</button>
-                        <button class="btn btn-outline-secondary" onclick="saQuickDate('year')">本年</button>
-                        <button class="btn btn-outline-secondary" onclick="saQuickDate('all')">全部</button>
-                    </div>
-                    <input type="date" class="form-control form-control-sm flex-shrink-0" id="sa-start-date" style="width:130px;" onchange="renderSpendingAnalysis()">
-                    <input type="date" class="form-control form-control-sm flex-shrink-0" id="sa-end-date"   style="width:130px;" onchange="renderSpendingAnalysis()">
-                </div>
                 <div class="row g-2 mb-3" id="sa-summary-cards"></div>
                 <div class="card shadow-sm mb-3">
                     <div class="card-body">
@@ -4883,20 +4879,13 @@ function closeSpendingAnalysis() {
 }
 
 function saQuickDate(p) {
-    const today = new Date();
-    let start = '', end = '';
-    if (p === 'month') { start = new Date(today.getFullYear(), today.getMonth(), 1); end = today; }
-    else if (p === '3months') { start = new Date(today); start.setMonth(start.getMonth()-3); end = today; }
-    else if (p === 'year') { start = new Date(today.getFullYear(),0,1); end = new Date(today.getFullYear(),11,31); }
-    $('sa-start-date').value = start ? formatLocal(start) : '';
-    $('sa-end-date').value = end ? formatLocal(end) : '';
-    renderSpendingAnalysis();
+    quickStatsDateFilter(p);
 }
 
 function renderSpendingAnalysis() {
-    const start = $('sa-start-date').value;
-    const end   = $('sa-end-date').value;
-    const saUser = _saCurrentUser || '';
+    const start  = currentStatsFilter.startDate || '';
+    const end    = currentStatsFilter.endDate   || '';
+    const saUser = (currentStatsFilter.user !== 'all') ? currentStatsFilter.user : '';
     const rawData = transactions.filter(t => {
         if (t.isTransfer || t._isBaseline || t.amount >= 0) return false;
         if (start && t.date < start) return false;
@@ -6050,14 +6039,7 @@ function switchStatsTab(tab) {
     $$('.stats-sub-pane').forEach(p => p.classList.remove('active'));
     $(`stats-tab-${tab}`).classList.add('active');
     $(`stats-pane-${tab}`).classList.add('active');
-    if (tab === 'spending') {
-        // 同步统计页日期到消费类型
-        const sd = $('stats-start-date')?.value || '';
-        const ed = $('stats-end-date')?.value   || '';
-        if ($('sa-start-date')) $('sa-start-date').value = sd;
-        if ($('sa-end-date'))   $('sa-end-date').value   = ed;
-        renderSpendingAnalysis();
-    }
+    if (tab === 'spending') renderSpendingAnalysis();
 }
 
 
@@ -6189,6 +6171,16 @@ function switchStatsCurrency(c, el) {
     renderStats();
 }
 
+function switchStatsUser(u) {
+    currentStatsFilter.user = u;
+    // 更新用户按钮高亮
+    $$('#stats-user-btns button').forEach(b =>
+        b.classList.toggle('active', b.dataset.user === u));
+    renderStats();
+    // 若消费类型子页可见，同步刷新
+    if ($('stats-pane-spending')?.classList.contains('active')) renderSpendingAnalysis();
+}
+
 function switchAssetAggregation(type, el) {
     $$('.chart-card .btn-group button').forEach(b => b.classList.remove('active'));
     el.classList.add('active');
@@ -6209,6 +6201,8 @@ function renderStats() {
         if (t._isBaseline) return false;
         if (start && t.date < start) return false;
         if (end && t.date > end) return false;
+        const filterUser = currentStatsFilter.user || 'all';
+        if (filterUser !== 'all' && t.ownerName !== filterUser) return false;
         return true;
     });
     let inc = 0, exp = 0;
@@ -6740,23 +6734,33 @@ function getActiveForeignCurrencies() {
 }
 
 function renderStatsCurrencyButtons() {
+    // 货币按钮
     const container = $('stats-currency-btns');
-    if (!container) return;
-    const activeForeign = getActiveForeignCurrencies();
-    // Always show CNY; only show foreign currencies that have accounts
-    const allBtns = [
-        { code: 'RMB', label: 'CNY (¥)', style: 'btn-outline-success' },
-        ...activeForeign.map(c => ({ code: c.code, label: `${c.code} (${c.symbol})`, style: 'btn-outline-info' }))
-    ];
-    container.innerHTML = allBtns.map(b => {
-        const isActive = currentStatsFilter.currency === b.code ? ' active' : '';
-        return `<button class="btn btn-sm ${b.style}${isActive}" onclick="switchStatsCurrency('${b.code}', this)">${b.label}</button>`;
-    }).join('');
-    // If current selected currency no longer has accounts, reset to RMB
-    if (currentStatsFilter.currency !== 'RMB' && !activeForeign.find(c => c.code === currentStatsFilter.currency)) {
-        currentStatsFilter.currency = 'RMB';
-        const firstBtn = container.querySelector('button');
-        if (firstBtn) firstBtn.classList.add('active');
+    if (container) {
+        const activeForeign = getActiveForeignCurrencies();
+        const allBtns = [
+            { code: 'RMB', label: 'CNY (¥)', style: 'btn-outline-success' },
+            ...activeForeign.map(c => ({ code: c.code, label: `${c.code} (${c.symbol})`, style: 'btn-outline-info' }))
+        ];
+        container.innerHTML = allBtns.map(b => {
+            const isActive = currentStatsFilter.currency === b.code ? ' active' : '';
+            return `<button class="btn btn-sm ${b.style}${isActive}" onclick="switchStatsCurrency('${b.code}', this)">${b.label}</button>`;
+        }).join('');
+        if (currentStatsFilter.currency !== 'RMB' && !activeForeign.find(c => c.code === currentStatsFilter.currency)) {
+            currentStatsFilter.currency = 'RMB';
+            const firstBtn = container.querySelector('button');
+            if (firstBtn) firstBtn.classList.add('active');
+        }
+    }
+    // 用户按钮
+    const userContainer = $('stats-user-btns');
+    if (userContainer) {
+        const users = dataUsers && dataUsers.length ? dataUsers : [];
+        const opts = [{ key: 'all', label: '所有用户' }, ...users.map(u => ({ key: u, label: u }))];
+        userContainer.innerHTML = opts.map(o => {
+            const isActive = (currentStatsFilter.user || 'all') === o.key ? ' active' : '';
+            return `<button class="btn btn-sm btn-outline-secondary${isActive}" data-user="${o.key}" onclick="switchStatsUser('${o.key}')">${o.label}</button>`;
+        }).join('');
     }
 }
 
