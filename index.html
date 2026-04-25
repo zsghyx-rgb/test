@@ -750,8 +750,8 @@ select.compact-form-control { height: 2.1rem; }
 }
 .stats-sub-pane { display: none; }
 .stats-sub-pane.active { display: block; }
-</style>
-</head>
+
+/* ── 图表钻取底部抽屉 ── */
 #chart-drawer-backdrop {
     position: fixed; inset: 0; background: rgba(0,0,0,0.45);
     z-index: 1055; opacity: 0; transition: opacity .25s;
@@ -1589,61 +1589,8 @@ select.compact-form-control { height: 2.1rem; }
     </div>
 </div>
 
-<div id="view-spending-analysis" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bs-body-bg);z-index:2000;display:none;flex-direction:column;">
-    <!-- 固定顶部：标题 + 筛选栏 -->
-    <div class="p-3 pb-2 flex-shrink-0 border-bottom" style="background:var(--bs-body-bg);">
-        <div class="d-flex align-items-center gap-2 mb-2">
-            <button class="btn btn-sm btn-outline-secondary" onclick="closeSpendingAnalysis()"><i class="bi bi-arrow-left"></i></button>
-            <h5 class="mb-0">消费类型分析</h5>
-        </div>
-        <!-- 用户筛选 + 日期 + 快速筛选 同一行 -->
-        <div class="d-flex gap-2 align-items-center" style="overflow-x:auto;white-space:nowrap;flex-wrap:nowrap;">
-            <button class="btn btn-sm btn-outline-secondary flex-shrink-0" id="sa-user-filter-btn" onclick="saCycleUser()">
-                <i class="bi bi-person"></i> <span id="sa-user-filter-text">所有用户</span>
-            </button>
-            <input type="date" class="form-control form-control-sm flex-shrink-0" id="sa-start-date" style="width:130px;min-width:130px;" onchange="renderSpendingAnalysis()">
-            <input type="date" class="form-control form-control-sm flex-shrink-0" id="sa-end-date" style="width:130px;min-width:130px;" onchange="renderSpendingAnalysis()">
-            <div class="btn-group btn-group-sm flex-shrink-0">
-                <button class="btn btn-outline-secondary" onclick="saQuickDate('month')">本月</button>
-                <button class="btn btn-outline-secondary" onclick="saQuickDate('3months')">3月</button>
-                <button class="btn btn-outline-secondary" onclick="saQuickDate('year')">本年</button>
-                <button class="btn btn-outline-secondary" onclick="saQuickDate('all')">全部</button>
-            </div>
-        </div>
-    </div>
-    <!-- 可滚动内容区 -->
-    <div class="p-3 pt-2" style="overflow-y:auto;flex:1;">
-        <!-- 汇总卡片 -->
-        <div class="row g-2 mb-3" id="sa-summary-cards"></div>
-        <!-- 图表 -->
-        <div class="card shadow-sm mb-3">
-            <div class="card-body">
-                <h6 class="card-title">占比分布</h6>
-                <div style="height:260px;"><canvas id="saTypeChart"></canvas></div>
-            </div>
-        </div>
-        <div class="card shadow-sm mb-3">
-            <div class="card-body">
-                <h6 class="card-title">月度趋势</h6>
-                <div style="height:260px;overflow-x:auto;"><canvas id="saTrendChart"></canvas></div>
-            </div>
-        </div>
-        <!-- 明细列表 -->
-        <div class="d-flex gap-2 mb-2 flex-wrap align-items-center">
-            <h6 class="mb-0 me-1">支出明细</h6>
-            <select class="form-select form-select-sm" id="sa-filter-type" style="width:110px;" onchange="renderSaDetailList()">
-                <option value="">全部类型</option>
-                <option value="need">必须的</option>
-                <option value="want">想要的</option>
-                <option value="regret">后悔的</option>
-                <option value="none">未标记</option>
-            </select>
-            <input type="text" class="form-control form-control-sm" id="sa-filter-search" style="width:150px;" placeholder="搜索类别/备注..." oninput="renderSaDetailList()">
-            <span class="text-muted small ms-auto" id="sa-detail-count"></span>
-        </div>
-        <div id="sa-detail-list" class="mb-4"></div>
-    </div>
-</div>
+
+
 
 
 <!-- 新增/编辑计划交易 -->
