@@ -707,7 +707,7 @@ select.compact-form-control { height: 2.1rem; }
     padding: 0 0;
 }
 #trans-filter-panel.open {
-    max-height: 200px;
+    max-height: 240px;
     padding: 8px 0 4px;
 }
 #trans-search-panel {
@@ -927,7 +927,7 @@ select.compact-form-control { height: 2.1rem; }
         </div>
     </div>
     <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;pointer-events:none;">
-        <span class="text-muted" style="font-size:0.7rem;">version 2.0.5</span>
+        <span class="text-muted" style="font-size:0.7rem;">version 2.0.6</span>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
@@ -1089,43 +1089,47 @@ select.compact-form-control { height: 2.1rem; }
                     </div>
                 </div>
 
-                <!-- 筛选展开面板 -->
+                <!-- 筛选展开面板（分行显示） -->
                 <div id="trans-filter-panel">
-                    <div style="overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;">
-                        <div class="d-flex align-items-center gap-2 flex-nowrap pb-1" style="white-space:nowrap;min-width:max-content;">
-                            <!-- 清除 -->
-                            <button class="btn btn-sm btn-outline-secondary flex-shrink-0" onclick="clearTransactionFilters()" title="清除所有筛选">
-                                <i class="bi bi-x-circle"></i>
-                            </button>
-                            <!-- 用户 -->
-                            <button class="btn btn-sm btn-outline-secondary flex-shrink-0" id="trans-user-filter-btn" onclick="cycleUserFilter()">
-                                <i class="bi bi-person"></i> <span id="trans-user-filter-text">所有用户</span>
-                            </button>
-                            <!-- 显示模式 -->
-                            <button class="btn btn-sm btn-outline-secondary flex-shrink-0" id="transfer-mode-toggle" onclick="toggleDisplayMode()">
-                                <i class="bi bi-eye" id="transfer-mode-icon"></i>
-                                <span id="transfer-mode-text">收支+转账</span>
-                            </button>
-                            <!-- 快速日期 -->
-                            <div id="quick-date-filter-group" class="flex-shrink-0">
-                                <div class="btn-group btn-group-sm">
-                                    <button class="btn btn-outline-secondary" data-range="30days"    onclick="quickDateFilter('30days')">近30天</button>
-                                    <button class="btn btn-outline-secondary" data-range="month"     onclick="quickDateFilter('month')">本月</button>
-                                    <button class="btn btn-outline-secondary" data-range="lastmonth" onclick="quickDateFilter('lastmonth')">上月</button>
-                                    <button class="btn btn-outline-secondary" data-range="year"      onclick="quickDateFilter('year')">本年</button>
-                                    <button class="btn btn-outline-secondary" data-range="all"       onclick="quickDateFilter('all')">全部</button>
-                                </div>
+                    <!-- 第一行：日期 -->
+                    <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                        <span class="text-muted small flex-shrink-0" style="width:36px;">日期</span>
+                        <div id="quick-date-filter-group" class="flex-shrink-0">
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-secondary" data-range="30days"    onclick="quickDateFilter('30days')">近30天</button>
+                                <button class="btn btn-outline-secondary" data-range="month"     onclick="quickDateFilter('month')">本月</button>
+                                <button class="btn btn-outline-secondary" data-range="lastmonth" onclick="quickDateFilter('lastmonth')">上月</button>
+                                <button class="btn btn-outline-secondary" data-range="year"      onclick="quickDateFilter('year')">本年</button>
+                                <button class="btn btn-outline-secondary" data-range="all"       onclick="quickDateFilter('all')">全部</button>
                             </div>
-                            <!-- 自定义日期 -->
-                            <button class="btn btn-sm btn-outline-secondary flex-shrink-0" id="trans-custom-toggle" onclick="toggleTransCustomDate()">
-                                <i class="bi bi-calendar3"></i> 自定义
-                            </button>
                         </div>
+                        <button class="btn btn-sm btn-outline-secondary flex-shrink-0" id="trans-custom-toggle" onclick="toggleTransCustomDate()">
+                            <i class="bi bi-calendar3"></i> 自定义
+                        </button>
                     </div>
-                    <!-- 自定义日期面板 -->
-                    <div id="trans-custom-date-panel" class="d-flex gap-2 mt-1" style="display:none!important;">
+                    <!-- 自定义日期展开 -->
+                    <div id="trans-custom-date-panel" class="d-flex gap-2 mb-2" style="display:none!important;">
+                        <span style="width:36px;"></span>
                         <input type="date" class="form-control form-control-sm" id="filter-start-date" onchange="applyTransactionFilter()" style="width:140px;">
                         <input type="date" class="form-control form-control-sm" id="filter-end-date"   onchange="applyTransactionFilter()" style="width:140px;">
+                    </div>
+                    <!-- 第二行：用户 + 显示模式 -->
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="text-muted small flex-shrink-0" style="width:36px;">用户</span>
+                        <button class="btn btn-sm btn-outline-secondary flex-shrink-0" id="trans-user-filter-btn" onclick="cycleUserFilter()">
+                            <i class="bi bi-person"></i> <span id="trans-user-filter-text">所有用户</span>
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary flex-shrink-0" id="transfer-mode-toggle" onclick="toggleDisplayMode()">
+                            <i class="bi bi-eye" id="transfer-mode-icon"></i>
+                            <span id="transfer-mode-text">收支+转账</span>
+                        </button>
+                    </div>
+                    <!-- 第三行：清除 -->
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <span style="width:36px;"></span>
+                        <button class="btn btn-sm btn-outline-secondary flex-shrink-0" onclick="clearTransactionFilters()">
+                            <i class="bi bi-x-circle"></i> 清除筛选
+                        </button>
                     </div>
                 </div>
             </div>
@@ -1198,15 +1202,16 @@ select.compact-form-control { height: 2.1rem; }
 
         <div id="view-stats" class="view-section">
             <div class="page-sticky-header pt-1">
-                <!-- 标题行：月导航常驻 + 筛选图标 -->
+                <!-- 标题行：月导航居中 + 筛选图标 -->
                 <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="flex-grow-1"></span>
                     <div class="d-flex align-items-center flex-shrink-0" id="stats-month-nav">
-                        <button class="btn btn-sm btn-outline-secondary px-2" id="stats-prev-month-btn"
+                        <button class="btn btn-sm btn-outline-secondary px-3" id="stats-prev-month-btn"
                                 onclick="navigateStatsMonth(-1)" title="上月">&#8249;</button>
                         <button class="btn btn-sm btn-outline-secondary px-2 mx-1"
                                 id="stats-month-label" onclick="navigateStatsMonth(0)"
-                                title="点击回到本月" style="min-width:96px;font-weight:500;"></button>
-                        <button class="btn btn-sm btn-outline-secondary px-2" id="stats-next-month-btn"
+                                title="点击回到本月" style="min-width:110px;font-weight:500;"></button>
+                        <button class="btn btn-sm btn-outline-secondary px-3" id="stats-next-month-btn"
                                 onclick="navigateStatsMonth(1)" title="下月">&#8250;</button>
                     </div>
                     <span class="flex-grow-1"></span>
@@ -1223,9 +1228,6 @@ select.compact-form-control { height: 2.1rem; }
                             <div class="btn-group btn-group-sm">
                                 <button class="btn btn-outline-secondary" data-range="30days"   onclick="quickStatsDateFilter('30days')">近30天</button>
                                 <button class="btn btn-outline-secondary" data-range="year"     onclick="quickStatsDateFilter('year')">本年</button>
-                                <button class="btn btn-outline-secondary" data-range="3months"  onclick="quickStatsDateFilter('3months')">3个月</button>
-                                <button class="btn btn-outline-secondary" data-range="6months"  onclick="quickStatsDateFilter('6months')">6个月</button>
-                                <button class="btn btn-outline-secondary" data-range="12months" onclick="quickStatsDateFilter('12months')">12个月</button>
                                 <button class="btn btn-outline-secondary" data-range="all"      onclick="quickStatsDateFilter('all')">全部</button>
                             </div>
                         </div>
@@ -6080,6 +6082,8 @@ function navigateStatsMonth(delta) {
     $$('#quick-stats-filter-group-1 button').forEach(b => b.classList.remove('active'));
     updateStatsNavUI();
     renderStats();
+    // 若消费类型子页当前可见，同步刷新
+    if ($('stats-pane-spending')?.classList.contains('active')) renderSpendingAnalysis();
 }
 
 function updateStatsNavUI() {
@@ -6134,6 +6138,7 @@ function applyStatsFilter() {
     $$('#quick-stats-filter-group-1 button').forEach(b => b.classList.remove('active'));
     updateStatsNavUI();
     renderStats();
+    if ($('stats-pane-spending')?.classList.contains('active')) renderSpendingAnalysis();
 }
 
 function quickStatsDateFilter(p) {
@@ -6162,6 +6167,7 @@ function quickStatsDateFilter(p) {
     if (toggle) toggle.classList.remove('active');
     updateStatsNavUI();
     renderStats();
+    if ($('stats-pane-spending')?.classList.contains('active')) renderSpendingAnalysis();
 }
 
 function switchStatsCurrency(c, el) {
