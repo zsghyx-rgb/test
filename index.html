@@ -927,7 +927,7 @@ select.compact-form-control { height: 2.1rem; }
         </div>
     </div>
     <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;pointer-events:none;">
-        <span class="text-muted" style="font-size:0.7rem;">version 2.0.6</span>
+        <span class="text-muted" style="font-size:0.7rem;">version 2.0.7</span>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
@@ -2395,6 +2395,9 @@ function decryptAndLoadData() {
  * 数据加载成功后，显示用户选择按钮
  */
 function onDataLoaded() {
+    // 记录本次登录时间（用于判断草稿是否过期）
+    localStorage.setItem('APP_last_login_time', Date.now().toString());
+
     // 从数据文件读取用户列表（兼容旧格式：只有allUserData没有users字段）
     if (inMemoryLoadedData.users && inMemoryLoadedData.users.length > 0) {
         dataUsers = inMemoryLoadedData.users;
@@ -3195,8 +3198,23 @@ function mergeData(local, remote) {
         (remoteArr || []).forEach(item => map.set(String(item.id), item));
         (localArr || []).forEach(item => {
             const existing = map.get(String(item.id));
-            if (!existing || (item.updatedAt || 0) >= (existing.updatedAt || 0)) {
+            if (!existing) {
                 map.set(String(item.id), item);
+            } else {
+                const itemTs     = item.updatedAt     ?? null;
+                const existingTs = existing.updatedAt ?? null;
+                if (itemTs === null && existingTs !== null) {
+                    // local 没有 updatedAt，remote 有 → 保留 remote（existing）
+                    // 不做任何事
+                } else if (itemTs !== null && existingTs === null) {
+                    // local 有 updatedAt，remote 没有 → 保留 local
+                    map.set(String(item.id), item);
+                } else {
+                    // 两者都有或都没有 updatedAt → 取较大值（local >= remote 则用 local）
+                    if ((itemTs || 0) >= (existingTs || 0)) {
+                        map.set(String(item.id), item);
+                    }
+                }
             }
         });
         return Array.from(map.values());
@@ -3472,7 +3490,7 @@ async function loadFromDrive() {
         } catch(_) {}
 
         window._driveMode = true;
-        showToast('已从 Drive 获取加密文件，请输入密码', 'info', 0);
+        showToast('已从 Drive 获取加密文件，请输入密码', 'info', 3000);
         $('user-section').style.display = 'none';
         $('user-buttons').innerHTML = '';
         $('password-error').classList.add('d-none');
@@ -3492,6 +3510,7 @@ async function backgroundSyncAfterLogin() {
     window._pendingBackgroundSync = false;
 
     try {
+        // ── 步骤1：核对版本 ──
         const localVersion = localStorage.getItem('APP_drive_version') || '0';
         let remoteVersion = '0';
         try {
@@ -3500,18 +3519,19 @@ async function backgroundSyncAfterLogin() {
         } catch (_) { return; } // 无网络，静默放弃
 
         if (remoteVersion === '0' || remoteVersion === localVersion) {
-            // 版本一致，无需更新
+            // 版本一致，直接用本地数据，无需拉取
             if (verboseToast) showToast('数据已是最新', 'success', 2000);
+            // 记录本次登录时间
+            localStorage.setItem('APP_last_login_time', Date.now().toString());
             return;
         }
 
-        // 有新版本，拉取远端数据
+        // ── 步骤2：有新版本，拉取远端数据 ──
         const resp = await fetch(gasRequestUrl());
         if (!resp.ok) return;
         const raw = (await resp.text()).trim();
         if (!raw || raw === 'UNAUTHORIZED') return;
 
-        // 解密远端数据
         let remoteData = null;
         try {
             remoteData = JSON.parse(raw);
@@ -3524,37 +3544,76 @@ async function backgroundSyncAfterLogin() {
             } else { return; }
         }
 
-        // 合并数据
-        const newCount = countNewItemsFromRemote(inMemoryLoadedData, remoteData);
-        const merged = mergeData(inMemoryLoadedData, remoteData);
+        // ── 步骤3：判断是否有本地草稿 ──
+        const hasDraft = (() => {
+            for (let i = 0; i < localStorage.length; i++) {
+                const k = localStorage.key(i);
+                if (k && k.startsWith('APP_local_draft_') && !k.includes('_time_')) return true;
+            }
+            return false;
+        })();
+
+        // ── 步骤4：判断是否超过10天未登录 ──
+        const lastLoginTime = parseInt(localStorage.getItem('APP_last_login_time') || '0');
+        const tenDaysMs = 10 * 24 * 60 * 60 * 1000;
+        const stale = (lastLoginTime === 0) || (Date.now() - lastLoginTime > tenDaysMs);
+
+        // 更新版本号和缓存
         if (remoteVersion !== '0') localStorage.setItem('APP_drive_version', remoteVersion);
         try { localStorage.setItem('APP_raw_cache', raw); } catch(_) {}
+        localStorage.setItem('APP_last_login_time', Date.now().toString());
+
+        // ── 步骤5：决策合并策略 ──
+        let finalData;
+        let strategyLabel = '';
+
+        if (!hasDraft || stale) {
+            // 无草稿 或 超过10天：远端直接覆盖本地
+            finalData = remoteData;
+            // 清除所有草稿（超期草稿作废）
+            const draftKeys = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const k = localStorage.key(i);
+                if (k && k.startsWith('APP_local_draft_')) draftKeys.push(k);
+            }
+            draftKeys.forEach(k => localStorage.removeItem(k));
+            strategyLabel = stale && hasDraft ? '草稿已过期，已使用最新云端数据' : '';
+        } else {
+            // 有草稿且未过期：按 updatedAt 合并
+            finalData = mergeData(inMemoryLoadedData, remoteData);
+        }
+
+        // ── 步骤6：更新内存并刷新 UI ──
+        const newCount = countNewItemsFromRemote(inMemoryLoadedData, remoteData);
+        inMemoryLoadedData = finalData;
 
         const isFormOpen = $('add-transaction-section') && $('add-transaction-section').classList.contains('show');
 
         if (isFormOpen) {
-            inMemoryLoadedData = merged;
             saveUserData();
-            if (newCount > 0) {
+            if (strategyLabel) {
+                showToast(strategyLabel, 'warning', 4000);
+            } else if (newCount > 0) {
                 showToast(`后台已同步 ${newCount} 条新数据，关闭表单后自动刷新`, 'info', 4000);
             } else {
                 showToast('后台已同步', 'info', 2000);
             }
             window._pendingUIRefresh = true;
         } else {
-            inMemoryLoadedData = merged;
             loadAllData();
             filterUserData();
             renderAllTransactions();
             renderAccounts();
-            if (newCount > 0) {
+            if (strategyLabel) {
+                showToast(strategyLabel, 'warning', 4000);
+            } else if (newCount > 0) {
                 showToast(`已同步 ${newCount} 条新数据`, 'success', 3000);
             } else {
                 showToast('已同步', 'success', 2000);
             }
         }
     } catch(e) {
-        // 后台同步失败，静默忽略，不打扰用户
+        // 后台同步失败，静默忽略
     }
 }
 
