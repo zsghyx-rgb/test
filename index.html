@@ -1449,20 +1449,6 @@ select.compact-form-control { height: 2.1rem; }
     </div>
 </div>
 
-                <div class="col-12 col-md-6">
-                    <div class="card shadow-sm h-100">
-                        <div class="card-header bg-transparent fw-bold">
-                            <i class="bi bi-clock-history"></i> 云端备份浏览
-                        </div>
-                        <div class="card-body">
-                            <p class="text-muted small mb-2">查看 Drive 历史备份，与当前数据对比差异，或从备份恢复。</p>
-                            <button class="btn btn-outline-secondary btn-sm w-100 mb-2" onclick="loadBackupList()">
-                                <i class="bi bi-arrow-clockwise"></i> 读取备份列表
-                            </button>
-                            <div id="backup-list-container" class="mt-1" style="max-height:220px;overflow-y:auto;font-size:0.85rem;"></div>
-                        </div>
-                    </div>
-                </div>
 
                 <div class="col-12 col-md-6">
                     <div class="card shadow-sm h-100">
@@ -1584,17 +1570,18 @@ select.compact-form-control { height: 2.1rem; }
 
                     <div class="mb-2">
                         <button class="btn btn-outline-secondary btn-sm me-2" onclick="toggleAdvancedExportSection()">
-                            <i class="bi bi-file-earmark-code" id="adv-export-toggle-icon"></i>
-                            <span id="adv-export-toggle-text">显示高级导出</span>
+                            <i class="bi bi-gear" id="adv-export-toggle-icon"></i>
+                            <span id="adv-export-toggle-text">高级设置</span>
                         </button>
 
                     </div>
 
                     <div class="card shadow-sm mb-3" id="adv-export-card" style="display: none;">
                         <div class="card-header bg-transparent fw-bold">
-                            <i class="bi bi-file-earmark-code"></i> 高级导出 / 导入
+                            <i class="bi bi-gear"></i> 高级设置
                         </div>
                         <div class="card-body">
+                            <div class="fw-bold small mb-2"><i class="bi bi-file-earmark-code"></i> 高级导出 / 导入</div>
                             <div class="d-grid gap-2">
                                 <div class="btn-group">
                                     <button class="btn btn-success" onclick="exportJsonData()">
@@ -1618,6 +1605,13 @@ select.compact-form-control { height: 2.1rem; }
                                 <input type="file" id="transaction-csv-input" class="d-none" accept=".csv" onchange="importTransactionCsv()">
                                 <input type="file" id="transfer-csv-input" class="d-none" accept=".csv" onchange="importTransferCsv()">
                             </div>
+                            <hr class="my-3">
+                            <div class="fw-bold small mb-2"><i class="bi bi-clock-history"></i> 云端备份浏览</div>
+                            <p class="text-muted small mb-2">查看 Drive 历史备份，与当前数据对比差异，或从备份恢复。</p>
+                            <button class="btn btn-outline-secondary btn-sm w-100 mb-2" onclick="loadBackupList()">
+                                <i class="bi bi-arrow-clockwise"></i> 读取备份列表
+                            </button>
+                            <div id="backup-list-container" class="mt-1" style="max-height:220px;overflow-y:auto;font-size:0.85rem;"></div>
                         </div>
                     </div>
                 </div>
@@ -6590,40 +6584,20 @@ async function openBackupCompare(fileName, dateStr) {
             accDiffHtml = '<div class="text-muted small">账户信息无差异</div>';
         }
 
-        // 辅助：渲染单笔交易摘要行（表格行，固定列宽不换行）
+        // 辅助：渲染单笔交易摘要行
         const txRow = (t, badge) => {
             const sym = t.amount < 0 ? '-' : '+';
             const cat = t.category || (t.isTransfer ? '转账' : '');
-            const accName = accNameById(t.accountId);
-            return `<tr style="white-space:nowrap;">
-                <td style="width:46px;padding:5px 6px;">${badge}</td>
-                <td style="width:88px;padding:5px 6px;color:var(--bs-secondary);">${t.date}</td>
-                <td style="width:72px;padding:5px 6px;max-width:72px;overflow:hidden;text-overflow:ellipsis;" title="${cat}">${cat}</td>
-                <td style="width:88px;padding:5px 6px;max-width:88px;overflow:hidden;text-overflow:ellipsis;font-weight:bold;" class="${t.amount < 0 ? 'text-danger' : 'text-success'}" title="${sym}${Math.abs(t.amount)}">${sym}${Math.abs(t.amount)}</td>
-                <td style="width:100px;padding:5px 6px;max-width:100px;overflow:hidden;text-overflow:ellipsis;color:var(--bs-secondary);" title="${t.desc || ''}">${t.desc || ''}</td>
-                <td style="width:80px;padding:5px 6px;max-width:80px;overflow:hidden;text-overflow:ellipsis;" title="${t.tags || ''}">${t.tags ? `<span class="badge bg-light text-dark border">${t.tags}</span>` : '<span class="text-muted">—</span>'}</td>
-                <td style="width:90px;padding:5px 6px;max-width:90px;overflow:hidden;text-overflow:ellipsis;color:var(--bs-secondary);" title="${accName}">${accName}</td>
-                <td style="width:70px;padding:5px 6px;max-width:70px;overflow:hidden;text-overflow:ellipsis;color:var(--bs-secondary);" title="${t._user}">${t._user}</td>
-            </tr>`;
-        };
-
-        // 辅助：包裹交易列表为可横向滚动的表格
-        const txTable = (rows) => `
-            <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
-                <table style="border-collapse:collapse;min-width:640px;width:100%;font-size:0.82rem;table-layout:fixed;">
-                    <thead><tr style="background:var(--bs-tertiary-bg);white-space:nowrap;">
-                        <th style="width:46px;padding:4px 6px;border-bottom:2px solid var(--bs-border-color);"></th>
-                        <th style="width:88px;padding:4px 6px;border-bottom:2px solid var(--bs-border-color);">日期</th>
-                        <th style="width:72px;padding:4px 6px;border-bottom:2px solid var(--bs-border-color);">分类</th>
-                        <th style="width:88px;padding:4px 6px;border-bottom:2px solid var(--bs-border-color);">金额</th>
-                        <th style="width:100px;padding:4px 6px;border-bottom:2px solid var(--bs-border-color);">备注</th>
-                        <th style="width:80px;padding:4px 6px;border-bottom:2px solid var(--bs-border-color);">标签</th>
-                        <th style="width:90px;padding:4px 6px;border-bottom:2px solid var(--bs-border-color);">账户</th>
-                        <th style="width:70px;padding:4px 6px;border-bottom:2px solid var(--bs-border-color);">用户</th>
-                    </tr></thead>
-                    <tbody>${rows}</tbody>
-                </table>
+            return `<div class="d-flex align-items-center gap-2 py-1 border-bottom small flex-wrap">
+                ${badge}
+                <span class="text-muted" style="min-width:78px;">${t.date}</span>
+                <span style="min-width:60px;">${cat}</span>
+                <span class="${t.amount < 0 ? 'text-danger' : 'text-success'} fw-bold" style="min-width:70px;">${sym}${Math.abs(t.amount)}</span>
+                <span class="text-muted">${t.desc || ''}</span>
+                ${t.tags ? `<span class="badge bg-light text-dark border">${t.tags}</span>` : ''}
+                <span class="text-muted ms-auto">${t._user}</span>
             </div>`;
+        };
 
         // 渲染变更交易
         let txChangedHtml = '';
@@ -6683,14 +6657,14 @@ async function openBackupCompare(fileName, dateStr) {
         <div class="mb-3">
             <div class="fw-bold small mb-2"><i class="bi bi-plus-circle text-success"></i> 当前新增交易（备份中没有）— ${diff.txOnlyInCurrent.length} 笔</div>
             ${diff.txOnlyInCurrent.length
-                ? txTable(diff.txOnlyInCurrent.map(t => txRow(t, '<span class="badge bg-success">新增</span>')).join(''))
+                ? diff.txOnlyInCurrent.map(t => txRow(t, '<span class="badge bg-success">新增</span>')).join('')
                 : '<div class="text-muted small">无</div>'}
         </div>
 
         <div class="mb-3">
             <div class="fw-bold small mb-2"><i class="bi bi-dash-circle text-danger"></i> 备份独有交易（当前已删除）— ${diff.txOnlyInBackup.length} 笔</div>
             ${diff.txOnlyInBackup.length
-                ? txTable(diff.txOnlyInBackup.map(t => txRow(t, '<span class="badge bg-danger">已删</span>')).join(''))
+                ? diff.txOnlyInBackup.map(t => txRow(t, '<span class="badge bg-danger">已删</span>')).join('')
                 : '<div class="text-muted small">无</div>'}
         </div>
 
@@ -7636,12 +7610,12 @@ function toggleAdvancedExportSection() {
     const toggleIcon = $('adv-export-toggle-icon');
     if (card.style.display === 'none') {
         card.style.display = 'block';
-        toggleText.textContent = '隐藏高级导出';
-        toggleIcon.className = 'bi bi-file-earmark-code-fill';
+        toggleText.textContent = '收起高级设置';
+        toggleIcon.className = 'bi bi-gear-fill';
     } else {
         card.style.display = 'none';
-        toggleText.textContent = '显示高级导出';
-        toggleIcon.className = 'bi bi-file-earmark-code';
+        toggleText.textContent = '高级设置';
+        toggleIcon.className = 'bi bi-gear';
     }
 }
 
