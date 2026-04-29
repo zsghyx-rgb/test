@@ -6590,20 +6590,40 @@ async function openBackupCompare(fileName, dateStr) {
             accDiffHtml = '<div class="text-muted small">账户信息无差异</div>';
         }
 
-        // 辅助：渲染单笔交易摘要行
+        // 辅助：渲染单笔交易摘要行（表格行，固定列宽不换行）
         const txRow = (t, badge) => {
             const sym = t.amount < 0 ? '-' : '+';
             const cat = t.category || (t.isTransfer ? '转账' : '');
-            return `<div class="d-flex align-items-center gap-2 py-1 border-bottom small flex-wrap">
-                ${badge}
-                <span class="text-muted" style="min-width:78px;">${t.date}</span>
-                <span style="min-width:60px;">${cat}</span>
-                <span class="${t.amount < 0 ? 'text-danger' : 'text-success'} fw-bold" style="min-width:70px;">${sym}${Math.abs(t.amount)}</span>
-                <span class="text-muted">${t.desc || ''}</span>
-                ${t.tags ? `<span class="badge bg-light text-dark border">${t.tags}</span>` : ''}
-                <span class="text-muted ms-auto">${t._user}</span>
-            </div>`;
+            const accName = accNameById(t.accountId);
+            return `<tr style="white-space:nowrap;">
+                <td style="width:46px;padding:5px 6px;">${badge}</td>
+                <td style="width:88px;padding:5px 6px;color:var(--bs-secondary);">${t.date}</td>
+                <td style="width:72px;padding:5px 6px;max-width:72px;overflow:hidden;text-overflow:ellipsis;" title="${cat}">${cat}</td>
+                <td style="width:88px;padding:5px 6px;max-width:88px;overflow:hidden;text-overflow:ellipsis;font-weight:bold;" class="${t.amount < 0 ? 'text-danger' : 'text-success'}" title="${sym}${Math.abs(t.amount)}">${sym}${Math.abs(t.amount)}</td>
+                <td style="width:100px;padding:5px 6px;max-width:100px;overflow:hidden;text-overflow:ellipsis;color:var(--bs-secondary);" title="${t.desc || ''}">${t.desc || ''}</td>
+                <td style="width:80px;padding:5px 6px;max-width:80px;overflow:hidden;text-overflow:ellipsis;" title="${t.tags || ''}">${t.tags ? `<span class="badge bg-light text-dark border">${t.tags}</span>` : '<span class="text-muted">—</span>'}</td>
+                <td style="width:90px;padding:5px 6px;max-width:90px;overflow:hidden;text-overflow:ellipsis;color:var(--bs-secondary);" title="${accName}">${accName}</td>
+                <td style="width:70px;padding:5px 6px;max-width:70px;overflow:hidden;text-overflow:ellipsis;color:var(--bs-secondary);" title="${t._user}">${t._user}</td>
+            </tr>`;
         };
+
+        // 辅助：包裹交易列表为可横向滚动的表格
+        const txTable = (rows) => `
+            <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+                <table style="border-collapse:collapse;min-width:640px;width:100%;font-size:0.82rem;table-layout:fixed;">
+                    <thead><tr style="background:var(--bs-tertiary-bg);white-space:nowrap;">
+                        <th style="width:46px;padding:4px 6px;border-bottom:2px solid var(--bs-border-color);"></th>
+                        <th style="width:88px;padding:4px 6px;border-bottom:2px solid var(--bs-border-color);">日期</th>
+                        <th style="width:72px;padding:4px 6px;border-bottom:2px solid var(--bs-border-color);">分类</th>
+                        <th style="width:88px;padding:4px 6px;border-bottom:2px solid var(--bs-border-color);">金额</th>
+                        <th style="width:100px;padding:4px 6px;border-bottom:2px solid var(--bs-border-color);">备注</th>
+                        <th style="width:80px;padding:4px 6px;border-bottom:2px solid var(--bs-border-color);">标签</th>
+                        <th style="width:90px;padding:4px 6px;border-bottom:2px solid var(--bs-border-color);">账户</th>
+                        <th style="width:70px;padding:4px 6px;border-bottom:2px solid var(--bs-border-color);">用户</th>
+                    </tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>`;
 
         // 渲染变更交易
         let txChangedHtml = '';
@@ -6663,14 +6683,14 @@ async function openBackupCompare(fileName, dateStr) {
         <div class="mb-3">
             <div class="fw-bold small mb-2"><i class="bi bi-plus-circle text-success"></i> 当前新增交易（备份中没有）— ${diff.txOnlyInCurrent.length} 笔</div>
             ${diff.txOnlyInCurrent.length
-                ? diff.txOnlyInCurrent.map(t => txRow(t, '<span class="badge bg-success">新增</span>')).join('')
+                ? txTable(diff.txOnlyInCurrent.map(t => txRow(t, '<span class="badge bg-success">新增</span>')).join(''))
                 : '<div class="text-muted small">无</div>'}
         </div>
 
         <div class="mb-3">
             <div class="fw-bold small mb-2"><i class="bi bi-dash-circle text-danger"></i> 备份独有交易（当前已删除）— ${diff.txOnlyInBackup.length} 笔</div>
             ${diff.txOnlyInBackup.length
-                ? diff.txOnlyInBackup.map(t => txRow(t, '<span class="badge bg-danger">已删</span>')).join('')
+                ? txTable(diff.txOnlyInBackup.map(t => txRow(t, '<span class="badge bg-danger">已删</span>')).join(''))
                 : '<div class="text-muted small">无</div>'}
         </div>
 
