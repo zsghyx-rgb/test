@@ -319,15 +319,21 @@ body {
     left: 14px !important;
     transform: translateX(0) !important;
     top: 10px !important;
-    padding: 5px 12px 5px 10px !important;
-    border-radius: 20px !important;
+    padding: 6px 8px !important;
+    border-radius: 50% !important;
     font-size: 0.75rem !important;
     cursor: pointer !important;
-    max-width: 130px;
+    max-width: 32px;
+    min-width: 32px;
+    width: 32px;
+    height: 32px;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
     white-space: nowrap;
     overflow: hidden;
     transition: left 0.4s ease, transform 0.4s ease, padding 0.3s ease, max-width 0.3s ease;
-    animation: toastBreath 2s ease-in-out infinite;
+    animation: toastBreath 4s ease-in-out infinite;
 }
 
 .amount-hidden { filter: blur(8px); user-select: none; }
@@ -927,7 +933,7 @@ select.compact-form-control { height: 2.1rem; }
         </div>
     </div>
     <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;pointer-events:none;">
-        <span class="text-muted" style="font-size:0.7rem;">version 2.0.7</span>
+        <span class="text-muted" style="font-size:0.7rem;">version 2.0.8</span>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
@@ -1091,16 +1097,15 @@ select.compact-form-control { height: 2.1rem; }
 
                 <!-- 筛选展开面板（分行显示） -->
                 <div id="trans-filter-panel">
-                    <!-- 第一行：日期 -->
-                    <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                    <!-- 第一行：日期（单行横向滚动） -->
+                    <div class="d-flex align-items-center gap-2 mb-2 flex-nowrap" style="overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch;">
                         <span class="text-muted small flex-shrink-0" style="width:36px;">日期</span>
                         <div id="quick-date-filter-group" class="flex-shrink-0">
-                            <div class="btn-group btn-group-sm">
-                                <button class="btn btn-outline-secondary" data-range="30days"    onclick="quickDateFilter('30days')">近30天</button>
-                                <button class="btn btn-outline-secondary" data-range="month"     onclick="quickDateFilter('month')">本月</button>
-                                <button class="btn btn-outline-secondary" data-range="lastmonth" onclick="quickDateFilter('lastmonth')">上月</button>
-                                <button class="btn btn-outline-secondary" data-range="year"      onclick="quickDateFilter('year')">本年</button>
-                                <button class="btn btn-outline-secondary" data-range="all"       onclick="quickDateFilter('all')">全部</button>
+                            <div class="btn-group btn-group-sm flex-nowrap" style="white-space:nowrap;">
+                                <button class="btn btn-outline-secondary" data-range="30days" onclick="quickDateFilter('30days')">近30天</button>
+                                <button class="btn btn-outline-secondary" data-range="month"  onclick="quickDateFilter('month')">本月</button>
+                                <button class="btn btn-outline-secondary" data-range="year"   onclick="quickDateFilter('year')">本年</button>
+                                <button class="btn btn-outline-secondary" data-range="all"    onclick="quickDateFilter('all')">全部</button>
                             </div>
                         </div>
                         <button class="btn btn-sm btn-outline-secondary flex-shrink-0" id="trans-custom-toggle" onclick="toggleTransCustomDate()">
@@ -1122,13 +1127,6 @@ select.compact-form-control { height: 2.1rem; }
                         <button class="btn btn-sm btn-outline-secondary flex-shrink-0" id="transfer-mode-toggle" onclick="toggleDisplayMode()">
                             <i class="bi bi-eye" id="transfer-mode-icon"></i>
                             <span id="transfer-mode-text">收支+转账</span>
-                        </button>
-                    </div>
-                    <!-- 第三行：清除 -->
-                    <div class="d-flex align-items-center gap-2 mb-1">
-                        <span style="width:36px;"></span>
-                        <button class="btn btn-sm btn-outline-secondary flex-shrink-0" onclick="clearTransactionFilters()">
-                            <i class="bi bi-x-circle"></i> 清除筛选
                         </button>
                     </div>
                 </div>
@@ -3154,7 +3152,7 @@ function minimizeUnsavedToast() {
     el.classList.remove('minimized');
     void el.offsetWidth;
     el.classList.add('minimized');
-    el.innerHTML = `<span style="color:#e67e00;font-size:1.1rem;line-height:1;flex-shrink:0;">●</span><span style="margin-left:5px;font-weight:600;">未保存</span>`;
+    el.innerHTML = `<span style="color:#e67e00;font-size:1.1rem;line-height:1;">●</span>`;
     el.onclick = (e) => {
         e.stopPropagation();
         clearTimeout(_toastMinimizeTimer);
