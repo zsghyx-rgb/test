@@ -413,11 +413,6 @@ select.compact-form-control { height: 2.1rem; }
     font-size: 0.85rem;
     user-select: none;
 }
-/* 日期交替背景色 */
-.mobile-transaction-card.tx-group-even { background: rgba(13,110,253,0.05) !important; }
-.mobile-transaction-card.tx-group-odd  { background: rgba(25,135,84,0.05)  !important; }
-.tx-row-even > td { background: rgba(13,110,253,0.04) !important; }
-.tx-row-odd  > td { background: rgba(25,135,84,0.04)  !important; }
 .mobile-transaction-card .card-line-1 {
     display: flex;
     justify-content: space-between;
@@ -538,6 +533,26 @@ select.compact-form-control { height: 2.1rem; }
     .modal-body { overflow-y: auto; flex: 1; max-height: calc(90vh - 120px); }
     .modal-body form { display: flex; flex-direction: column; }
 
+    /* 编辑/新增交易弹窗：手机端始终全屏，覆盖上方通用 modal 规则 */
+    #editTransactionModal .modal-dialog {
+        margin: 0 !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+        min-height: 100dvh !important;
+        max-height: 100dvh !important;
+        border-radius: 0 !important;
+        align-items: stretch !important;
+    }
+    #editTransactionModal .modal-content {
+        border-radius: 0 !important;
+        border: none !important;
+        max-height: 100dvh !important;
+        height: 100dvh !important;
+    }
+    #editTransactionModal .modal-body {
+        max-height: none !important;
+    }
+
 }
 
 @media (min-width: 769px) {
@@ -650,15 +665,13 @@ select.compact-form-control { height: 2.1rem; }
         margin: 0 !important;
         width: 100vw !important;
         max-width: 100vw !important;
-        height: 90dvh !important;
-        max-height: 90dvh !important;
+        max-height: 100dvh !important;
         border-radius: 0;
     }
     #editTransactionModal .modal-content {
         border-radius: 0 !important;
         border: none !important;
-        height: 90dvh !important;
-        max-height: 90dvh !important;
+        max-height: 100dvh !important;
     }
 }
 /* 桌面端：正常宽度居中，高度自适应最大90vh */
@@ -2045,7 +2058,7 @@ let historyTransactions = [];     // 历史模式专属交易数组（不与 tra
 let historyPrevFilters = null;    // 历史模式进入前的日期筛选状态
 
 let chartInstances = {};
-let currentStatsFilter = { startDate: '', endDate: '', currency: 'RMB', user: 'all' };
+let currentStatsFilter = { startDate: '', endDate: '', currency: localStorage.getItem('APP_stats_currency') || 'RMB', user: localStorage.getItem('APP_stats_user') || 'all' };
 // 月导航状态（'month' = 单月模式，'range' = 快速范围/自定义模式）
 let statsNavYear  = new Date().getFullYear();
 let statsNavMonth = new Date().getMonth(); // 0-indexed
@@ -2056,8 +2069,8 @@ let amountsHidden = false;
 let searchDebounceTimer = null;
 let displayedTransactionCount = 100;
 let currentAssetAggregation = 'month';
-let transactionDisplayMode = 'all';
-let currentUserFilterValue = 'all';
+let transactionDisplayMode = localStorage.getItem('APP_trans_display_mode') || 'all';
+let currentUserFilterValue = localStorage.getItem('APP_trans_user_filter') || 'all';
 
 const $ = id => document.getElementById(id);
 const $$ = selector => document.querySelectorAll(selector);
@@ -3062,9 +3075,22 @@ function logout() {
 function initAppUI() {
     renderAccounts();
 
-    // 默认只显示当前用户的流水
-    currentUserFilterValue = currentUserName;
+    // 恢复交易页用户筛选（已保存的值需校验是否仍有效；否则默认当前用户）
+    const savedTransUser = localStorage.getItem('APP_trans_user_filter');
+    const validUsers = ['all', ...dataUsers];
+    currentUserFilterValue = (savedTransUser && validUsers.includes(savedTransUser))
+        ? savedTransUser
+        : currentUserName;
     updateUserFilterBtn();
+
+    // 恢复收支/转账显示模式
+    const savedMode = localStorage.getItem('APP_trans_display_mode');
+    if (savedMode && ['all', 'transactions', 'transfers'].includes(savedMode)) {
+        transactionDisplayMode = savedMode;
+    } else {
+        transactionDisplayMode = 'all';
+    }
+    updateTransferModeButton();
 
     $('filter-start-date').value = '';
     $('filter-end-date').value = '';
@@ -3084,6 +3110,18 @@ function initAppUI() {
         currentStatsFilter.startDate = mStartStr;
         currentStatsFilter.endDate   = mEndStr;
         updateStatsNavUI();
+    }
+
+    // 恢复统计页货币（renderStatsCurrencyButtons 内部会校验账户是否有效）
+    const savedCurrency = localStorage.getItem('APP_stats_currency');
+    if (savedCurrency) currentStatsFilter.currency = savedCurrency;
+
+    // 恢复统计页用户筛选
+    const savedStatsUser = localStorage.getItem('APP_stats_user');
+    if (savedStatsUser && validUsers.includes(savedStatsUser)) {
+        currentStatsFilter.user = savedStatsUser;
+    } else {
+        currentStatsFilter.user = 'all';
     }
 
     const today = new Date();
@@ -5402,6 +5440,7 @@ function cycleUserFilter() {
     const options = ['all', ...dataUsers];
     const idx = options.indexOf(currentUserFilterValue);
     currentUserFilterValue = options[(idx + 1) % options.length];
+    localStorage.setItem('APP_trans_user_filter', currentUserFilterValue);
     updateUserFilterBtn();
     applyTransactionFilter();
 }
@@ -5495,6 +5534,7 @@ function sortTransactions(field) {
 function toggleDisplayMode() {
     const modes = ['all', 'transactions', 'transfers'];
     transactionDisplayMode = modes[(modes.indexOf(transactionDisplayMode) + 1) % modes.length];
+    localStorage.setItem('APP_trans_display_mode', transactionDisplayMode);
     updateTransferModeButton();
     displayedTransactionCount = 100;
     renderAllTransactions();
@@ -5582,16 +5622,9 @@ function renderAllTransactions() {
 
     const displayData = filtered.slice(0, Math.min(displayedTransactionCount, filtered.length));
 
-    // 日期分组交替色追踪
-    let _lastDateDesktop = null, _dateGroupIdxDesktop = -1;
-    let _lastDateMobile  = null, _dateGroupIdxMobile  = -1;
-
     displayData.forEach(t => {
         const acc = accounts.find(a => a.id == t.accountId);
         if (!acc) return;
-
-        // 桌面端日期分组索引
-        if (t.date !== _lastDateDesktop) { _dateGroupIdxDesktop++; _lastDateDesktop = t.date; }
         const typeText = t.isTransfer ? '转账' : (t.amount < 0 ? '支出' : '收入');
         const typeColorClass = t.isTransfer ? 'text-warning' : (t.amount < 0 ? 'text-danger' : 'text-success');
 
@@ -5619,7 +5652,6 @@ function renderAllTransactions() {
         (!t.isTransfer ? `<i class="bi bi-eye text-secondary" style="cursor:pointer;" title="查看" onclick="openEditTransaction(${t.id})"></i>` : ''));
 
         const tr = document.createElement('tr');
-        tr.className = _dateGroupIdxDesktop % 2 === 0 ? 'tx-row-even' : 'tx-row-odd';
         const tDescDisplay = t.items && t.items.length > 1
             ? t.items.filter(it => it.desc).map(it => it.desc).join(' / ')
             : (t.desc||'');
@@ -5647,11 +5679,8 @@ function renderAllTransactions() {
             if (!acc) return;
             if (t.isTransfer && t.type === 'income') return;
 
-            // 移动端日期分组索引
-            if (t.date !== _lastDateMobile) { _dateGroupIdxMobile++; _lastDateMobile = t.date; }
-
             const card = document.createElement('div');
-            card.className = 'mobile-transaction-card ' + (_dateGroupIdxMobile % 2 === 0 ? 'tx-group-even' : 'tx-group-odd');
+            card.className = 'mobile-transaction-card';
             card.dataset.id = t.id;
 
             const accDisplayName = getAccountDisplayName(acc);
@@ -6304,11 +6333,13 @@ function switchStatsCurrency(c, el) {
     $$('#stats-currency-btns button').forEach(b => b.classList.remove('active'));
     el.classList.add('active');
     currentStatsFilter.currency = c;
+    localStorage.setItem('APP_stats_currency', c);
     renderStats();
 }
 
 function switchStatsUser(u) {
     currentStatsFilter.user = u;
+    localStorage.setItem('APP_stats_user', u);
     // 更新用户按钮高亮
     $$('#stats-user-btns button').forEach(b =>
         b.classList.toggle('active', b.dataset.user === u));
@@ -8178,17 +8209,29 @@ function _renderAnomalies() {
         const hasHistory = vals.some(v => v > 0);
 
         if (!hasHistory) {
+            // 历史3个月从未有该类别，且金额超过上月总支出10%
             if (lastTotal > 0 && amt / lastTotal > 0.1) {
-                anomalies.push({ cat, amt, type: 'new', desc: `近3月首次出现` });
+                anomalies.push({
+                    cat, amt, type: 'new',
+                    desc: `近3月首次出现，占上月支出 ${(amt/lastTotal*100).toFixed(0)}%`
+                });
             }
         } else if (std < mean * 0.01) {
+            // 标准差极小（基本固定支出），若上月明显偏高
             if (amt > mean * 1.5) {
-                anomalies.push({ cat, amt, type: 'spike', desc: `历史稳定约 ${_fmtC(mean)}` });
+                anomalies.push({
+                    cat, amt, type: 'spike',
+                    desc: `历史稳定约 ${_fmtC(mean)}，上月异常偏高 +${((amt/mean-1)*100).toFixed(0)}%`
+                });
             }
         } else {
+            // 均值+1.5倍标准差检验
             const threshold = mean + 1.5 * Math.max(std, mean * 0.15);
             if (amt > threshold && amt > mean * 1.3) {
-                anomalies.push({ cat, amt, type: 'spike', desc: `历史均值 ${_fmtC(mean)}` });
+                anomalies.push({
+                    cat, amt, type: 'spike',
+                    desc: `历史均值 ${_fmtC(mean)}`
+                });
             }
         }
     });
@@ -8198,7 +8241,7 @@ function _renderAnomalies() {
     anomalies.sort((a, b) => b.amt - a.amt);
 
     let html = `<div class="insight-card" style="border-left:3px solid #e74c3c;">
-        <div class="insight-card-title" style="color:#e74c3c;">⚠️ 异常消费提醒</div>`;
+        <div class="insight-card-title" style="color:#e74c3c;">消费提醒</div>`;
 
     anomalies.slice(0, 5).forEach(({ cat, amt, type, desc }) => {
         const icon = type === 'new' ? '🆕' : '🔺';
