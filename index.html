@@ -1,7 +1,7 @@
 <!DOCTYPE html><html lang="zh-CN" data-bs-theme="dark"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>记一笔</title>
+    <title>记一笔 v2.1.7</title>
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0d6efd">
@@ -533,21 +533,9 @@ select.compact-form-control { height: 2.1rem; }
     .modal-body { overflow-y: auto; flex: 1; max-height: calc(90vh - 120px); }
     .modal-body form { display: flex; flex-direction: column; }
 
-    /* 编辑/新增交易弹窗：手机端始终全屏，覆盖上方通用 modal 规则 */
-    #editTransactionModal .modal-dialog {
-        margin: 0 !important;
-        width: 100vw !important;
-        max-width: 100vw !important;
-        min-height: 100dvh !important;
-        max-height: 100dvh !important;
-        border-radius: 0 !important;
-        align-items: stretch !important;
-    }
+    /* 编辑/新增交易弹窗：覆盖通用 modal 的 90vh 限制，与新增窗口保持一致（弹性高度，最高 100dvh） */
     #editTransactionModal .modal-content {
-        border-radius: 0 !important;
-        border: none !important;
         max-height: 100dvh !important;
-        height: 100dvh !important;
     }
     #editTransactionModal .modal-body {
         max-height: none !important;
