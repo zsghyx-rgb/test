@@ -1,7 +1,7 @@
 <!DOCTYPE html><html lang="zh-CN" data-bs-theme="dark"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>记一笔 v2.1.10</title>
+    <title>记一笔 v2.1.11</title>
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0d6efd">
@@ -979,7 +979,21 @@ select.compact-form-control { height: 2.1rem; }
                 </div>
             </div>
 
-            <!-- 设备昵称 -->
+            <!-- Anthropic API Key（收据 OCR） -->
+            <div class="mb-2">
+                <div id="ocr-key-saved-bar" class="d-flex align-items-center justify-content-between">
+                    <span class="small text-success"><i class="bi bi-camera-fill"></i> 收据识别已启用</span>
+                    <button class="btn btn-link btn-sm p-0 text-muted" onclick="showOcrKeyInput()">修改</button>
+                </div>
+                <div id="ocr-key-input-bar">
+                    <label class="form-label small mb-1">Anthropic API Key <span class="text-muted">（收据 OCR 识别）</span></label>
+                    <div class="input-group input-group-sm">
+                        <input type="password" class="form-control" id="ocr-key-input" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+                        <button class="btn btn-outline-success" type="button" onclick="saveOcrKey()"><i class="bi bi-check-lg"></i></button>
+                    </div>
+                    <div class="form-text">Key 仅存本地，<a href="https://console.anthropic.com" target="_blank">免费注册获取</a></div>
+                </div>
+            </div>
             <div class="mb-3">
                 <label class="form-label small mb-1">设备昵称 <span class="text-muted">(可选，用于访问日志)</span></label>
                 <div class="input-group input-group-sm">
@@ -1983,8 +1997,18 @@ select.compact-form-control { height: 2.1rem; }
                                 <button type="button" class="btn btn-outline-secondary btn-sm" id="attachment-btn" style="width: 45px;" onclick="document.getElementById('attachment-file-input').click()">
                                     <i class="bi bi-image"></i>
                                 </button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" id="ocr-scan-btn" style="width: 45px;" onclick="startOcrScan()" title="拍照识别小票">
+                                    <i class="bi bi-camera"></i>
+                                </button>
                             </div>
                             <div id="edit-trans-desc-hint" style="display:none;align-items:center;gap:6px;margin-top:3px;padding:3px 8px;border-radius:5px;background:rgba(var(--bs-primary-rgb),0.08);border:1px solid rgba(var(--bs-primary-rgb),0.2);font-size:0.78rem;"></div>
+                            <!-- OCR 识别状态横幅 -->
+                            <div id="ocr-result-banner" style="display:none;margin-top:4px;padding:4px 8px;border-radius:6px;background:rgba(var(--bs-success-rgb),0.1);border:1px solid rgba(var(--bs-success-rgb),0.3);font-size:0.78rem;color:var(--bs-success);">
+                                <i class="bi bi-stars"></i> <span id="ocr-result-text"></span>
+                                <button type="button" class="btn-close btn-close-sm ms-2" style="font-size:0.6rem;float:right;margin-top:2px;" onclick="clearOcrBanner()"></button>
+                            </div>
+                            <!-- OCR 隐藏文件输入（相机优先） -->
+                            <input type="file" id="ocr-file-input" accept="image/*" capture="environment" class="d-none" onchange="handleOcrFileSelected(this)">
                         </div>
                     </div>
 
@@ -2217,6 +2241,7 @@ function initLoginSettingsUI() {
     initGasUrlUI();
     initGasTokenUI();
     initDeviceNameUI();
+    initOcrKeyUI();
     renderVerboseToastBtn();
 }
 
@@ -2347,6 +2372,197 @@ function saveDeviceName() {
     const hint = $('device-name-hint');
     if (hint) hint.textContent = `已保存：${val}`;
     if (verboseToast) showToast(`设备昵称已保存：${val}`, 'success', 2000);
+}
+
+// ── OCR 收据识别 ────────────────────────────────────────────────
+
+function initOcrKeyUI() {
+    const saved = localStorage.getItem('APP_ocr_key') || '';
+    const savedBar = $('ocr-key-saved-bar');
+    const inputBar = $('ocr-key-input-bar');
+    if (!savedBar || !inputBar) return;
+    if (saved) {
+        savedBar.style.removeProperty('display');
+        inputBar.style.display = 'none';
+    } else {
+        savedBar.style.display = 'none';
+        inputBar.style.removeProperty('display');
+    }
+}
+
+function showOcrKeyInput() {
+    $('ocr-key-saved-bar').style.display = 'none';
+    $('ocr-key-input-bar').style.removeProperty('display');
+    const input = $('ocr-key-input');
+    input.value = localStorage.getItem('APP_ocr_key') || '';
+    input.focus();
+}
+
+function saveOcrKey() {
+    const val = ($('ocr-key-input').value || '').trim();
+    if (!val || !val.startsWith('sk-ant-')) {
+        alert('请输入有效的 Anthropic API Key（以 sk-ant- 开头）');
+        return;
+    }
+    localStorage.setItem('APP_ocr_key', val);
+    initOcrKeyUI();
+    showToast('API Key 已保存，收据识别已启用 📷', 'success', 2500);
+}
+
+function startOcrScan() {
+    const key = localStorage.getItem('APP_ocr_key') || '';
+    if (!key) {
+        showToast('请先在设置中填入 Anthropic API Key', 'warning', 3000);
+        return;
+    }
+    // 重置 input 以允许重复选择同一文件
+    const fi = $('ocr-file-input');
+    fi.value = '';
+    fi.click();
+}
+
+async function handleOcrFileSelected(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+
+    // 显示加载状态
+    const btn = $('ocr-scan-btn');
+    const origHTML = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+    btn.disabled = true;
+
+    try {
+        // 压缩图片（最大 1200px 宽，JPEG 0.85）
+        const base64 = await compressImageToBase64(file, 1200, 0.85);
+
+        const key = localStorage.getItem('APP_ocr_key') || '';
+        const txType = $('edit-trans-type').value; // 'expense' | 'income'
+        const catList = (categories[txType === 'income' ? 'income' : 'expense'] || []).join('、');
+
+        const prompt = `你是一个记账助手，请识别这张收据/小票图片，并提取关键信息。
+只返回如下 JSON，不要输出任何其他文字或 markdown：
+{
+  "amount": <数字，总金额，人民币元，如无法识别填 null>,
+  "merchant": <"商家名称或消费描述"，如无法识别填 null>,
+  "date": <"YYYY-MM-DD"，如无法识别填 null>,
+  "category": <从 [${catList}] 中选最合适的一项，必须是列表中的值>,
+  "desc": <"简短备注，例如：午餐、超市购物、打车回家"，10字以内>
+}`;
+
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': key,
+                'anthropic-version': '2023-06-01',
+                'anthropic-dangerous-direct-browser-access': 'true'
+            },
+            body: JSON.stringify({
+                model: 'claude-sonnet-4-6',
+                max_tokens: 300,
+                messages: [{
+                    role: 'user',
+                    content: [
+                        { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64 } },
+                        { type: 'text', text: prompt }
+                    ]
+                }]
+            })
+        });
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err?.error?.message || `HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        const text = (data.content || []).map(b => b.text || '').join('').trim();
+        // 去除可能的 ```json ``` 包裹
+        const cleaned = text.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
+        const result = JSON.parse(cleaned);
+
+        applyOcrResult(result);
+
+    } catch (e) {
+        console.error('OCR error', e);
+        showToast('识别失败：' + (e.message || '未知错误'), 'danger', 4000);
+    } finally {
+        btn.innerHTML = origHTML;
+        btn.disabled = false;
+    }
+}
+
+function applyOcrResult(r) {
+    const filled = [];
+
+    if (r.amount && !isNaN(r.amount)) {
+        $('edit-trans-amount').value = Math.abs(Number(r.amount)).toFixed(2);
+        $('edit-trans-amount').style.background = 'rgba(var(--bs-success-rgb),0.10)';
+        filled.push(`金额 ${r.amount}`);
+    }
+    if (r.date) {
+        $('edit-trans-date').value = r.date;
+        filled.push(`日期 ${r.date}`);
+    }
+    if (r.category) {
+        const sel = $('edit-trans-category');
+        for (let i = 0; i < sel.options.length; i++) {
+            if (sel.options[i].value === r.category) {
+                sel.value = r.category;
+                filled.push(`类别「${r.category}」`);
+                break;
+            }
+        }
+    }
+    if (r.desc || r.merchant) {
+        const descVal = r.desc || r.merchant;
+        $('edit-trans-desc').value = descVal;
+        filled.push(`备注「${descVal}」`);
+    }
+
+    if (filled.length === 0) {
+        showToast('未能识别到有效信息，请手动填写', 'warning', 3000);
+        return;
+    }
+
+    // 显示结果横幅
+    const banner = $('ocr-result-banner');
+    const bannerText = $('ocr-result-text');
+    if (banner && bannerText) {
+        bannerText.textContent = '已识别：' + filled.join('、') + '，请确认后保存';
+        banner.style.display = 'block';
+    }
+}
+
+function clearOcrBanner() {
+    const banner = $('ocr-result-banner');
+    if (banner) banner.style.display = 'none';
+    // 清除输入框高亮
+    const amtInput = $('edit-trans-amount');
+    if (amtInput) amtInput.style.background = '';
+}
+
+// 图片压缩（canvas 缩放 → base64 JPEG）
+function compressImageToBase64(file, maxWidth, quality) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = reject;
+        reader.onload = e => {
+            const img = new Image();
+            img.onerror = reject;
+            img.onload = () => {
+                let w = img.width, h = img.height;
+                if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
+                const canvas = document.createElement('canvas');
+                canvas.width = w; canvas.height = h;
+                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                const dataURL = canvas.toDataURL('image/jpeg', quality);
+                resolve(dataURL.split(',')[1]); // 只返回 base64 部分
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
 }
 
 
@@ -4602,6 +4818,8 @@ function switchTransTab(tab, skipReset) {
         const attachBtn = $('attachment-btn');
         if (attachSec) attachSec.style.display = tab === 'expense' ? '' : 'none';
         if (attachBtn) attachBtn.style.display = tab === 'expense' ? '' : 'none';
+        const ocrBtn = $('ocr-scan-btn');
+        if (ocrBtn) ocrBtn.style.display = tab === 'expense' ? '' : 'none';
         showSpendingTypeRow(tab === 'expense');
         // 拆分按钮仅在支出时显示
         const splitWrap = $('split-btn-wrap');
@@ -4637,6 +4855,9 @@ function _initNewTransModal(mode, title) {
     resetInlineItems();
     resetAttachmentUI();
     resetSpendingType();
+    clearOcrBanner();
+    const amtInput = $('edit-trans-amount');
+    if (amtInput) amtInput.style.background = '';
     $('trans-tab-bar').style.display = '';
 }
 
