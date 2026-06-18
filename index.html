@@ -1,7 +1,7 @@
 <!DOCTYPE html><html lang="zh-CN" data-bs-theme="dark"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>记一笔 v2.1.8</title>
+    <title>记一笔 v2.1.10</title>
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0d6efd">
@@ -860,6 +860,70 @@ select.compact-form-control { height: 2.1rem; }
 }
 #expenseCategoryChart, #tagStatsChart, #categoryTrendChart,
 #totalExpenseTrendChart, #monthlyTrendChart { cursor: pointer; }
+
+/* ── 自定义账户下拉组件 ── */
+.acc-select-wrapper {
+    position: relative;
+}
+.acc-select-trigger {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    user-select: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%236c757d' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    background-size: 12px;
+    padding-right: 1.6rem !important;
+}
+.acc-select-trigger.open {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.2rem rgba(13,110,253,.25);
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+.acc-select-dropdown {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    background: var(--bs-body-bg);
+    border: 1px solid #86b7fe;
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    max-height: 300px;
+    overflow-y: auto;
+}
+.acc-select-dropdown.open { display: block; }
+.acc-select-option {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.35rem 0.65rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    line-height: 1.3;
+    gap: 0.5rem;
+}
+.acc-select-option:hover { background: var(--bs-tertiary-bg); }
+.acc-select-option.selected { background: rgba(13,110,253,0.1); }
+.acc-select-option .acc-name {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.acc-select-option .acc-bal {
+    font-size: 0.72rem;
+    color: var(--bs-secondary);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
 </style>
 </head>
 <body>
@@ -992,7 +1056,7 @@ select.compact-form-control { height: 2.1rem; }
         </div>
     </div>
     <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;pointer-events:none;">
-        <span class="text-muted" style="font-size:0.7rem;">version 2.1.8</span>
+        <span class="text-muted" style="font-size:0.7rem;">version 2.1.11</span>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
@@ -1849,7 +1913,7 @@ select.compact-form-control { height: 2.1rem; }
                         </div>
                         <div style="flex:1;min-width:0;">
                             <label class="compact-form-label">账户</label>
-                            <select class="form-select compact-form-control" id="edit-trans-account" required=""></select>
+                            <div class="acc-select-wrapper" id="wrap-edit-trans-account"><select class="form-select compact-form-control" id="edit-trans-account" required="" style="display:none;"></select><div class="acc-select-trigger compact-form-control form-select" id="trigger-edit-trans-account"></div><div class="acc-select-dropdown" id="dropdown-edit-trans-account"></div></div>
                         </div>
                         <!-- 拆分切换按钮：普通模式=剪刀，拆分模式=加号添加行 -->
                         <div id="split-btn-wrap" style="flex-shrink:0;align-self:flex-end;">
@@ -1951,7 +2015,7 @@ select.compact-form-control { height: 2.1rem; }
                     <div class="row g-2 mb-2">
                         <div class="col-6">
                             <label class="compact-form-label">转出账户</label>
-                            <select class="form-select compact-form-control" id="edit-transfer-from" onchange="handleEditTransferAmountChange()" required=""></select>
+                            <div class="acc-select-wrapper" id="wrap-edit-transfer-from"><select class="form-select compact-form-control" id="edit-transfer-from" onchange="handleEditTransferAmountChange()" required="" style="display:none;"></select><div class="acc-select-trigger compact-form-control form-select" id="trigger-edit-transfer-from"></div><div class="acc-select-dropdown" id="dropdown-edit-transfer-from"></div></div>
                         </div>
                         <div class="col-6">
                             <label class="compact-form-label">转出金额</label>
@@ -1961,7 +2025,7 @@ select.compact-form-control { height: 2.1rem; }
                     <div class="row g-2 mb-2">
                         <div class="col-6">
                             <label class="compact-form-label">转入账户</label>
-                            <select class="form-select compact-form-control" id="edit-transfer-to" onchange="handleEditTransferAmountChange()" required=""></select>
+                            <div class="acc-select-wrapper" id="wrap-edit-transfer-to"><select class="form-select compact-form-control" id="edit-transfer-to" onchange="handleEditTransferAmountChange()" required="" style="display:none;"></select><div class="acc-select-trigger compact-form-control form-select" id="trigger-edit-transfer-to"></div><div class="acc-select-dropdown" id="dropdown-edit-transfer-to"></div></div>
                         </div>
                         <div class="col-6">
                             <label class="compact-form-label">转入金额</label>
@@ -2601,6 +2665,12 @@ function loginWithUser(name) {
 
     loadAllData();
     filterUserData();
+    // 记录本次登录时已知的交易快照（ID + updatedAt，用于标注新同步/修改数据）
+    try {
+        const knownMap = {};
+        transactions.forEach(t => { knownMap[t.id] = t.updatedAt ?? 0; });
+        sessionStorage.setItem('knownTxnMap_' + name, JSON.stringify(knownMap));
+    } catch(_) {}
     initAppUI();
 
     // 初始 tab = 交易页，显示悬浮按钮
@@ -4292,7 +4362,7 @@ function renderDetailContent(id) {
                 const toAcc   = tIn  ? accounts.find(a => a.id == tIn.accountId)  : null;
                 const fromName = fromAcc ? getAccountDisplayName(fromAcc) : '?';
                 const toName   = toAcc   ? getAccountDisplayName(toAcc)   : '?';
-                titleHtml = `<span style="font-size:0.83rem;font-weight:600;">${fromName}<span style="color:var(--bs-primary);margin:0 2px;">→</span>${toName}</span>`;
+                titleHtml = `<span style="font-size:0.83rem;font-weight:600;">${fromName}<span style="color:var(--bs-primary);margin:0 2px;">→</span>${toName}${getTxnBadge(t)}</span>`;
                 const cleanDesc = tOut ? (tOut.desc || '') : (t.desc || '');
                 if (cleanDesc) subLine += ' · ' + cleanDesc;
             } else {
@@ -4404,8 +4474,8 @@ function renderDetailContent(id) {
             tr.innerHTML = `
                 <td>${t.date}</td>
                 <td><div class="${typeColorClass}">${typeText}</div></td>
-                <td>${categoryDisplay}</td>
-                <td>${accountOutDisplay}</td>
+                <td>${categoryDisplay}${!isTransfer ? getTxnBadge(t) : ''}</td>
+                <td>${accountOutDisplay}${isTransfer ? getTxnBadge(t) : ''}</td>
                 <td><div class="fw-bold ${amtColorClass}">${displayAmt}</div></td>
                 <td>${toAccDisplay}</td>
                 <td>${peerAmtDisplay}</td>
@@ -4576,7 +4646,7 @@ function openNewTransFromDetail() {
     _initNewTransModal('add', '新增交易');
     switchTransTab(prefs.type || 'expense', true);
     const accSelect = $('edit-trans-account');
-    if (accSelect) accSelect.value = currentDetailAccountId;
+    if (accSelect) { accSelect.value = currentDetailAccountId; accSelectSync('edit-trans-account'); }
     const catSelect = $('edit-trans-category');
     if (catSelect && prefs.category) {
         const opt = [...catSelect.options].find(o => o.value === prefs.category);
@@ -4628,14 +4698,23 @@ function fillTransferSelects(fromValue, toValue) {
     fromSelect.innerHTML = '';
     // 转出：只有自己的账户，按手动排序
     sortedUserAccounts(accounts.filter(a => a.ownerName === currentUserName)).forEach(a => {
-        fromSelect.add(new Option(`${getAccountDisplayName(a)} (${CURRENCY_SYMBOLS[a.currency]})`, a.id));
+        const name = `${getAccountDisplayName(a)} (${CURRENCY_SYMBOLS[a.currency]})`;
+        const opt = new Option(name, a.id);
+        opt.setAttribute('data-name', name);
+        opt.setAttribute('data-bal', calculateBalance(a.id).toFixed(2));
+        fromSelect.add(opt);
     });
     toSelect.innerHTML = '';
     // 转入：自己的账户（排序）+ 其他用户账户
     const sortedMine = sortedUserAccounts(accounts.filter(a => a.ownerName === currentUserName));
     const others = accounts.filter(a => a.ownerName !== currentUserName);
     [...sortedMine, ...others].forEach(a => {
-        toSelect.add(new Option(`${getAccountDisplayName(a)} (${CURRENCY_SYMBOLS[a.currency]})`, a.id));
+        const name = `${getAccountDisplayName(a)} (${CURRENCY_SYMBOLS[a.currency]})`;
+        const opt = new Option(name, a.id);
+        opt.setAttribute('data-name', name);
+        const isMine = a.ownerName === currentUserName;
+        if (isMine) opt.setAttribute('data-bal', calculateBalance(a.id).toFixed(2));
+        toSelect.add(opt);
     });
     if (fromValue) fromSelect.value = fromValue;
     else if (fromSelect.options.length > 0) fromSelect.selectedIndex = 0;
@@ -4646,6 +4725,8 @@ function fillTransferSelects(fromValue, toValue) {
         if (other) toSelect.value = other.id;
         else if (toSelect.options.length > 1) toSelect.selectedIndex = 1;
     }
+    accSelectSync('edit-transfer-from');
+    accSelectSync('edit-transfer-to');
 }
 
 function openNewTransfer() {
@@ -4744,7 +4825,7 @@ function openEditTransaction(id) {
     $('edit-trans-delete-btn').style.display = 'none';
     if (!readOnly) $('edit-trans-delete-btn').style.removeProperty('display');
     $('edit-trans-date').value = t.date;
-    $('edit-trans-account').value = t.accountId;
+    $('edit-trans-account').value = t.accountId; accSelectSync('edit-trans-account');
     $('edit-trans-tags').value = t.tags || '';
     $('edit-trans-desc').value = t.desc || '';
     setSpendingType(t.spendingType || '');
@@ -5272,7 +5353,7 @@ function renderSaDetailList() {
         card.style.cursor = 'pointer';
         card.innerHTML = `
             <div class="card-line-1">
-                <span class="category-text">${t.category || ''}${stBadge}${isExpanded ? '' : ''}${tagsHtml}</span>
+                <span class="category-text">${t.category || ''}${stBadge}${isExpanded ? '' : ''}${tagsHtml}${getTxnBadge(t)}</span>
                 <div class="amount-expense fw-bold">${sym}${formatAmount(Math.abs(t.amount), acc.currency)}</div>
             </div>
             <div class="card-line-2">
@@ -5380,7 +5461,7 @@ $('edit-transaction-form').addEventListener('submit', (e) => {
         saveUserData(); triggerAutoSave(); loadAllData(); filterUserData();
         displayedTransactionCount = 100; renderAllTransactions(); renderAccounts();
         // renderAccounts()->updateSelectOptions() resets dropdowns, manually restore
-        $('edit-trans-account').value = accountId;
+        $('edit-trans-account').value = accountId; accSelectSync('edit-trans-account');
         const catEl = $('edit-trans-category');
         if (catEl && !itemsData) {
             const opt = [...catEl.options].find(o => o.value === category);
@@ -5657,6 +5738,21 @@ function initMobileSwipeGestures(card, transactionId) {
         else openEditTransaction(transactionId);
     });
 }
+
+function getTxnBadge(t) {
+    try {
+        const raw = sessionStorage.getItem('knownTxnMap_' + currentUserName);
+        if (!raw) return '';
+        const knownMap = JSON.parse(raw);
+        if (!(t.id in knownMap)) return NEW_BADGE;
+        if ((t.updatedAt ?? 0) > (knownMap[t.id] ?? 0)) return UPDATED_BADGE;
+    } catch(_) {}
+    return '';
+}
+// 兼容旧调用
+function isNewTxn(t) { return getTxnBadge(t) !== ''; }
+const NEW_BADGE = '<em style="font-size:0.68rem;color:#fd7e14;font-style:italic;margin-left:4px;">新数据</em>';
+const UPDATED_BADGE = '<em style="font-size:0.68rem;color:#0d6efd;font-style:italic;margin-left:4px;">已更新</em>';
 function renderAllTransactions() {
     const tbody = $('transaction-table-body');
     tbody.innerHTML = '';
@@ -5721,8 +5817,8 @@ function renderAllTransactions() {
         tr.innerHTML = `
             <td>${t.date}</td>
             <td><div class="text-start ps-2 ${typeColorClass}">${typeText}</div></td>
-            <td>${t.isTransfer ? '' : (t.items && t.items.length > 1 ? t.items[0].category + '等' + (t.items.length-1) + '项' : (t.category || ''))}</td>
-            <td><small>${getAccountDisplayName(acc)}</small></td>
+            <td>${t.isTransfer ? '' : (t.items && t.items.length > 1 ? t.items[0].category + '等' + (t.items.length-1) + '项' : (t.category || ''))}${!t.isTransfer ? getTxnBadge(t) : ''}</td>
+            <td><small>${getAccountDisplayName(acc)}</small>${t.isTransfer ? getTxnBadge(t) : ''}</td>
             <td><div class="fw-bold ${t.isTransfer ? 'text-warning' : (t.amount < 0 ? 'text-danger' : 'text-success')}">${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}</div></td>
             <td>${toAccountDisplay}</td>
             <td>${amountInDisplay}</td>
@@ -5759,7 +5855,7 @@ function renderAllTransactions() {
                 const isCrossCurrency = acc.currency !== accTo.currency;
  card.innerHTML = `
     <div class="card-line-1">
-        <div class="fw-bold flex-grow-1" style="font-size:0.85rem;">${accDisplayName} <i class="bi bi-arrow-right-short text-primary"></i> ${getAccountDisplayName(accTo)}</div>
+        <div class="fw-bold flex-grow-1" style="font-size:0.85rem;">${accDisplayName} <i class="bi bi-arrow-right-short text-primary"></i> ${getAccountDisplayName(accTo)}${getTxnBadge(t)}</div>
         <div class="amount-transfer fw-bold">${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}</div>
     </div>
     <div class="card-line-2 d-flex justify-content-between align-items-center">
@@ -5796,7 +5892,7 @@ function renderAllTransactions() {
 
                 card.innerHTML = `
                     <div class="card-line-1">
-                        <span class="category-text">${catDisplay}${tagsHtml}${attachIconHtml}</span>
+                        <span class="category-text">${catDisplay}${tagsHtml}${attachIconHtml}${getTxnBadge(t)}</span>
                         <div class="${amountClass} fw-bold">${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}</div>
                     </div>
                     <div class="card-line-2">
@@ -6518,7 +6614,7 @@ function showChartDrawer(title, txList) {
                 } else {
                     const catDisplay = t.items && t.items.length > 1
                         ? t.items[0].category + ' 等' + (t.items.length - 1) + '项'
-                        : (t.category || '');
+                        : (t.category || '') + (t._splitPortion ? ' <span class="text-muted" style="font-size:.72rem;">(拆分)</span>' : '');
                     const amountClass = t.amount < 0 ? 'amount-expense' : 'amount-income';
                     const attachIcon  = t.attachmentId ? ' <i class="bi bi-paperclip text-muted" style="font-size:.72rem;"></i>' : '';
                     tr.innerHTML = `
@@ -6570,7 +6666,7 @@ function showChartDrawer(title, txList) {
                     const amountClass = t.amount < 0 ? 'amount-expense' : 'amount-income';
                     const catDisplay  = t.items && t.items.length > 1
                         ? t.items[0].category + '等' + (t.items.length - 1) + '项'
-                        : (t.category || '');
+                        : (t.category || '') + (t._splitPortion ? ' <span class="text-muted" style="font-size:.72rem;">(拆分)</span>' : '');
                     card.innerHTML = `
                         <div class="card-line-1">
                             <span class="category-text">${catDisplay}${tagsHtml}${attachIconHtml}</span>
@@ -6956,6 +7052,26 @@ function closeChartDrawer() {
     document.body.style.overflow = '';
 }
 
+// 拆分交易钻取辅助：按类别取出对应分录的"虚拟流水"，金额只取该分录自身金额，
+// 避免拆分交易的总金额被错误地全部计入其中某一个分类
+function expandTxByCategory(t, cat) {
+    if (t.items && t.items.length > 1) {
+        return t.items
+            .filter(it => it.category === cat)
+            .map(it => ({
+                ...t,
+                amount: it.amount,
+                category: it.category,
+                tags: it.tags || t.tags,
+                desc: it.desc || t.desc,
+                spendingType: it.spendingType || t.spendingType,
+                items: undefined,
+                _splitPortion: true
+            }));
+    }
+    return t.category === cat ? [t] : [];
+}
+
 // ─────────────────────────────────────────────────────────────
 function renderExpenseChart(data) {
     const ctx = $('expenseCategoryChart');
@@ -6985,11 +7101,9 @@ function renderExpenseChart(data) {
             onClick(e, els) {
                 if (!els.length) return;
                 const cat = sorted[els[0].index][0];
-                const txs = data.filter(t => {
-                    if (t.amount >= 0 || t.isTransfer) return false;
-                    if (t.items && t.items.length > 1) return t.items.some(it => it.category === cat);
-                    return t.category === cat;
-                });
+                const txs = data
+                    .filter(t => t.amount < 0 && !t.isTransfer)
+                    .flatMap(t => expandTxByCategory(t, cat));
                 showChartDrawer(`支出排行 · ${cat}`, txs);
             }
         }
@@ -7155,11 +7269,9 @@ function renderCategoryTrendChart(data) {
             onClick(e, els) {
                 if (!els.length) return;
                 const month = labels[els[0].index];
-                const txs = (data || []).filter(t => {
-                    if (t.amount >= 0 || t.isTransfer || !t.date.startsWith(month)) return false;
-                    if (t.items && t.items.length > 1) return t.items.some(it => it.category === cat);
-                    return t.category === cat;
-                });
+                const txs = (data || [])
+                    .filter(t => t.amount < 0 && !t.isTransfer && t.date.startsWith(month))
+                    .flatMap(t => expandTxByCategory(t, cat));
                 showChartDrawer(`单类别趋势 · ${cat} · ${month}`, txs);
             }
         }
@@ -7208,17 +7320,22 @@ function updateSelectOptions() {
     const plannedType = $('planned-type')?.value || 'expense';
     fill('planned-category', plannedType === 'expense' ? categories.expense : categories.income);
 
-    const accFill = (id, includeOthers) => {
+    const accFill = (id, includeOthers, showBal) => {
         const el = $(id);
         if (!el) return;
         el.innerHTML = '';
         const myAccs = sortedUserAccounts(userAccounts);
         const accsToShow = includeOthers ? [...myAccs, ...accounts.filter(a => a.ownerName !== currentUserName)] : myAccs;
         accsToShow.forEach(a => {
-            el.add(new Option(`${getAccountDisplayName(a)} (${CURRENCY_SYMBOLS[a.currency] || a.currency})`, a.id));
+            const name = `${getAccountDisplayName(a)} (${CURRENCY_SYMBOLS[a.currency] || a.currency})`;
+            const opt = new Option(name, a.id);
+            opt.setAttribute('data-name', name);
+            if (showBal) opt.setAttribute('data-bal', calculateBalance(a.id).toFixed(2));
+            el.add(opt);
         });
+        if (showBal) accSelectSync(id);
     };
-    accFill('edit-trans-account', false); accFill('planned-account', false);
+    accFill('edit-trans-account', false, true); accFill('planned-account', false, false);
 
     updateUserFilterBtn();
 }
@@ -8765,6 +8882,109 @@ function renderLogPage() {
 }
 
 function logGoPage(p) { _logCurrentPage = p; renderLogPage(); }
+
+
+// ── 自定义账户下拉组件 ──
+const ACC_SELECT_IDS = ['edit-trans-account', 'edit-transfer-from', 'edit-transfer-to'];
+
+function accSelectSync(selectId) {
+    const sel = $(selectId);
+    const trigger = $('trigger-' + selectId);
+    if (!sel || !trigger) return;
+    const opt = sel.options[sel.selectedIndex];
+    // 触发器只显示纯账户名（无余额），取 data-name 属性
+    trigger.textContent = opt ? (opt.getAttribute('data-name') || opt.text) : '';
+}
+
+function accSelectBuild(selectId) {
+    const sel = $(selectId);
+    const dropdown = $('dropdown-' + selectId);
+    if (!sel || !dropdown) return;
+    dropdown.innerHTML = '';
+    Array.from(sel.options).forEach((opt, i) => {
+        const div = document.createElement('div');
+        div.className = 'acc-select-option' + (i === sel.selectedIndex ? ' selected' : '');
+        div.dataset.index = i;
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'acc-name';
+        nameSpan.textContent = opt.getAttribute('data-name') || opt.text;
+
+        div.appendChild(nameSpan);
+
+        const bal = opt.getAttribute('data-bal');
+        if (bal !== null) {
+            const balSpan = document.createElement('span');
+            balSpan.className = 'acc-bal';
+            balSpan.textContent = bal;
+            div.appendChild(balSpan);
+        }
+
+        div.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            sel.selectedIndex = i;
+            sel.dispatchEvent(new Event('change', { bubbles: true }));
+            accSelectClose(selectId);
+            accSelectSync(selectId);
+        });
+        dropdown.appendChild(div);
+    });
+}
+
+function accSelectOpen(selectId) {
+    // 先关闭其他
+    ACC_SELECT_IDS.forEach(id => { if (id !== selectId) accSelectClose(id); });
+    accSelectBuild(selectId);
+    const trigger = $('trigger-' + selectId);
+    const dropdown = $('dropdown-' + selectId);
+    if (!trigger || !dropdown) return;
+    trigger.classList.add('open');
+    dropdown.classList.add('open');
+    // fixed 定位：对齐触发器底部，宽度与触发器相同
+    const rect = trigger.getBoundingClientRect();
+    dropdown.style.left = rect.left + 'px';
+    dropdown.style.width = rect.width + 'px';
+    dropdown.style.top = (rect.bottom) + 'px';
+}
+
+function accSelectClose(selectId) {
+    $('trigger-' + selectId)?.classList.remove('open');
+    $('dropdown-' + selectId)?.classList.remove('open');
+}
+
+function accSelectRepositionAll() {
+    ACC_SELECT_IDS.forEach(id => {
+        const dropdown = $('dropdown-' + id);
+        if (!dropdown || !dropdown.classList.contains('open')) return;
+        const trigger = $('trigger-' + id);
+        if (!trigger) return;
+        const rect = trigger.getBoundingClientRect();
+        dropdown.style.left = rect.left + 'px';
+        dropdown.style.width = rect.width + 'px';
+        dropdown.style.top = rect.bottom + 'px';
+    });
+}
+
+function accSelectInit() {
+    ACC_SELECT_IDS.forEach(id => {
+        const trigger = $('trigger-' + id);
+        if (!trigger) return;
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = $('dropdown-' + id)?.classList.contains('open');
+            if (isOpen) accSelectClose(id); else accSelectOpen(id);
+        });
+    });
+    document.addEventListener('click', () => {
+        ACC_SELECT_IDS.forEach(id => accSelectClose(id));
+    });
+    // modal 滚动时同步下拉位置
+    const modalBody = document.querySelector('#editTransactionModal .modal-body');
+    if (modalBody) modalBody.addEventListener('scroll', accSelectRepositionAll, { passive: true });
+}
+
+// 页面加载后初始化
+document.addEventListener('DOMContentLoaded', accSelectInit);
 
 function _escHtml(s) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
