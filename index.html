@@ -1,7 +1,7 @@
 <!DOCTYPE html><html lang="zh-CN" data-bs-theme="dark"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>记一笔 v2.1.13</title>
+    <title>记一笔 v2.1.14</title>
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0d6efd">
@@ -1082,7 +1082,7 @@ select.compact-form-control { height: 2.1rem; }
         </div>
     </div>
     <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;pointer-events:none;">
-        <span class="text-muted" style="font-size:0.7rem;">version 2.1.13</span>
+        <span class="text-muted" style="font-size:0.7rem;">version 2.1.14</span>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
@@ -1935,9 +1935,11 @@ select.compact-form-control { height: 2.1rem; }
                     <select class="form-select compact-form-control" id="budget-category-select"></select>
                 </div>
                 <div class="mb-2">
-                    <label class="compact-form-label">每月预算金额</label>
-                    <input type="number" min="0" step="0.01" class="form-control compact-form-control" id="budget-amount-input" placeholder="例如：2000">
-                    <div class="form-text">按统计页当前选择的货币单位计算</div>
+                    <label class="compact-form-label">每月预算金额（<span id="budget-currency-label"></span>）</label>
+                    <div class="input-group">
+                        <span class="input-group-text" id="budget-currency-symbol"></span>
+                        <input type="number" min="0" step="0.01" class="form-control compact-form-control" id="budget-amount-input" placeholder="例如：2000">
+                    </div>
                 </div>
                 <button type="button" class="btn btn-primary btn-sm w-100 mt-2" onclick="saveBudgetModal()">保存</button>
             </div>
@@ -5168,6 +5170,7 @@ function deleteTransaction(id) {
         saveUserData(); triggerAutoSave(); filterUserData();
         displayedTransactionCount = 100;
         renderAllTransactions(); renderAccounts();
+        if ($('view-stats').classList.contains('active-view')) renderStats();
     }
 }
 
@@ -5782,6 +5785,7 @@ function renderBudgetPane() {
     if (!wrap) return;
     const filterUser = currentStatsFilter.user || 'all';
     const { spend, total } = computeMonthlySpendByCategory(statsNavYear, statsNavMonth, filterUser);
+    const dispCurrency = currentStatsFilter.currency;
 
     const labelEl = $('budget-month-label');
     if (labelEl) labelEl.textContent = `${statsNavYear} 年 ${statsNavMonth + 1} 月 · 预算追踪`;
@@ -5795,10 +5799,17 @@ function renderBudgetPane() {
         return;
     }
 
-    const rows = budgets.map(b => ({
-        ...b,
-        spent: b.category === '__total__' ? total : (spend[b.category] || 0)
-    }));
+    const rows = budgets.map(b => {
+        // 预算金额按自身设定时的货币存储，展示时统一换算成统计页当前选择的货币，
+        // 避免切换统计货币后金额比较出现偏差。未记录货币的旧数据视为当前货币（不做转换）。
+        const budgetCurrency = b.currency || dispCurrency;
+        const amountInDispCurrency = convertAmt(b.amount, budgetCurrency);
+        return {
+            ...b,
+            spent: b.category === '__total__' ? total : (spend[b.category] || 0),
+            amountDisp: amountInDispCurrency
+        };
+    });
     // 总预算永远置顶，其余按花费金额从高到低排序
     rows.sort((a, b) => {
         if (a.category === '__total__') return -1;
@@ -5807,16 +5818,16 @@ function renderBudgetPane() {
     });
 
     wrap.innerHTML = rows.map(b => {
-        const pctRaw = b.amount > 0 ? (b.spent / b.amount) * 100 : 0;
+        const pctRaw = b.amountDisp > 0 ? (b.spent / b.amountDisp) * 100 : 0;
         const pct = Math.min(100, pctRaw);
         const barColor = pctRaw >= 100 ? '#dc3545' : pctRaw >= 80 ? '#fd7e14' : '#198754';
         const label = b.category === '__total__'
             ? '<i class="bi bi-pin-angle-fill text-primary" style="font-size:0.75rem;"></i> 总支出预算'
             : b.category;
-        const remain = b.amount - b.spent;
+        const remain = b.amountDisp - b.spent;
         const remainHtml = pctRaw >= 100
-            ? `<span style="color:#dc3545;">超支 ${formatAmount(Math.abs(remain), currentStatsFilter.currency)}</span>`
-            : `<span class="text-muted">剩余 ${formatAmount(remain, currentStatsFilter.currency)}</span>`;
+            ? `<span style="color:#dc3545;">超支 ${formatAmount(Math.abs(remain), dispCurrency)}</span>`
+            : `<span class="text-muted">剩余 ${formatAmount(remain, dispCurrency)}</span>`;
         return `
         <div class="card shadow-sm mb-2">
             <div class="card-body py-2 px-3">
@@ -5831,12 +5842,20 @@ function renderBudgetPane() {
                     <div class="progress-bar" style="width:${pct}%;background-color:${barColor};"></div>
                 </div>
                 <div class="d-flex justify-content-between mt-1" style="font-size:0.78rem;">
-                    <span class="text-muted">已用 ${formatAmount(b.spent, currentStatsFilter.currency)} / ${formatAmount(b.amount, currentStatsFilter.currency)}</span>
+                    <span class="text-muted">已用 ${formatAmount(b.spent, dispCurrency)} / ${formatAmount(b.amountDisp, dispCurrency)}</span>
                     ${remainHtml}
                 </div>
             </div>
         </div>`;
     }).join('');
+}
+
+// 在预算弹窗里把货币单位标出来，避免用户填错单位
+function setBudgetModalCurrency(currency) {
+    const labelEl = $('budget-currency-label');
+    const symbolEl = $('budget-currency-symbol');
+    if (labelEl) labelEl.textContent = currency;
+    if (symbolEl) symbolEl.textContent = CURRENCY_SYMBOLS[currency] || currency;
 }
 
 function openAddBudgetModal() {
@@ -5853,6 +5872,8 @@ function openAddBudgetModal() {
         return;
     }
     $('budget-amount-input').value = '';
+    // 新建预算时，按统计页当前选择的货币录入
+    setBudgetModalCurrency(currentStatsFilter.currency);
     bootstrap.Modal.getOrCreateInstance($('budgetModal')).show();
 }
 
@@ -5866,6 +5887,8 @@ function editBudget(id) {
     sel.add(new Option(b.category === '__total__' ? '总支出预算（不限分类）' : b.category, b.category));
     sel.disabled = true;
     $('budget-amount-input').value = b.amount;
+    // 修改时沿用该预算原本设定的货币，保持金额含义不变
+    setBudgetModalCurrency(b.currency || currentStatsFilter.currency);
     bootstrap.Modal.getOrCreateInstance($('budgetModal')).show();
 }
 
@@ -5878,9 +5901,9 @@ function saveBudgetModal() {
 
     if (idVal) {
         const b = budgets.find(x => x.id === Number(idVal));
-        if (b) b.amount = amount;
+        if (b) b.amount = amount; // 编辑时金额单位沿用原货币，不改变 currency
     } else {
-        budgets.push({ id: Date.now(), category, amount });
+        budgets.push({ id: Date.now(), category, amount, currency: currentStatsFilter.currency });
     }
     bootstrap.Modal.getInstance($('budgetModal'))?.hide();
     triggerAutoSave();
@@ -5988,6 +6011,7 @@ $('edit-transaction-form').addEventListener('submit', (e) => {
         if (hintEl) hintEl.style.display = 'none';
         resetAttachmentUI();
         if (verboseToast) showToast('已添加', 'success', 1500);
+        if ($('view-stats').classList.contains('active-view')) renderStats();
     } else {
         const id = parseFloat($('edit-trans-id').value);
         const t = transactions.find(x => x.id === id);
@@ -6001,6 +6025,7 @@ $('edit-transaction-form').addEventListener('submit', (e) => {
             saveUserData(); triggerAutoSave(); filterUserData();
             displayedTransactionCount = 100;
             renderAllTransactions(); renderAccounts();
+            if ($('view-stats').classList.contains('active-view')) renderStats();
             bootstrap.Modal.getInstance($('editTransactionModal')).hide();
             maybeReturnToDetail();
         }
@@ -6047,6 +6072,7 @@ $('edit-transfer-form').addEventListener('submit', (e) => {
         $('edit-transfer-amount-in').value = '';
         $('edit-transfer-desc').value = '';
         if (verboseToast) showToast('已添加', 'success', 1500);
+        if ($('view-stats').classList.contains('active-view')) renderStats();
     } else {
         const id = parseFloat($('edit-transfer-id').value);
         const tOut = transactions.find(x => x.id === id);
@@ -6071,12 +6097,11 @@ $('edit-transfer-form').addEventListener('submit', (e) => {
         saveUserData(); triggerAutoSave(); filterUserData();
         displayedTransactionCount = 100;
         renderAllTransactions(); renderAccounts();
+        if ($('view-stats').classList.contains('active-view')) renderStats();
         bootstrap.Modal.getInstance($('editTransactionModal')).hide();
         maybeReturnToDetail();
     }
-});
-
-function updateUserFilterBtn() {
+});function updateUserFilterBtn() {
     const btn = $('trans-user-filter-btn');
     const textEl = $('trans-user-filter-text');
     if (!btn) return;
@@ -6911,9 +6936,6 @@ function navigateStatsMonth(delta) {
     $$('#quick-stats-filter-group-1 button').forEach(b => b.classList.remove('active'));
     updateStatsNavUI();
     renderStats();
-    // 若消费类型子页当前可见，同步刷新
-    if ($('stats-pane-spending')?.classList.contains('active')) renderSpendingAnalysis();
-    if ($('stats-pane-budget')?.classList.contains('active')) renderBudgetPane();
 }
 
 function updateStatsNavUI() {
@@ -6968,8 +6990,6 @@ function applyStatsFilter() {
     $$('#quick-stats-filter-group-1 button').forEach(b => b.classList.remove('active'));
     updateStatsNavUI();
     renderStats();
-    if ($('stats-pane-spending')?.classList.contains('active')) renderSpendingAnalysis();
-    if ($('stats-pane-budget')?.classList.contains('active')) renderBudgetPane();
 }
 
 function quickStatsDateFilter(p) {
@@ -6998,8 +7018,6 @@ function quickStatsDateFilter(p) {
     if (toggle) toggle.classList.remove('active');
     updateStatsNavUI();
     renderStats();
-    if ($('stats-pane-spending')?.classList.contains('active')) renderSpendingAnalysis();
-    if ($('stats-pane-budget')?.classList.contains('active')) renderBudgetPane();
 }
 
 function switchStatsCurrency(c, el) {
@@ -7017,9 +7035,6 @@ function switchStatsUser(u) {
     $$('#stats-user-btns button').forEach(b =>
         b.classList.toggle('active', b.dataset.user === u));
     renderStats();
-    // 若消费类型子页可见，同步刷新
-    if ($('stats-pane-spending')?.classList.contains('active')) renderSpendingAnalysis();
-    if ($('stats-pane-budget')?.classList.contains('active')) renderBudgetPane();
 }
 
 function switchAssetAggregation(type, el) {
@@ -7088,6 +7103,9 @@ function renderStats() {
         categories.expense.forEach(c => sel.add(new Option(c, c)));
         if (categories.expense[0]) renderCategoryTrendChart(filtered);
     }
+    // 消费类型 / 预算子页若当前可见，同步刷新（集中在此处理，避免各个筛选入口各自维护一份遗漏）
+    if ($('stats-pane-spending')?.classList.contains('active')) renderSpendingAnalysis();
+    if ($('stats-pane-budget')?.classList.contains('active')) renderBudgetPane();
 }
 
 // ── 图表钻取底部抽屉 ─────────────────────────────────────────
