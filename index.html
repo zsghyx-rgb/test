@@ -1,7 +1,7 @@
 <!DOCTYPE html><html lang="zh-CN" data-bs-theme="dark"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>记一笔 v2.2.2</title>
+    <title>记一笔 v2.2.3</title>
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0d6efd">
@@ -1390,7 +1390,7 @@ select.compact-form-control { height: 2.1rem; }
         </div>
     </div>
     <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;pointer-events:none;">
-        <span class="text-muted" style="font-size:0.7rem;">version 2.2.2</span>
+        <span class="text-muted" style="font-size:0.7rem;">version 2.2.3</span>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
@@ -2586,7 +2586,8 @@ const $$ = selector => document.querySelectorAll(selector);
 
 // 金额类输入框统一用 type="text"，这里做实时清洗：
 // 支持德语等用 "," 作小数点的系统直接输入逗号，自动转成 "."；
-// 同时过滤非数字字符，只保留一个小数点。用捕获阶段保证比元素自身的 oninput 先执行。
+// 同时过滤非数字字符，只保留一个小数点，并限制小数位数（默认2位，可用 data-max-decimals 覆盖，如汇率用4位）。
+// 用捕获阶段保证比元素自身的 oninput 先执行。
 document.addEventListener('input', function (e) {
     const el = e.target;
     if (!el.classList || !el.classList.contains('decimal-input')) return;
@@ -2595,6 +2596,11 @@ document.addEventListener('input', function (e) {
     const firstDot = cleaned.indexOf('.');
     if (firstDot !== -1) {
         cleaned = cleaned.slice(0, firstDot + 1) + cleaned.slice(firstDot + 1).replace(/\./g, '');
+    }
+    const maxDecimals = parseInt(el.dataset.maxDecimals || '2', 10);
+    const dotIdx = cleaned.indexOf('.');
+    if (dotIdx !== -1 && cleaned.length - dotIdx - 1 > maxDecimals) {
+        cleaned = cleaned.slice(0, dotIdx + 1 + maxDecimals);
     }
     if (cleaned !== original) {
         const pos = el.selectionStart;
@@ -4897,11 +4903,16 @@ function getOrCreateBalanceAdjCategory(type) {
     return '余额调整';
 }
 
+// 金额运算用，避免浮点误差导致出现多位小数（如 0.1+0.2 = 0.30000000000000004）
+function roundMoney(n) {
+    return Math.round((n + Number.EPSILON) * 100) / 100;
+}
+
 function calculateBalance(accId) {
     const acc = accounts.find(a => a.id == accId);
     let bal = parseFloat(acc.initialBalance);
     transactions.filter(t => t.accountId == accId).forEach(t => bal += parseFloat(t.amount));
-    return bal;
+    return roundMoney(bal);
 }
 
 function deleteAccount(id) {
@@ -4965,7 +4976,7 @@ $('account-form').addEventListener('submit', (e) => {
     e.preventDefault();
     const mode = $('acc-mode').value;
     const name = $('acc-name').value;
-    const balance = parseFloat($('acc-balance').value);
+    const balance = roundMoney(parseFloat($('acc-balance').value));
     const notes = $('acc-notes').value.trim();
 
     if (mode === 'add') {
@@ -4988,7 +4999,7 @@ $('account-form').addEventListener('submit', (e) => {
         const acc = accounts.find(a => a.id === id);
         if (acc) {
             const oldBalance = calculateBalance(id);
-            const diff = balance - oldBalance;
+            const diff = roundMoney(balance - oldBalance);
             acc.name = name;
             acc.notes = notes;
             acc.updatedAt = Date.now();
@@ -6317,36 +6328,153 @@ function deleteBudget(id) {
 
 // ── 类别图标网格 ─────────────────────────────────────────────
 const CATEGORY_ICON_MAP = {
+    // ── 餐饮 ──
     '餐饮': { icon: 'bi-cup-hot-fill', color: '#fd7e14' },
+    '早餐': { icon: 'bi-cup-hot-fill', color: '#fd7e14' },
+    '午餐': { icon: 'bi-egg-fried', color: '#fd7e14' },
+    '晚餐': { icon: 'bi-egg-fried', color: '#fd7e14' },
+    '夜宵': { icon: 'bi-moon-stars-fill', color: '#6610f2' },
+    '外卖': { icon: 'bi-bicycle', color: '#fd7e14' },
+    '聚餐': { icon: 'bi-people-fill', color: '#fd7e14' },
+    '咖啡': { icon: 'bi-cup-straw', color: '#6f4e37' },
+    '奶茶': { icon: 'bi-cup-straw', color: '#d63384' },
+    '烟酒': { icon: 'bi-cup-fill', color: '#6c757d' },
+    '零食': { icon: 'bi-egg-fried', color: '#fd7e14' },
+    '水果': { icon: 'bi-apple', color: '#198754' },
+    '蔬菜': { icon: 'bi-flower1', color: '#198754' },
+    '生鲜': { icon: 'bi-basket-fill', color: '#198754' },
+    '超市': { icon: 'bi-cart-fill', color: '#0d6efd' },
+
+    // ── 交通出行 ──
     '交通': { icon: 'bi-bus-front-fill', color: '#0dcaf0' },
-    '住房': { icon: 'bi-house-door-fill', color: '#6f42c1' },
-    '购物': { icon: 'bi-bag-fill', color: '#d63384' },
-    '娱乐': { icon: 'bi-controller', color: '#6610f2' },
-    '医疗': { icon: 'bi-heart-pulse-fill', color: '#dc3545' },
-    '教育': { icon: 'bi-mortarboard-fill', color: '#0d6efd' },
-    '通讯': { icon: 'bi-phone-fill', color: '#20c997' },
+    '打车': { icon: 'bi-car-front-fill', color: '#0dcaf0' },
+    '地铁': { icon: 'bi-train-front-fill', color: '#0dcaf0' },
+    '公交': { icon: 'bi-bus-front-fill', color: '#0dcaf0' },
+    '高铁': { icon: 'bi-train-front-fill', color: '#0d6efd' },
+    '机票': { icon: 'bi-airplane-fill', color: '#0dcaf0' },
+    '停车': { icon: 'bi-p-circle-fill', color: '#6c757d' },
+    '加油': { icon: 'bi-fuel-pump-fill', color: '#fd7e14' },
+    '车辆保养': { icon: 'bi-tools', color: '#6c757d' },
+    '洗车': { icon: 'bi-car-front-fill', color: '#0dcaf0' },
+    '共享单车': { icon: 'bi-bicycle', color: '#198754' },
     '旅行': { icon: 'bi-airplane-fill', color: '#0dcaf0' },
     '旅游': { icon: 'bi-airplane-fill', color: '#0dcaf0' },
-    '服饰': { icon: 'bi-handbag-fill', color: '#e83e8c' },
-    '数码': { icon: 'bi-laptop', color: '#495057' },
-    '宠物': { icon: 'bi-emoji-smile-fill', color: '#fd7e14' },
-    '人情': { icon: 'bi-gift-fill', color: '#d63384' },
-    '运动': { icon: 'bi-bicycle', color: '#198754' },
-    '健身': { icon: 'bi-bicycle', color: '#198754' },
-    '美容': { icon: 'bi-stars', color: '#e83e8c' },
-    '书籍': { icon: 'bi-book-fill', color: '#0d6efd' },
+    '度假': { icon: 'bi-umbrella-fill', color: '#0dcaf0' },
+    '门票': { icon: 'bi-ticket-perforated-fill', color: '#fd7e14' },
+
+    // ── 居住 ──
+    '住房': { icon: 'bi-house-door-fill', color: '#6f42c1' },
+    '房租': { icon: 'bi-house-door-fill', color: '#6f42c1' },
+    '房贷': { icon: 'bi-bank', color: '#6f42c1' },
+    '物业费': { icon: 'bi-building', color: '#6f42c1' },
+    '装修': { icon: 'bi-hammer', color: '#6c757d' },
+    '家具': { icon: 'bi-house-gear-fill', color: '#6f42c1' },
+    '家电': { icon: 'bi-plug-fill', color: '#495057' },
     '水电': { icon: 'bi-lightning-charge-fill', color: '#ffc107' },
     '水电煤': { icon: 'bi-lightning-charge-fill', color: '#ffc107' },
+    '网费': { icon: 'bi-wifi', color: '#20c997' },
+    '物业': { icon: 'bi-building', color: '#6f42c1' },
+    '日用品': { icon: 'bi-basket2-fill', color: '#0d6efd' },
+
+    // ── 购物 ──
+    '购物': { icon: 'bi-bag-fill', color: '#d63384' },
+    '服饰': { icon: 'bi-handbag-fill', color: '#e83e8c' },
+    '数码': { icon: 'bi-laptop', color: '#495057' },
+    '化妆品': { icon: 'bi-stars', color: '#e83e8c' },
+    '美妆': { icon: 'bi-stars', color: '#e83e8c' },
+    '母婴': { icon: 'bi-emoji-laughing-fill', color: '#fd7e14' },
+    '宝宝用品': { icon: 'bi-emoji-laughing-fill', color: '#fd7e14' },
+    '玩具': { icon: 'bi-controller', color: '#6610f2' },
+
+    // ── 娱乐 ──
+    '娱乐': { icon: 'bi-controller', color: '#6610f2' },
+    '电影': { icon: 'bi-film', color: '#6610f2' },
+    'KTV': { icon: 'bi-mic-fill', color: '#d63384' },
+    '演出': { icon: 'bi-music-note-beamed', color: '#6610f2' },
+    '游戏': { icon: 'bi-controller', color: '#6610f2' },
+    '订阅': { icon: 'bi-collection-play-fill', color: '#6610f2' },
+    '会员': { icon: 'bi-patch-check-fill', color: '#6610f2' },
+
+    // ── 医疗健康 ──
+    '医疗': { icon: 'bi-heart-pulse-fill', color: '#dc3545' },
+    '药品': { icon: 'bi-capsule', color: '#dc3545' },
+    '体检': { icon: 'bi-clipboard2-pulse-fill', color: '#dc3545' },
+    '牙医': { icon: 'bi-emoji-smile', color: '#dc3545' },
+    '运动': { icon: 'bi-bicycle', color: '#198754' },
+    '健身': { icon: 'bi-bicycle', color: '#198754' },
+    '健身房': { icon: 'bi-trophy-fill', color: '#198754' },
+    '瑜伽': { icon: 'bi-person-arms-up', color: '#198754' },
+    '游泳': { icon: 'bi-water', color: '#0dcaf0' },
+    '球类': { icon: 'bi-trophy-fill', color: '#198754' },
+    '户外': { icon: 'bi-tree-fill', color: '#198754' },
+    '登山': { icon: 'bi-tree-fill', color: '#198754' },
+    '钓鱼': { icon: 'bi-water', color: '#0dcaf0' },
+    '美容': { icon: 'bi-stars', color: '#e83e8c' },
+    '美甲': { icon: 'bi-stars', color: '#e83e8c' },
+    '理发': { icon: 'bi-scissors', color: '#e83e8c' },
+    '护肤': { icon: 'bi-droplet-half', color: '#e83e8c' },
+
+    // ── 教育学习 ──
+    '教育': { icon: 'bi-mortarboard-fill', color: '#0d6efd' },
+    '课程': { icon: 'bi-mortarboard-fill', color: '#0d6efd' },
+    '培训': { icon: 'bi-easel2-fill', color: '#0d6efd' },
+    '考试': { icon: 'bi-pencil-square', color: '#0d6efd' },
+    '书籍': { icon: 'bi-book-fill', color: '#0d6efd' },
+    '文具': { icon: 'bi-pencil-fill', color: '#0d6efd' },
+
+    // ── 通讯数码 ──
+    '通讯': { icon: 'bi-phone-fill', color: '#20c997' },
+    '话费': { icon: 'bi-phone-fill', color: '#20c997' },
+
+    // ── 人情往来 ──
+    '人情': { icon: 'bi-gift-fill', color: '#d63384' },
+    '红包': { icon: 'bi-gift-fill', color: '#dc3545' },
+    '礼物': { icon: 'bi-gift-fill', color: '#d63384' },
+    '慈善': { icon: 'bi-heart-fill', color: '#dc3545' },
+    '捐款': { icon: 'bi-heart-fill', color: '#dc3545' },
+
+    // ── 宠物 ──
+    '宠物': { icon: 'bi-emoji-smile-fill', color: '#fd7e14' },
+    '猫粮': { icon: 'bi-emoji-smile-fill', color: '#fd7e14' },
+    '狗粮': { icon: 'bi-emoji-smile-fill', color: '#fd7e14' },
+    '宠物医疗': { icon: 'bi-heart-pulse-fill', color: '#fd7e14' },
+
+    // ── 金融与杂项支出 ──
     '保险': { icon: 'bi-shield-check', color: '#0d6efd' },
     '理财': { icon: 'bi-graph-up-arrow', color: '#198754' },
-    '红包': { icon: 'bi-gift-fill', color: '#dc3545' },
+    '税费': { icon: 'bi-receipt-cutoff', color: '#6c757d' },
+    '罚款': { icon: 'bi-exclamation-octagon-fill', color: '#dc3545' },
+    '手续费': { icon: 'bi-receipt', color: '#6c757d' },
+    '利息支出': { icon: 'bi-bank', color: '#6c757d' },
+    '违约金': { icon: 'bi-exclamation-octagon-fill', color: '#dc3545' },
+    '快递': { icon: 'bi-box-seam-fill', color: '#fd7e14' },
+    '维修': { icon: 'bi-tools', color: '#6c757d' },
     '其他': { icon: 'bi-three-dots', color: '#6c757d' },
+    '未分类': { icon: 'bi-question-circle', color: '#6c757d' },
+    '余额调整': { icon: 'bi-sliders', color: '#6c757d' },
+
+    // ── 收入 ──
     '工资': { icon: 'bi-cash-coin', color: '#198754' },
-    '投资': { icon: 'bi-graph-up-arrow', color: '#0d6efd' },
     '兼职': { icon: 'bi-briefcase-fill', color: '#fd7e14' },
+    '副业': { icon: 'bi-briefcase-fill', color: '#fd7e14' },
+    '佣金': { icon: 'bi-briefcase-fill', color: '#198754' },
+    '奖金': { icon: 'bi-trophy-fill', color: '#198754' },
+    '年终奖': { icon: 'bi-trophy-fill', color: '#198754' },
+    '投资': { icon: 'bi-graph-up-arrow', color: '#0d6efd' },
+    '股息': { icon: 'bi-graph-up-arrow', color: '#0d6efd' },
+    '基金': { icon: 'bi-graph-up-arrow', color: '#0d6efd' },
+    '利息收入': { icon: 'bi-piggy-bank-fill', color: '#198754' },
+    '房租收入': { icon: 'bi-house-door-fill', color: '#198754' },
     '礼金': { icon: 'bi-gift-fill', color: '#d63384' },
     '报销': { icon: 'bi-receipt', color: '#20c997' },
     '退款': { icon: 'bi-arrow-counterclockwise', color: '#20c997' },
+    '中奖': { icon: 'bi-stars', color: '#fd7e14' },
+    '补贴': { icon: 'bi-cash-coin', color: '#198754' },
+    '稿费': { icon: 'bi-pencil-fill', color: '#198754' },
+    '二手出售': { icon: 'bi-tag-fill', color: '#198754' },
+    '众筹': { icon: 'bi-people-fill', color: '#198754' },
+    '赔偿': { icon: 'bi-receipt', color: '#198754' },
+    '继承': { icon: 'bi-bank', color: '#198754' },
 };
 const CAT_FALLBACK_PALETTE = ['#0d6efd','#198754','#fd7e14','#d63384','#6610f2','#20c997','#dc3545','#6c757d'];
 
@@ -6482,14 +6610,14 @@ $('edit-transaction-form').addEventListener('submit', (e) => {
     if (_inSplitMode && itemsData === null) return;
     let category, finalAmount;
     if (itemsData) {
-        finalAmount = itemsData.reduce((s, it) => s + it.amount, 0);
+        finalAmount = roundMoney(itemsData.reduce((s, it) => s + it.amount, 0));
         category = itemsData[0].category;
     } else {
         $('edit-trans-category').removeAttribute('disabled');
         category = $('edit-trans-category').value;
         const amount = parseFloat($('edit-trans-amount').value);
         if (isNaN(amount) || amount <= 0) { alert('请输入有效金额'); return; }
-        finalAmount = type === 'expense' ? -Math.abs(amount) : Math.abs(amount);
+        finalAmount = roundMoney(type === 'expense' ? -Math.abs(amount) : Math.abs(amount));
     }
 
     if (mode === 'add') {
@@ -8629,7 +8757,7 @@ function renderExchangeRateSettings() {
         div.className = 'input-group mb-2';
         div.innerHTML = `
             <span class="input-group-text" style="width:100px;">1 ${cur.symbol} (${cur.code})</span>
-            <input type="text" inputmode="decimal" class="form-control decimal-input" id="${inputId}" value="${rate}">
+            <input type="text" inputmode="decimal" class="form-control decimal-input" data-max-decimals="4" id="${inputId}" value="${rate}">
             <span class="input-group-text">¥</span>
             <button class="btn btn-outline-primary btn-sm" onclick="setExchangeRate('${cur.code}', 'RMB', $('${inputId}').value)">保存</button>`;
         container.appendChild(div);
@@ -8723,7 +8851,12 @@ const ICON_PICKER_LIST = [
     'bi-laptop','bi-camera-fill','bi-emoji-smile-fill','bi-gift-fill','bi-bicycle','bi-trophy-fill',
     'bi-stars','bi-scissors','bi-shield-check','bi-graph-up-arrow','bi-cash-coin','bi-briefcase-fill',
     'bi-piggy-bank-fill','bi-wallet2','bi-credit-card-fill','bi-receipt','bi-arrow-counterclockwise','bi-tools',
-    'bi-tree-fill','bi-cup-straw','bi-basket-fill','bi-umbrella-fill','bi-balloon-fill','bi-three-dots'
+    'bi-tree-fill','bi-cup-straw','bi-basket-fill','bi-umbrella-fill','bi-balloon-fill','bi-three-dots',
+    'bi-cup-fill','bi-apple','bi-flower1','bi-basket2-fill','bi-moon-stars-fill','bi-people-fill',
+    'bi-p-circle-fill','bi-fuel-pump-fill','bi-hammer','bi-house-gear-fill','bi-plug-fill','bi-ticket-perforated-fill',
+    'bi-mic-fill','bi-collection-play-fill','bi-patch-check-fill','bi-clipboard2-pulse-fill','bi-person-arms-up','bi-water',
+    'bi-easel2-fill','bi-pencil-square','bi-pencil-fill','bi-droplet-half','bi-heart-fill','bi-receipt-cutoff',
+    'bi-exclamation-octagon-fill','bi-box-seam-fill','bi-bank','bi-question-circle','bi-sliders','bi-tag-fill'
 ];
 const ICON_PICKER_COLORS = ['#fd7e14','#dc3545','#d63384','#6610f2','#0d6efd','#0dcaf0','#198754','#6c757d'];
 
