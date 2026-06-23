@@ -1027,14 +1027,18 @@ select.compact-form-control { height: 2.1rem; }
     border: 1px solid var(--bs-border-color);
     background: var(--bs-tertiary-bg);
     border-radius: 10px;
-    padding: 6px 6px 8px;
+    padding: 6px 6px 10px;
     display: flex; flex-direction: column; align-items: center; gap: 2px;
 }
 .transfer-amount-field .amt-label { font-size: 0.68rem; color: var(--bs-secondary-color); }
 .transfer-amount-input {
-    font-size: 1.3rem;
+    font-size: 2.4rem;
+    font-weight: 700;
     max-width: none;
-    padding: 2px 0 0;
+    width: 100%;
+    text-align: center;
+    padding: 4px 0 0;
+    line-height: 1;
 }
 
 /* 只读查看模式：禁用新组件的交互 */
@@ -1419,7 +1423,7 @@ select.compact-form-control { height: 2.1rem; }
         </div>
     </div>
     <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;pointer-events:none;">
-        <span class="text-muted" style="font-size:0.7rem;">version 2.2.6</span>
+        <span class="text-muted" style="font-size:0.7rem;">version 2.2.7</span>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
@@ -2381,6 +2385,7 @@ select.compact-form-control { height: 2.1rem; }
                                     <i class="bi bi-plus-sm"></i> 添加消费类型
                                 </button>
                                 <div id="spending-type-expanded" style="display:none;">
+                                    <label class="compact-form-label">消费类型</label>
                                     <div id="spending-type-select-wrap">
                                         <select id="edit-trans-spending-type" style="display:none;">
                                             <option value="">未标记</option>
@@ -2404,6 +2409,7 @@ select.compact-form-control { height: 2.1rem; }
                                     <i class="bi bi-plus-sm"></i> 添加标签
                                 </button>
                                 <div id="tags-expanded" style="display:none;">
+                                    <label class="compact-form-label">标签</label>
                                     <div class="tag-suggest-wrap">
                                         <input type="text" class="form-control compact-form-control" id="edit-trans-tags"
                                                placeholder="添加标签…" autocomplete="off"
@@ -2420,6 +2426,7 @@ select.compact-form-control { height: 2.1rem; }
                                     <i class="bi bi-plus-sm"></i> 添加备注
                                 </button>
                                 <div id="desc-expanded" style="display:none;">
+                                    <label class="compact-form-label">备注</label>
                                     <div class="input-group" id="desc-input-group">
                                         <input type="text" class="form-control compact-form-control" id="edit-trans-desc"
                                                oninput="updateDescHint('edit-trans-desc','edit-trans-desc-hint','edit-trans-type','edit-trans-category','edit-trans-account')"
@@ -2511,6 +2518,7 @@ select.compact-form-control { height: 2.1rem; }
                                 <i class="bi bi-plus-sm"></i> 添加备注
                             </button>
                             <div id="transfer-desc-expanded" style="display:none;">
+                                <label class="compact-form-label">备注</label>
                                 <input type="text" class="form-control compact-form-control" id="edit-transfer-desc" placeholder="添加备注...">
                             </div>
                         </div>
