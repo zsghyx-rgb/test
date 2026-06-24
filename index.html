@@ -655,8 +655,25 @@ select.compact-form-control { height: 2.1rem; }
         flex-direction: column;
         flex: 1 1 0;
         min-width: 0;
+        min-height: 0;
         overflow: hidden;
         border-right: 1px solid var(--bs-border-color);
+    }
+
+    /* 过滤栏固定高度，不参与伸缩 */
+    #trans-list-pane .page-sticky-header {
+        flex-shrink: 0;
+    }
+
+    /* 表格容器占满剩余高度并滚动 */
+    #trans-list-pane .excel-table-container {
+        flex: 1;
+        min-height: 0;
+        overflow: auto;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+        border-bottom: none;
     }
 
     /* 右侧：详情/编辑面板 */
