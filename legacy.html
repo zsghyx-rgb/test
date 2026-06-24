@@ -1,7 +1,7 @@
 <!DOCTYPE html><html lang="zh-CN" data-bs-theme="dark"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>记一笔 v2.3.0</title>
+    <title>记一笔 v2.1.14</title>
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0d6efd">
@@ -179,10 +179,9 @@ body {
     to { opacity: 1; }
 }
 
-.account-col { width: 40%; min-width: 200px; }
+.account-col { width: 40%; }
 
-@media (min-width: 769px) { .account-col { width: calc(33.333% - 12px); } }
-@media (min-width: 1200px) { .account-col { width: calc(25% - 12px); } }
+@media (min-width: 992px) { .account-col { width: 30%; } }
 
 .account-card h5 { font-size: 1rem !important; font-weight: bold; margin-bottom: 0; }
 
@@ -534,10 +533,9 @@ select.compact-form-control { height: 2.1rem; }
     .modal-body { overflow-y: auto; flex: 1; max-height: calc(90vh - 120px); }
     .modal-body form { display: flex; flex-direction: column; }
 
-    /* 编辑/新增交易弹窗：覆盖通用 modal 的 90vh 限制，铺满全屏高度 */
+    /* 编辑/新增交易弹窗：覆盖通用 modal 的 90vh 限制，与新增窗口保持一致（弹性高度，最高 90dvh） */
     #editTransactionModal .modal-content {
-        height: 100dvh !important;
-        max-height: 100dvh !important;
+        max-height: 90dvh !important;
     }
     #editTransactionModal .modal-body {
         max-height: none !important;
@@ -578,158 +576,6 @@ select.compact-form-control { height: 2.1rem; }
         margin-top: 4px;
         box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     }
-
-    /* ── 宽屏账户页 ── */
-
-    /* 净值汇总栏：三列等宽，字号稍大 */
-    #net-worth-display .row { font-size: 1rem; }
-    #net-worth-display .row b { font-size: 1.1rem; }
-
-    /* 账户卡片：固定高度，上下信息分布更对称 */
-    .account-card {
-        min-height: 72px;
-    }
-
-    /* 账户详情页：表格列更宽松 */
-    #view-account-detail .excel-table th,
-    #view-account-detail .excel-table td {
-        padding: 8px 12px;
-        font-size: 0.9rem;
-    }
-
-    /* ── 宽屏统计 Tab 布局 ── */
-
-    /* 概览：CSS grid，覆盖 Bootstrap .row/.col-* */
-    #stats-pane-overview #charts-container {
-        display: grid !important;
-        grid-template-columns: 40% 1fr;
-        gap: 16px;
-        align-items: start;
-    }
-    #stats-pane-overview #charts-container > * {
-        width: 100% !important;
-        max-width: 100% !important;
-        padding: 0 !important;
-        flex: none !important;
-    }
-    #stats-pane-overview #charts-container > *:nth-child(1) { grid-column: 1; grid-row: 1; }
-    #stats-pane-overview #charts-container > *:nth-child(2) { grid-column: 1; grid-row: 2; }
-    #stats-pane-overview #charts-container > *:nth-child(3) { grid-column: 2; grid-row: 1 / 3; }
-    #stats-pane-overview #charts-container > *:nth-child(4) { grid-column: 1; grid-row: 3; }
-    #stats-pane-overview #charts-container > *:nth-child(5) { grid-column: 2; grid-row: 3; }
-    #stats-pane-overview #charts-container > *:nth-child(6) { grid-column: 1 / 3; grid-row: 4; }
-    /* 月度趋势图跨两行，给足高度 */
-    #stats-pane-overview #charts-container > *:nth-child(3) .chart-scroll-container { height: 520px !important; }
-    /* 其余图表适当加高 */
-    #stats-pane-overview #charts-container .card-body > div[style*="height:350px"] { height: 380px !important; }
-    #stats-pane-overview #charts-container .chart-scroll-container[style*="height:300px"] { height: 340px !important; }
-
-    /* 收支汇总卡片字号稍大 */
-    #stats-pane-overview .alert .row { font-size: 1rem; }
-    #stats-pane-overview .alert .row b { font-size: 1.05rem; }
-
-    /* 消费类型子页：左右两列 */
-    #stats-pane-spending {
-        display: grid !important;
-        grid-template-columns: 40% 1fr;
-        gap: 16px;
-        align-items: start;
-    }
-    #stats-pane-spending > * { width: 100% !important; max-width: 100% !important; }
-    #sa-summary-cards                            { grid-column: 1 / 3 !important; }
-    #stats-pane-spending > .card:nth-of-type(1)  { grid-column: 1 !important; }
-    #stats-pane-spending > .card:nth-of-type(2)  { grid-column: 2 !important; }
-    #stats-pane-spending > .d-flex               { grid-column: 1 / 3 !important; }
-    #sa-detail-list                              { grid-column: 1 / 3 !important; }
-
-    /* ── 宽屏交易 Tab 左右分栏 ── */
-    #view-transactions.active-view {
-        flex-direction: row !important;
-        gap: 0;
-        overflow: hidden;
-    }
-
-    /* 左侧：表格 + 顶部过滤 */
-    #trans-list-pane {
-        display: flex;
-        flex-direction: column;
-        flex: 1 1 0;
-        min-width: 0;
-        overflow: hidden;
-        border-right: 1px solid var(--bs-border-color);
-    }
-
-    /* 右侧：详情/编辑面板 */
-    #trans-detail-pane {
-        width: 380px;
-        flex-shrink: 0;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-        background: var(--bs-body-bg);
-    }
-
-    /* 面板滚动区域 */
-    #dp-scroll-area {
-        flex: 1;
-        overflow-y: auto;
-        min-height: 0;
-    }
-
-    /* 面板空状态 */
-    #dp-empty-state {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        color: var(--bs-secondary-color);
-        gap: 10px;
-        font-size: 0.9rem;
-    }
-
-    /* 面板顶部栏 */
-    #dp-header {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 14px 8px;
-        border-bottom: 1px solid var(--bs-border-color);
-        flex-shrink: 0;
-    }
-    #dp-title { font-weight: 600; font-size: 0.95rem; flex: 1; }
-
-    /* 面板内的 trans-modal-v2 样式适配（非 modal） */
-    #dp-panel .trans-modal-v2 {
-        display: flex;
-        flex-direction: column;
-        flex: 1;
-        min-height: 0;
-        border-radius: 0;
-        border: none;
-        background: transparent;
-    }
-    #dp-panel .trans-form-v2 {
-        display: flex;
-        flex-direction: column;
-        flex: 1;
-        min-height: 0;
-    }
-    #dp-panel .trans-scroll-area {
-        flex: 1;
-        overflow-y: auto;
-        min-height: 0;
-        padding: 10px 14px;
-    }
-    #dp-panel .trans-amount-bar {
-        flex-shrink: 0;
-    }
-
-    /* 点击高亮选中行 */
-    .excel-table tbody tr.dp-selected {
-        background: rgba(var(--bs-primary-rgb), 0.12) !important;
-    }
-    .excel-table tbody tr { cursor: pointer; }
 }
 
 /* ── 标签建议下拉 ── */
@@ -779,12 +625,10 @@ select.compact-form-control { height: 2.1rem; }
 #editTransactionModal .modal-dialog {
     display: flex;
     flex-direction: column;
-    height: 100dvh;
     max-height: 100dvh;
     margin: auto;
 }
 #editTransactionModal .modal-content {
-    height: 100dvh;
     max-height: 100dvh;
     display: flex;
     flex-direction: column;
@@ -803,33 +647,29 @@ select.compact-form-control { height: 2.1rem; }
     flex: 1;
     min-height: 0;
 }
-/* 手机端：宽度全屏、贴顶、无圆角、铺满全屏高度 */
+/* 手机端：宽度全屏、贴顶、无圆角 */
 @media (max-width: 768px) {
     #editTransactionModal .modal-dialog {
         margin: 0 !important;
         width: 100vw !important;
         max-width: 100vw !important;
-        height: 100dvh !important;
-        max-height: 100dvh !important;
+        max-height: 90dvh !important;
         border-radius: 0;
     }
     #editTransactionModal .modal-content {
         border-radius: 0 !important;
         border: none !important;
-        height: 100dvh !important;
-        max-height: 100dvh !important;
+        max-height: 90dvh !important;
     }
 }
-/* 桌面端：正常宽度居中，铺满全屏高度 */
+/* 桌面端：正常宽度居中，高度自适应最大90vh */
 @media (min-width: 769px) {
     #editTransactionModal .modal-dialog {
-        height: 100vh;
-        max-height: 100vh;
+        max-height: 90vh;
         max-width: 560px;
     }
     #editTransactionModal .modal-content {
-        height: 100vh;
-        max-height: 100vh;
+        max-height: 90vh;
     }
 }
 /* 拆分模式时分录列表占满剩余空间 */
@@ -870,337 +710,6 @@ select.compact-form-control { height: 2.1rem; }
 .split-item-card[data-accent="1"] { border-left-color: #fd7e14; background: rgba(253,126,20,0.05) !important; }
 .split-item-card[data-accent="2"] { border-left-color: #198754; background: rgba(25,135,84,0.05) !important; }
 .split-item-card[data-accent="3"] { border-left-color: #9c27b0; background: rgba(156,39,176,0.05) !important; }
-
-/* ════════════════════════════════════════════════════════════
-   沉浸式收/支/转账弹窗（v2）
-   ════════════════════════════════════════════════════════════ */
-
-/* 类型分段控件 */
-.trans-type-segment {
-    display: flex;
-    gap: 4px;
-    background: var(--bs-tertiary-bg);
-    border-radius: 10px;
-    padding: 3px;
-}
-.trans-type-btn {
-    flex: 1;
-    border: none;
-    background: transparent;
-    color: var(--bs-secondary-color);
-    font-size: 0.85rem;
-    font-weight: 600;
-    padding: 7px 4px;
-    border-radius: 8px;
-    transition: background .15s, color .15s;
-    display: flex; align-items: center; justify-content: center; gap: 4px;
-}
-.trans-type-btn i { font-size: 0.8rem; }
-.trans-type-btn.active[data-type="expense"] { background: #dc3545; color: #fff; }
-.trans-type-btn.active[data-type="income"]  { background: #198754; color: #fff; }
-.trans-type-btn.active[data-type="transfer"]{ background: #fd7e14; color: #fff; }
-
-/* 表单整体：滚动区 + 吸底键盘区 */
-#edit-transfer-form {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-height: 0;
-}
-.trans-form-v2 { display: flex; flex-direction: column; flex: 1; min-height: 0; }
-.trans-scroll-area {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    padding-bottom: 4px;
-    display: flex;
-    flex-direction: column;
-}
-.trans-amount-bar {
-    flex: 0 0 auto;
-    padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
-    border-top: 1px solid var(--bs-border-color);
-    background: var(--bs-body-bg);
-}
-.trans-amount-bar.split-mode .amount-input-row { display: none; }
-
-/* 日期 / 账户 / 拆分 chip 行 */
-.trans-chip-row { display: flex; gap: 6px; margin-bottom: 10px; align-items: stretch; }
-.chip-date, .chip-acc-trigger {
-    display: flex; align-items: center; gap: 6px;
-    background: var(--bs-tertiary-bg);
-    border-radius: 10px;
-    padding: 7px 10px;
-    font-size: 0.85rem;
-    color: var(--bs-body-color);
-    cursor: pointer;
-    border: 1px solid transparent;
-}
-.chip-date { flex: 1; position: relative; }
-.chip-date i { color: var(--bs-secondary-color); flex-shrink: 0; }
-.chip-date-input {
-    border: none; background: transparent; padding: 0; margin: 0;
-    font-size: 0.85rem; color: var(--bs-body-color); flex: 1; min-width: 0;
-    position: relative;
-}
-.chip-date-input:focus { outline: none; }
-.chip-date-input::-webkit-calendar-picker-indicator {
-    opacity: 0;
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    cursor: pointer;
-}
-.chip-acc { flex: 1.3; position: relative; }
-.chip-acc-trigger i { color: var(--bs-secondary-color); flex-shrink: 0; }
-.chip-acc-trigger .acc-trigger-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.chip-acc-trigger.open { border-color: var(--bs-primary); }
-.chip-split-btn {
-    flex-shrink: 0;
-    width: 38px;
-    border: none;
-    border-radius: 10px;
-    background: var(--bs-tertiary-bg);
-    color: var(--bs-secondary-color);
-    font-size: 0.95rem;
-    display: flex; align-items: center; justify-content: center;
-}
-.chip-split-btn.active { background: rgba(25,135,84,0.15); color: #198754; }
-
-/* 分类设置：小图标预览按钮 */
-.cat-icon-mini {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 22px; height: 22px;
-    border-radius: 50%;
-    background: rgba(var(--cat-color-rgb), 0.18);
-    color: var(--cat-color);
-    font-size: 0.72rem;
-    margin-right: 6px;
-    cursor: pointer;
-    flex-shrink: 0;
-}
-.cat-icon-mini:hover { background: rgba(var(--cat-color-rgb), 0.32); }
-
-/* 图标选择弹窗 */
-.icon-picker-color-row { display: flex; gap: 8px; flex-wrap: wrap; }
-.icon-picker-color-item {
-    width: 28px; height: 28px;
-    border-radius: 50%;
-    border: 2px solid transparent;
-    cursor: pointer;
-    background: var(--swatch-color);
-}
-.icon-picker-color-item.selected { border-color: var(--bs-body-color); transform: scale(1.1); }
-.icon-picker-grid {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 8px;
-    max-height: 260px;
-    overflow-y: auto;
-    padding: 4px 0;
-}
-.icon-picker-item {
-    display: flex; align-items: center; justify-content: center;
-    width: 100%; aspect-ratio: 1;
-    border-radius: 10px;
-    border: 2px solid transparent;
-    background: var(--bs-tertiary-bg);
-    color: var(--bs-secondary-color);
-    font-size: 1.05rem;
-    cursor: pointer;
-}
-.icon-picker-item.selected {
-    background: rgba(var(--picker-color-rgb), 0.18);
-    color: var(--picker-color);
-    border-color: var(--picker-color);
-}
-
-/* 类别图标网格 */
-.cat-grid-section { margin-bottom: 4px; }
-.cat-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px 6px;
-    padding: 4px 2px 8px;
-    max-height: 232px;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
-}
-.cat-grid::-webkit-scrollbar { width: 4px; }
-.cat-grid::-webkit-scrollbar-thumb { background: var(--bs-border-color); border-radius: 4px; }
-.cat-grid::-webkit-scrollbar-track { background: transparent; }
-.cat-grid-item {
-    display: flex; flex-direction: column; align-items: center; gap: 4px;
-    background: none; border: none; padding: 2px;
-    color: var(--bs-body-color);
-}
-.cat-icon-circle {
-    width: 46px; height: 46px;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    background: rgba(var(--cat-color-rgb), 0.16);
-    color: var(--cat-color);
-    font-size: 1.15rem;
-    transition: transform .12s, background .15s;
-    border: 2px solid transparent;
-}
-.cat-grid-item.selected .cat-icon-circle {
-    background: var(--cat-color);
-    color: #fff;
-    border-color: rgba(var(--cat-color-rgb), 0.5);
-    transform: scale(1.06);
-}
-.cat-grid-item .cat-name {
-    font-size: 0.7rem;
-    color: var(--bs-secondary-color);
-    max-width: 60px;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.cat-grid-item.selected .cat-name { color: var(--bs-body-color); font-weight: 600; }
-
-/* 折叠字段展开按钮 */
-.btn-expand-field {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    background: transparent;
-    border: none;
-    padding: 2px 6px 2px 2px;
-    font-size: 0.76rem;
-    color: var(--bs-secondary-color);
-    border-radius: 6px;
-    cursor: pointer;
-    transition: color .15s, background .15s;
-    line-height: 1.4;
-}
-.btn-expand-field:hover {
-    color: var(--bs-body-color);
-    background: var(--bs-tertiary-bg);
-}
-.btn-expand-field i { font-size: 0.85rem; }
-
-/* 消费类型分段药丸 */
-.st-pill-group { display: flex; gap: 6px; flex-wrap: wrap; }
-.st-pill {
-    border: 1px solid var(--bs-border-color);
-    background: transparent;
-    color: var(--bs-secondary-color);
-    border-radius: 999px;
-    padding: 4px 12px;
-    font-size: 0.76rem;
-}
-.st-pill[data-val=""].active       { background: rgba(108,117,125,0.15); border-color: #6c757d; color: #6c757d; }
-.st-pill[data-val="need"].active   { background: rgba(13,110,253,0.15); border-color: #0d6efd; color: #0d6efd; }
-.st-pill[data-val="want"].active   { background: rgba(253,126,20,0.15); border-color: #fd7e14; color: #fd7e14; }
-.st-pill[data-val="regret"].active { background: rgba(220,53,69,0.15); border-color: #dc3545; color: #dc3545; }
-
-/* 沉浸式金额输入（系统键盘） */
-.amount-input-row {
-    display: flex; align-items: center; justify-content: center; gap: 6px;
-    padding: 6px 0 10px;
-}
-.amount-currency { font-size: 1.3rem; font-weight: 600; color: var(--bs-secondary-color); }
-.amount-input-v2 {
-    border: none;
-    background: transparent;
-    outline: none;
-    font-size: 2.4rem;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    line-height: 1;
-    color: var(--bs-body-color);
-    width: 100%;
-    max-width: 240px;
-    text-align: center;
-    transition: color .15s, background-color .3s;
-    border-radius: 8px;
-}
-.trans-amount-bar.amt-expense .amount-input-v2 { color: #dc3545; }
-.trans-amount-bar.amt-income .amount-input-v2 { color: #198754; }
-.amount-input-v2.ocr-highlight {
-    animation: ocrPulse 1.4s ease-out 1;
-}
-@keyframes ocrPulse {
-    0%   { background-color: rgba(var(--bs-success-rgb), 0.18); }
-    100% { background-color: transparent; }
-}
-/* 隐藏数字输入框默认的上下箭头 */
-.amount-input-v2::-webkit-outer-spin-button,
-.amount-input-v2::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-.amount-input-v2 { -moz-appearance: textfield; }
-
-.trans-action-row { display: flex; gap: 8px; }
-.btn-save-immersive {
-    flex: 1;
-    border: none;
-    border-radius: 10px;
-    background: var(--bs-primary);
-    color: #fff;
-    font-weight: 600;
-    font-size: 0.95rem;
-    padding: 10px 0;
-}
-.btn-delete-immersive {
-    flex: 0 0 100px;
-    border: none;
-    border-radius: 10px;
-    background: rgba(220,53,69,0.1);
-    color: #dc3545;
-    font-weight: 500;
-    font-size: 0.85rem;
-    padding: 0;
-}
-
-/* 转账：账户流向卡片 */
-.transfer-flow-row { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; }
-.transfer-acc-card { flex: 1; position: relative; min-width: 0; }
-.transfer-acc-trigger {
-    display: flex; flex-direction: column; gap: 2px;
-    background: var(--bs-tertiary-bg);
-    border-radius: 12px;
-    padding: 10px;
-    cursor: pointer;
-    border: 1px solid transparent;
-}
-.transfer-acc-trigger.open { border-color: var(--bs-primary); }
-.transfer-acc-label { font-size: 0.68rem; color: var(--bs-secondary-color); }
-.transfer-acc-trigger i { font-size: 1rem; color: var(--bs-primary); margin: 2px 0; }
-.transfer-acc-trigger .acc-trigger-text {
-    font-size: 0.82rem; font-weight: 600;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.transfer-flow-arrow { flex-shrink: 0; color: var(--bs-primary); font-size: 1.3rem; }
-
-/* 转账：双金额输入（系统键盘） */
-.transfer-amount-row { display: flex; gap: 8px; margin-bottom: 4px; }
-.transfer-amount-field {
-    flex: 1;
-    border: 1px solid var(--bs-border-color);
-    background: var(--bs-tertiary-bg);
-    border-radius: 10px;
-    padding: 6px 6px 8px;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-    min-height: 54px;
-}
-.transfer-amount-field .amt-label { font-size: 0.68rem; color: var(--bs-secondary-color); }
-.transfer-amount-input {
-    font-size: 1.3rem;
-    max-width: none;
-    padding: 2px 0 0;
-}
-
-/* 只读查看模式：禁用新组件的交互 */
-.trans-modal-v2.view-only .cat-grid-item,
-.trans-modal-v2.view-only .st-pill,
-.trans-modal-v2.view-only .chip-acc-trigger,
-.trans-modal-v2.view-only .chip-date,
-.trans-modal-v2.view-only .chip-split-btn,
-.trans-modal-v2.view-only .transfer-acc-trigger {
-    pointer-events: none;
-    opacity: 0.65;
-}
 
 
 
@@ -1573,7 +1082,7 @@ select.compact-form-control { height: 2.1rem; }
         </div>
     </div>
     <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;pointer-events:none;">
-        <span class="text-muted" style="font-size:0.7rem;">version 2.3.0</span>
+        <span class="text-muted" style="font-size:0.7rem;">version 2.1.14</span>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
@@ -1721,8 +1230,6 @@ select.compact-form-control { height: 2.1rem; }
         </div>
 
         <div id="view-transactions" class="view-section active-view">
-        <!-- 左侧：过滤栏 + 表格 -->
-        <div id="trans-list-pane">
             <div class="page-sticky-header pt-1">
                 <!-- 标题行：标题 + 搜索 + 筛选 + 新增 -->
                 <div class="d-flex align-items-center gap-2 mb-1">
@@ -1730,8 +1237,8 @@ select.compact-form-control { height: 2.1rem; }
                     <button class="btn btn-sm btn-outline-secondary" id="trans-filter-btn" onclick="toggleTransFilter()" title="搜索与筛选">
                         <i class="bi bi-sliders"></i>
                     </button>
-                    <button class="btn btn-sm btn-primary d-none d-md-inline-flex" onclick="dpOpenNew()" title="新增交易">
-                        <i class="bi bi-plus-lg"></i> 新增
+                    <button class="btn btn-sm btn-primary d-none d-md-inline-flex" onclick="openNewTransaction()" title="新增交易">
+                        <i class="bi bi-plus-lg"></i>
                     </button>
                 </div>
 
@@ -1842,208 +1349,7 @@ select.compact-form-control { height: 2.1rem; }
                     <button class="btn btn-outline-primary" onclick="loadMoreTransactions()">加载更多</button>
                 </div>
             </div>
-        </div><!-- /trans-list-pane -->
-
-        <!-- 右侧详情/编辑面板（仅宽屏显示） -->
-        <div id="trans-detail-pane" class="d-none d-md-flex flex-column">
-            <!-- 面板顶部栏 -->
-            <div id="dp-header">
-                <span id="dp-title">详情</span>
-                <button type="button" class="btn btn-sm btn-outline-danger d-none" id="dp-delete-btn" onclick="dpDeleteCurrent()">
-                    <i class="bi bi-trash"></i>
-                </button>
-            </div>
-            <!-- 面板内容滚动区 -->
-            <div id="dp-scroll-area">
-                <!-- 空状态 -->
-                <div id="dp-empty-state">
-                    <i class="bi bi-layout-sidebar-inset-reverse" style="font-size:2rem;opacity:0.3;"></i>
-                    <span>选择一笔交易查看详情</span>
-                    <button class="btn btn-primary btn-sm mt-2" onclick="dpOpenNew()"><i class="bi bi-plus-lg"></i> 新增交易</button>
-                </div>
-
-                <!-- 面板表单容器（动态渲染） -->
-                <div id="dp-panel" style="display:none; flex-direction:column; height:100%;">
-                    <!-- Tab 栏 -->
-                    <div class="px-3 pt-2 pb-1" id="dp-tab-bar">
-                        <div class="trans-type-segment" role="group">
-                            <button type="button" class="trans-type-btn active" data-type="expense" id="dp-tab-btn-expense" onclick="dpSwitchTab('expense')"><i class="bi bi-dash-circle-fill"></i> 支出</button>
-                            <button type="button" class="trans-type-btn" data-type="income" id="dp-tab-btn-income" onclick="dpSwitchTab('income')"><i class="bi bi-plus-circle-fill"></i> 收入</button>
-                            <button type="button" class="trans-type-btn" data-type="transfer" id="dp-tab-btn-transfer" onclick="dpSwitchTab('transfer')"><i class="bi bi-arrow-left-right"></i> 转账</button>
-                        </div>
-                    </div>
-
-                    <!-- 支出/收入表单 -->
-                    <form id="dp-transaction-form" class="trans-form-v2">
-                        <input type="hidden" id="dp-trans-id">
-                        <input type="hidden" id="dp-trans-mode" value="add">
-                        <input type="hidden" id="dp-trans-type" value="expense">
-
-                        <div class="trans-scroll-area">
-                            <div class="trans-chip-row">
-                                <div class="chip-date" onclick="this.querySelector('input').showPicker && this.querySelector('input').showPicker()">
-                                    <i class="bi bi-calendar3"></i>
-                                    <input type="date" class="chip-date-input" id="dp-trans-date" required="">
-                                </div>
-                                <div class="acc-select-wrapper chip-acc" id="dp-wrap-trans-account">
-                                    <select class="form-select" id="dp-trans-account" required="" style="display:none;"></select>
-                                    <div class="acc-select-trigger chip-acc-trigger" id="trigger-dp-trans-account">
-                                        <i class="bi bi-wallet2"></i><span class="acc-trigger-text"></span>
-                                    </div>
-                                    <div class="acc-select-dropdown" id="dropdown-dp-trans-account"></div>
-                                </div>
-                                <button type="button" id="dp-split-toggle-btn" class="chip-split-btn" title="拆分账单" onclick="dpHandleSplitBtn()">
-                                    <i class="bi bi-scissors"></i>
-                                </button>
-                            </div>
-
-                            <div id="dp-single-item-row">
-                                <div class="cat-grid-section" id="dp-cat-grid-section">
-                                    <select class="form-select" id="dp-trans-category" required="" style="display:none;"></select>
-                                    <div class="cat-grid" id="dp-cat-grid"></div>
-                                </div>
-                            </div>
-
-                            <div id="dp-split-items-section">
-                                <div id="dp-split-items-list"></div>
-                                <div class="d-flex align-items-center gap-2 py-2 border-top">
-                                    <span class="ms-auto small text-muted">合计：</span>
-                                    <span id="dp-split-total-amt" class="fw-bold text-danger" style="font-size:1rem;">0.00</span>
-                                </div>
-                            </div>
-
-                            <div id="dp-single-meta-section">
-                                <!-- 消费类型：折叠式 -->
-                                <div class="mb-2" id="dp-spending-type-collapse-wrap">
-                                    <button type="button" class="btn-expand-field" id="dp-spending-type-expand-btn" onclick="dpExpandMetaField('spending-type')">
-                                        <i class="bi bi-plus-sm"></i> 添加消费类型
-                                    </button>
-                                    <div id="dp-spending-type-expanded" style="display:none;">
-                                        <label class="compact-form-label">消费类型</label>
-                                        <div id="dp-spending-type-select-wrap">
-                                            <select id="dp-trans-spending-type" style="display:none;">
-                                                <option value="">未标记</option>
-                                                <option value="need">必须的</option>
-                                                <option value="want">想要的</option>
-                                                <option value="regret">后悔的</option>
-                                            </select>
-                                            <div class="st-pill-group" id="dp-st-pill-group">
-                                                <button type="button" class="st-pill" data-val="" onclick="dpSelectSpendingTypePill('')">未标记</button>
-                                                <button type="button" class="st-pill" data-val="need" onclick="dpSelectSpendingTypePill('need')">必须的</button>
-                                                <button type="button" class="st-pill" data-val="want" onclick="dpSelectSpendingTypePill('want')">想要的</button>
-                                                <button type="button" class="st-pill" data-val="regret" onclick="dpSelectSpendingTypePill('regret')">后悔的</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- 标签：折叠式 -->
-                                <div class="mb-2" id="dp-tags-collapse-wrap">
-                                    <button type="button" class="btn-expand-field" id="dp-tags-expand-btn" onclick="dpExpandMetaField('tags')">
-                                        <i class="bi bi-plus-sm"></i> 添加标签
-                                    </button>
-                                    <div id="dp-tags-expanded" style="display:none;">
-                                        <label class="compact-form-label">标签</label>
-                                        <div class="tag-suggest-wrap">
-                                            <input type="text" class="form-control compact-form-control" id="dp-trans-tags"
-                                                   placeholder="添加标签…" autocomplete="off"
-                                                   onfocus="openTagSuggest(this,'dp-ts-single')"
-                                                   onblur="scheduleCloseTagSuggest('dp-ts-single')">
-                                            <ul class="tag-suggest-list" id="dp-ts-single"></ul>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- 备注：折叠式 -->
-                                <div class="mb-2" id="dp-desc-collapse-wrap">
-                                    <button type="button" class="btn-expand-field" id="dp-desc-expand-btn" onclick="dpExpandMetaField('desc')">
-                                        <i class="bi bi-plus-sm"></i> 添加备注
-                                    </button>
-                                    <div id="dp-desc-expanded" style="display:none;">
-                                        <label class="compact-form-label">备注</label>
-                                        <input type="text" class="form-control compact-form-control" id="dp-trans-desc"
-                                               oninput="updateDescHint('dp-trans-desc','dp-trans-desc-hint','dp-trans-type','dp-trans-category','dp-trans-account')"
-                                               placeholder="添加备注...">
-                                        <div id="dp-trans-desc-hint" style="display:none;align-items:center;gap:6px;margin-top:3px;padding:3px 8px;border-radius:5px;background:rgba(var(--bs-primary-rgb),0.08);border:1px solid rgba(var(--bs-primary-rgb),0.2);font-size:0.78rem;"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="trans-amount-bar" id="dp-amount-bar">
-                            <div class="amount-input-row">
-                                <span class="amount-currency" id="dp-amount-currency-symbol">¥</span>
-                                <input type="text" inputmode="decimal" placeholder="0.00" class="amount-input-v2 decimal-input" id="dp-trans-amount" required="">
-                            </div>
-                            <div class="trans-action-row">
-                                <button type="submit" class="btn-save-immersive" id="dp-trans-submit-btn">保存</button>
-                            </div>
-                        </div>
-                    </form>
-
-                    <!-- 转账表单 -->
-                    <form id="dp-transfer-form" class="trans-form-v2" style="display:none;">
-                        <input type="hidden" id="dp-transfer-id">
-                        <input type="hidden" id="dp-transfer-mode" value="add">
-
-                        <div class="trans-scroll-area">
-                            <div class="trans-chip-row">
-                                <div class="chip-date" onclick="this.querySelector('input').showPicker && this.querySelector('input').showPicker()">
-                                    <i class="bi bi-calendar3"></i>
-                                    <input type="date" class="chip-date-input" id="dp-transfer-date" required="">
-                                </div>
-                            </div>
-                            <div class="transfer-flow-row">
-                                <div class="acc-select-wrapper transfer-acc-card" id="dp-wrap-transfer-from">
-                                    <select class="form-select" id="dp-transfer-from" onchange="dpHandleTransferAmountChange()" required="" style="display:none;"></select>
-                                    <div class="acc-select-trigger transfer-acc-trigger" id="trigger-dp-transfer-from">
-                                        <span class="transfer-acc-label">转出</span>
-                                        <i class="bi bi-credit-card-2-front-fill"></i>
-                                        <span class="acc-trigger-text"></span>
-                                    </div>
-                                    <div class="acc-select-dropdown" id="dropdown-dp-transfer-from"></div>
-                                </div>
-                                <div class="transfer-flow-arrow"><i class="bi bi-arrow-right-circle-fill"></i></div>
-                                <div class="acc-select-wrapper transfer-acc-card" id="dp-wrap-transfer-to">
-                                    <select class="form-select" id="dp-transfer-to" onchange="dpHandleTransferAmountChange()" required="" style="display:none;"></select>
-                                    <div class="acc-select-trigger transfer-acc-trigger" id="trigger-dp-transfer-to">
-                                        <span class="transfer-acc-label">转入</span>
-                                        <i class="bi bi-credit-card-2-back-fill"></i>
-                                        <span class="acc-trigger-text"></span>
-                                    </div>
-                                    <div class="acc-select-dropdown" id="dropdown-dp-transfer-to"></div>
-                                </div>
-                            </div>
-                            <!-- 转账备注：折叠式 -->
-                            <div class="mb-2" id="dp-transfer-desc-collapse-wrap">
-                                <button type="button" class="btn-expand-field" id="dp-transfer-desc-expand-btn" onclick="dpExpandTransferDesc()">
-                                    <i class="bi bi-plus-sm"></i> 添加备注
-                                </button>
-                                <div id="dp-transfer-desc-expanded" style="display:none;">
-                                    <label class="compact-form-label">备注</label>
-                                    <input type="text" class="form-control compact-form-control" id="dp-transfer-desc" placeholder="添加备注...">
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="trans-amount-bar" id="dp-transfer-amount-bar">
-                            <div class="transfer-amount-row">
-                                <div class="transfer-amount-field">
-                                    <label class="amt-label">转出金额</label>
-                                    <input type="text" inputmode="decimal" placeholder="0.00" class="amount-input-v2 transfer-amount-input decimal-input" id="dp-transfer-amount-out" oninput="dpHandleTransferAmountChange('out')" required="">
-                                </div>
-                                <div class="transfer-amount-field">
-                                    <label class="amt-label">转入金额</label>
-                                    <input type="text" inputmode="decimal" placeholder="0.00" class="amount-input-v2 transfer-amount-input decimal-input" id="dp-transfer-amount-in" oninput="dpHandleTransferAmountChange('in')" required="">
-                                </div>
-                            </div>
-                            <div class="trans-action-row">
-                                <button type="submit" class="btn-save-immersive" id="dp-transfer-submit-btn">保存</button>
-                            </div>
-                        </div>
-                    </form>
-                </div><!-- /dp-panel -->
-            </div><!-- /dp-scroll-area -->
-        </div><!-- /trans-detail-pane -->
-        </div><!-- /view-transactions -->
+        </div>
 
         <div id="view-stats" class="view-section">
             <div class="page-sticky-header pt-1">
@@ -2118,7 +1424,7 @@ select.compact-form-control { height: 2.1rem; }
 
             <!-- 概览子页 -->
             <div id="stats-pane-overview" class="stats-sub-pane active">
-                <div class="alert alert-light border shadow-sm mb-3 clickable-amount" onclick="toggleAmountVisibility()" id="stats-summary-bar">
+                <div class="alert alert-light border shadow-sm mb-4 clickable-amount" onclick="toggleAmountVisibility()">
                     <div class="row text-center">
                         <div class="col-4">期间收入: <b class="text-success" id="stat-income-display">0.00</b></div>
                         <div class="col-4">期间支出: <b class="text-danger" id="stat-expense-display">0.00</b></div>
@@ -2482,11 +1788,11 @@ select.compact-form-control { height: 2.1rem; }
                             <i class="bi bi-toggles"></i> 界面版本
                         </div>
                         <div class="card-body">
-                            <p class="text-muted small mb-3">当前使用的是<b>新版界面</b>（v2.3.0），支持宽屏分栏布局。如果你更习惯旧版弹窗风格，可切换到旧版。</p>
+                            <p class="text-muted small mb-3">当前使用的是<b>旧版界面</b>（v2.1.14），弹窗风格。新版支持宽屏分栏布局和更多功能。</p>
                             <div class="d-flex align-items-center gap-3">
-                                <span class="badge bg-primary">当前：新版</span>
-                                <button class="btn btn-outline-secondary btn-sm" onclick="switchToLegacy()">
-                                    <i class="bi bi-arrow-left-circle"></i> 切换到旧版界面
+                                <span class="badge bg-secondary">当前：旧版</span>
+                                <button class="btn btn-outline-primary btn-sm" onclick="switchToNew()">
+                                    <i class="bi bi-arrow-right-circle"></i> 切换到新版界面
                                 </button>
                             </div>
                         </div>
@@ -2538,7 +1844,7 @@ select.compact-form-control { height: 2.1rem; }
                         </div>
                         <div class="col-6">
                             <label class="compact-form-label">金额</label>
-                            <input type="text" inputmode="decimal" class="form-control compact-form-control decimal-input" id="planned-amount" required="">
+                            <input type="number" step="0.01" class="form-control compact-form-control" id="planned-amount" required="">
                         </div>
                     </div>
                     <div class="row g-2 mb-2">
@@ -2619,7 +1925,7 @@ select.compact-form-control { height: 2.1rem; }
                     </div>
                     <div class="mb-2">
                         <label class="compact-form-label" id="acc-balance-label">初始余额</label>
-                        <input type="text" inputmode="decimal" class="form-control compact-form-control decimal-input" id="acc-balance" value="0" required="">
+                        <input type="number" step="0.01" class="form-control compact-form-control" id="acc-balance" value="0" required="">
                         <div class="form-text d-none" id="acc-balance-hint">修改余额将自动生成一笔调整记录</div>
                     </div>
                     <div class="mb-2">
@@ -2651,7 +1957,7 @@ select.compact-form-control { height: 2.1rem; }
                     <label class="compact-form-label">每月预算金额（<span id="budget-currency-label"></span>）</label>
                     <div class="input-group">
                         <span class="input-group-text" id="budget-currency-symbol"></span>
-                        <input type="text" inputmode="decimal" class="form-control compact-form-control decimal-input" id="budget-amount-input" placeholder="例如：2000">
+                        <input type="number" min="0" step="0.01" class="form-control compact-form-control" id="budget-amount-input" placeholder="例如：2000">
                     </div>
                 </div>
                 <button type="button" class="btn btn-primary btn-sm w-100 mt-2" onclick="saveBudgetModal()">保存</button>
@@ -2660,260 +1966,172 @@ select.compact-form-control { height: 2.1rem; }
     </div>
 </div>
 
-<!-- 分类图标选择 -->
-<div class="modal fade" id="iconPickerModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header py-2">
-                <h5 class="modal-title fs-6">设置图标 · <span id="icon-picker-cat-name"></span></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <input type="hidden" id="icon-picker-type" value="">
-                <input type="hidden" id="icon-picker-cat" value="">
-                <div class="mb-2">
-                    <label class="compact-form-label">颜色</label>
-                    <div class="icon-picker-color-row" id="icon-picker-color-row"></div>
-                </div>
-                <div class="mb-2">
-                    <label class="compact-form-label">图标</label>
-                    <div class="icon-picker-grid" id="icon-picker-grid"></div>
-                </div>
-                <button type="button" class="btn btn-outline-secondary btn-sm w-100 mt-1" onclick="resetIconPicker()">恢复默认图标</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- 编辑/新增交易 -->
 <div class="modal fade" id="editTransactionModal" tabindex="-1">
     <div class="modal-dialog">
-        <div class="modal-content trans-modal-v2">
+        <div class="modal-content">
             <div class="modal-header py-2">
                 <h5 class="modal-title fs-6" id="editTransactionModalTitle">新增交易</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <!-- Tab 栏 -->
             <div class="px-3 pt-2 pb-1" id="trans-tab-bar">
-                <div class="trans-type-segment" role="group">
-                    <button type="button" class="trans-type-btn active" data-type="expense" id="tab-btn-expense" onclick="switchTransTab('expense')"><i class="bi bi-dash-circle-fill"></i> 支出</button>
-                    <button type="button" class="trans-type-btn" data-type="income" id="tab-btn-income" onclick="switchTransTab('income')"><i class="bi bi-plus-circle-fill"></i> 收入</button>
-                    <button type="button" class="trans-type-btn" data-type="transfer" id="tab-btn-transfer" onclick="switchTransTab('transfer')"><i class="bi bi-arrow-left-right"></i> 转账</button>
+                <div class="btn-group w-100" role="group">
+                    <button type="button" class="btn btn-sm btn-outline-danger active" id="tab-btn-expense" onclick="switchTransTab('expense')">支出</button>
+                    <button type="button" class="btn btn-sm btn-outline-success" id="tab-btn-income" onclick="switchTransTab('income')">收入</button>
+                    <button type="button" class="btn btn-sm btn-outline-warning" id="tab-btn-transfer" onclick="switchTransTab('transfer')">转账</button>
                 </div>
             </div>
-            <div class="modal-body pt-2 trans-modal-body">
+            <div class="modal-body pt-2">
 
                 <!-- ── 支出/收入 表单 ── -->
-                <form id="edit-transaction-form" class="trans-form-v2">
+                <form id="edit-transaction-form">
                     <input type="hidden" id="edit-trans-id">
                     <input type="hidden" id="edit-trans-mode" value="edit">
                     <input type="hidden" id="edit-trans-type" value="expense">
 
-                    <div class="trans-scroll-area">
-                        <!-- 日期 / 账户 / 拆分 chip 行 -->
-                        <div class="trans-chip-row">
-                            <div class="chip-date" onclick="this.querySelector('input').showPicker && this.querySelector('input').showPicker()">
-                                <i class="bi bi-calendar3"></i>
-                                <input type="date" class="chip-date-input" id="edit-trans-date" required="">
-                            </div>
-                            <div class="acc-select-wrapper chip-acc" id="wrap-edit-trans-account">
-                                <select class="form-select" id="edit-trans-account" required="" style="display:none;"></select>
-                                <div class="acc-select-trigger chip-acc-trigger" id="trigger-edit-trans-account">
-                                    <i class="bi bi-wallet2"></i><span class="acc-trigger-text"></span>
-                                </div>
-                                <div class="acc-select-dropdown" id="dropdown-edit-trans-account"></div>
-                            </div>
-                            <button type="button" id="split-toggle-btn" class="chip-split-btn" title="拆分账单" onclick="handleSplitBtn()">
+                    <div class="d-flex gap-1 mb-2 align-items-end">
+                        <div style="flex:1;min-width:0;">
+                            <label class="compact-form-label">日期</label>
+                            <input type="date" class="form-control compact-form-control" id="edit-trans-date" required="">
+                        </div>
+                        <div style="flex:1;min-width:0;">
+                            <label class="compact-form-label">账户</label>
+                            <div class="acc-select-wrapper" id="wrap-edit-trans-account"><select class="form-select compact-form-control" id="edit-trans-account" required="" style="display:none;"></select><div class="acc-select-trigger compact-form-control form-select" id="trigger-edit-trans-account"></div><div class="acc-select-dropdown" id="dropdown-edit-trans-account"></div></div>
+                        </div>
+                        <!-- 拆分切换按钮：普通模式=剪刀，拆分模式=加号添加行 -->
+                        <div id="split-btn-wrap" style="flex-shrink:0;align-self:flex-end;">
+                            <button type="button" id="split-toggle-btn"
+                                    class="btn btn-outline-secondary btn-sm"
+                                    style="width:34px;height:34px;padding:0;font-size:0.85rem;"
+                                    title="拆分账单" onclick="handleSplitBtn()">
                                 <i class="bi bi-scissors"></i>
                             </button>
                         </div>
+                    </div>
 
-                        <!-- 单笔：类别图标网格 -->
-                        <div id="single-item-row">
-                            <div class="cat-grid-section" id="cat-grid-section">
-                                <select class="form-select" id="edit-trans-category" required="" style="display:none;"></select>
-                                <div class="cat-grid" id="cat-grid-edit-trans-category"></div>
+                    <!-- 单笔：类别 | 金额 | 消费类型 -->
+                    <div id="single-item-row">
+                        <div class="d-flex gap-1 mb-2 align-items-end" id="spending-type-row">
+                            <div style="flex:2;min-width:0;">
+                                <label class="compact-form-label">类别</label>
+                                <select class="form-select compact-form-control" id="edit-trans-category" required=""></select>
                             </div>
-                        </div>
-
-                        <!-- 拆分模式分录区 -->
-                        <div id="split-items-section">
-                            <div id="split-items-list"></div>
-                            <div class="d-flex align-items-center gap-2 py-2 border-top">
-                                <button type="button" class="btn btn-outline-secondary btn-sm" id="split-attach-btn"
-                                        onclick="document.getElementById('attachment-file-input').click()">
-                                    <i class="bi bi-image"></i> 添加附件
-                                </button>
-                                <span class="ms-auto small text-muted">合计：</span>
-                                <span id="split-total-amt" class="fw-bold text-danger" style="font-size:1rem;">0.00</span>
+                            <div style="flex:1.4;min-width:0;">
+                                <label class="compact-form-label">金额</label>
+                                <input type="number" step="0.01" class="form-control compact-form-control" id="edit-trans-amount" required="">
                             </div>
-                        </div>
-
-                        <!-- 单笔时的标签/备注/消费类型（拆分时隐藏） -->
-                        <div id="single-meta-section">
-                            <!-- 消费类型：折叠式 -->
-                            <div class="mb-2" id="spending-type-collapse-wrap">
-                                <button type="button" class="btn-expand-field" id="spending-type-expand-btn" onclick="expandMetaField('spending-type')">
-                                    <i class="bi bi-plus-sm"></i> 添加消费类型
-                                </button>
-                                <div id="spending-type-expanded" style="display:none;">
-                                    <label class="compact-form-label">消费类型</label>
-                                    <div id="spending-type-select-wrap">
-                                        <select id="edit-trans-spending-type" style="display:none;">
-                                            <option value="">未标记</option>
-                                            <option value="need">必须的</option>
-                                            <option value="want">想要的</option>
-                                            <option value="regret">后悔的</option>
-                                        </select>
-                                        <div class="st-pill-group" id="st-pill-group">
-                                            <button type="button" class="st-pill" data-val="" onclick="selectSpendingTypePill('')">未标记</button>
-                                            <button type="button" class="st-pill" data-val="need" onclick="selectSpendingTypePill('need')">必须的</button>
-                                            <button type="button" class="st-pill" data-val="want" onclick="selectSpendingTypePill('want')">想要的</button>
-                                            <button type="button" class="st-pill" data-val="regret" onclick="selectSpendingTypePill('regret')">后悔的</button>
-                                        </div>
-                                    </div>
-                                </div>
+                            <div style="flex:1.6;min-width:0;" id="spending-type-select-wrap">
+                                <label class="compact-form-label" style="font-size:0.78rem;">消费类型</label>
+                                <select class="form-select compact-form-control" id="edit-trans-spending-type" style="font-size:0.8rem;">
+                                    <option value="">未标记</option>
+                                    <option value="need">必须的</option>
+                                    <option value="want">想要的</option>
+                                    <option value="regret">后悔的</option>
+                                </select>
                             </div>
-
-                            <!-- 标签：折叠式 -->
-                            <div class="mb-2" id="tags-collapse-wrap">
-                                <button type="button" class="btn-expand-field" id="tags-expand-btn" onclick="expandMetaField('tags')">
-                                    <i class="bi bi-plus-sm"></i> 添加标签
-                                </button>
-                                <div id="tags-expanded" style="display:none;">
-                                    <label class="compact-form-label">标签</label>
-                                    <div class="tag-suggest-wrap">
-                                        <input type="text" class="form-control compact-form-control" id="edit-trans-tags"
-                                               placeholder="添加标签…" autocomplete="off"
-                                               onfocus="openTagSuggest(this,'ts-single')"
-                                               onblur="scheduleCloseTagSuggest('ts-single')">
-                                        <ul class="tag-suggest-list" id="ts-single"></ul>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- 备注：折叠式 -->
-                            <div class="mb-2" id="desc-collapse-wrap">
-                                <button type="button" class="btn-expand-field" id="desc-expand-btn" onclick="expandMetaField('desc')">
-                                    <i class="bi bi-plus-sm"></i> 添加备注
-                                </button>
-                                <div id="desc-expanded" style="display:none;">
-                                    <label class="compact-form-label">备注</label>
-                                    <div class="input-group" id="desc-input-group">
-                                        <input type="text" class="form-control compact-form-control" id="edit-trans-desc"
-                                               oninput="updateDescHint('edit-trans-desc','edit-trans-desc-hint','edit-trans-type','edit-trans-category','edit-trans-account')"
-                                               placeholder="添加备注...">
-                                        <button type="button" class="btn btn-outline-secondary btn-sm" id="attachment-btn" style="width: 45px;" onclick="document.getElementById('attachment-file-input').click()">
-                                            <i class="bi bi-image"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-outline-primary btn-sm" id="ocr-scan-btn" style="width: 45px;" onclick="startOcrScan()" title="拍照识别小票">
-                                            <i class="bi bi-camera"></i>
-                                        </button>
-                                    </div>
-                                    <div id="edit-trans-desc-hint" style="display:none;align-items:center;gap:6px;margin-top:3px;padding:3px 8px;border-radius:5px;background:rgba(var(--bs-primary-rgb),0.08);border:1px solid rgba(var(--bs-primary-rgb),0.2);font-size:0.78rem;"></div>
-                                    <!-- OCR 识别状态横幅 -->
-                                    <div id="ocr-result-banner" style="display:none;margin-top:4px;padding:4px 8px;border-radius:6px;background:rgba(var(--bs-success-rgb),0.1);border:1px solid rgba(var(--bs-success-rgb),0.3);font-size:0.78rem;color:var(--bs-success);">
-                                        <i class="bi bi-stars"></i> <span id="ocr-result-text"></span>
-                                        <button type="button" class="btn-close btn-close-sm ms-2" style="font-size:0.6rem;float:right;margin-top:2px;" onclick="clearOcrBanner()"></button>
-                                    </div>
-                                    <!-- OCR 隐藏文件输入（相机优先） -->
-                                    <input type="file" id="ocr-file-input" accept="image/*" capture="environment" class="d-none" onchange="handleOcrFileSelected(this)">
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 附件（单笔和拆分都保留） -->
-                        <div class="mb-2" id="attachment-section" style="display:none;">
-                            <input type="file" id="attachment-file-input" accept="image/*,image/heic,image/heif,application/pdf" class="d-none" onchange="handleAttachmentSelected(this)">
-                            <div id="attachment-preview-container" class="d-flex flex-wrap gap-2 mt-2" style="display:none !important;"></div>
-                            <div id="attachment-upload-status" class="small text-muted mt-1" style="display:none;">
-                                <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
-                                <span class="ms-1">正在上传图片...</span>
-                            </div>
-                            <input type="hidden" id="edit-trans-attachment-id" value="">
                         </div>
                     </div>
 
-                    <!-- 沉浸式金额（吸底，系统键盘输入） -->
-                    <div class="trans-amount-bar" id="trans-amount-bar">
-                        <div class="amount-input-row">
-                            <span class="amount-currency" id="amount-currency-symbol">¥</span>
-                            <input type="text" inputmode="decimal" placeholder="0.00" class="amount-input-v2 decimal-input" id="edit-trans-amount" required="">
-                        </div>
-                        <div class="trans-action-row">
-                            <button type="button" class="btn-delete-immersive" id="edit-trans-delete-btn" onclick="deleteCurrentTransaction()" style="display:none!important;">
-                                <i class="bi bi-trash"></i> 删除
+                    <!-- 拆分模式分录区 -->
+                    <div id="split-items-section">
+                        <div id="split-items-list"></div>
+                        <div class="d-flex align-items-center gap-2 py-2 border-top">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="split-attach-btn"
+                                    onclick="document.getElementById('attachment-file-input').click()">
+                                <i class="bi bi-image"></i> 添加附件
                             </button>
-                            <button type="submit" class="btn-save-immersive" id="edit-trans-submit-btn">保存</button>
+                            <span class="ms-auto small text-muted">合计：</span>
+                            <span id="split-total-amt" class="fw-bold text-danger" style="font-size:1rem;">0.00</span>
                         </div>
                     </div>
+
+                    <!-- 单笔时的标签/备注（拆分时隐藏） -->
+                    <div id="single-meta-section">
+                        <div class="mb-2">
+                            <label class="compact-form-label">标签</label>
+                            <div class="tag-suggest-wrap">
+                                <input type="text" class="form-control compact-form-control" id="edit-trans-tags"
+                                       placeholder="添加标签…" autocomplete="off"
+                                       onfocus="openTagSuggest(this,'ts-single')"
+                                       onblur="scheduleCloseTagSuggest('ts-single')">
+                                <ul class="tag-suggest-list" id="ts-single"></ul>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <label class="compact-form-label">备注</label>
+                            <div class="input-group" id="desc-input-group">
+                                <input type="text" class="form-control compact-form-control" id="edit-trans-desc"
+                                       oninput="updateDescHint('edit-trans-desc','edit-trans-desc-hint','edit-trans-type','edit-trans-category','edit-trans-account')"
+                                       placeholder="添加备注...">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="attachment-btn" style="width: 45px;" onclick="document.getElementById('attachment-file-input').click()">
+                                    <i class="bi bi-image"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" id="ocr-scan-btn" style="width: 45px;" onclick="startOcrScan()" title="拍照识别小票">
+                                    <i class="bi bi-camera"></i>
+                                </button>
+                            </div>
+                            <div id="edit-trans-desc-hint" style="display:none;align-items:center;gap:6px;margin-top:3px;padding:3px 8px;border-radius:5px;background:rgba(var(--bs-primary-rgb),0.08);border:1px solid rgba(var(--bs-primary-rgb),0.2);font-size:0.78rem;"></div>
+                            <!-- OCR 识别状态横幅 -->
+                            <div id="ocr-result-banner" style="display:none;margin-top:4px;padding:4px 8px;border-radius:6px;background:rgba(var(--bs-success-rgb),0.1);border:1px solid rgba(var(--bs-success-rgb),0.3);font-size:0.78rem;color:var(--bs-success);">
+                                <i class="bi bi-stars"></i> <span id="ocr-result-text"></span>
+                                <button type="button" class="btn-close btn-close-sm ms-2" style="font-size:0.6rem;float:right;margin-top:2px;" onclick="clearOcrBanner()"></button>
+                            </div>
+                            <!-- OCR 隐藏文件输入（相机优先） -->
+                            <input type="file" id="ocr-file-input" accept="image/*" capture="environment" class="d-none" onchange="handleOcrFileSelected(this)">
+                        </div>
+                    </div>
+
+                    <!-- 附件（单笔和拆分都保留） -->
+                    <div class="mb-2" id="attachment-section" style="display:none;">
+
+                        <input type="file" id="attachment-file-input" accept="image/*,image/heic,image/heif,application/pdf" class="d-none" onchange="handleAttachmentSelected(this)">
+                        <div id="attachment-preview-container" class="d-flex flex-wrap gap-2 mt-2" style="display:none !important;"></div>
+                        <div id="attachment-upload-status" class="small text-muted mt-1" style="display:none;">
+                            <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                            <span class="ms-1">正在上传图片...</span>
+                        </div>
+                        <input type="hidden" id="edit-trans-attachment-id" value="">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-sm w-100 mt-2" id="edit-trans-submit-btn">保存</button>
+                    <button type="button" class="btn btn-outline-danger btn-sm w-100 mt-2" id="edit-trans-delete-btn" onclick="deleteCurrentTransaction()" style="display:none!important;">删除交易</button>
                 </form>
 
                 <!-- ── 转账 表单 ── -->
-                <form id="edit-transfer-form" class="trans-form-v2" style="display:none;">
+                <form id="edit-transfer-form" style="display:none;">
                     <input type="hidden" id="edit-transfer-id">
                     <input type="hidden" id="edit-transfer-mode" value="edit">
-
-                    <div class="trans-scroll-area">
-                        <div class="trans-chip-row">
-                            <div class="chip-date" onclick="this.querySelector('input').showPicker && this.querySelector('input').showPicker()">
-                                <i class="bi bi-calendar3"></i>
-                                <input type="date" class="chip-date-input" id="edit-transfer-date" required="">
-                            </div>
+                    <div class="mb-2">
+                        <label class="compact-form-label">日期</label>
+                        <input type="date" class="form-control compact-form-control" id="edit-transfer-date" required="">
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="compact-form-label">转出账户</label>
+                            <div class="acc-select-wrapper" id="wrap-edit-transfer-from"><select class="form-select compact-form-control" id="edit-transfer-from" onchange="handleEditTransferAmountChange()" required="" style="display:none;"></select><div class="acc-select-trigger compact-form-control form-select" id="trigger-edit-transfer-from"></div><div class="acc-select-dropdown" id="dropdown-edit-transfer-from"></div></div>
                         </div>
-
-                        <div class="transfer-flow-row">
-                            <div class="acc-select-wrapper transfer-acc-card" id="wrap-edit-transfer-from">
-                                <select class="form-select" id="edit-transfer-from" onchange="handleEditTransferAmountChange()" required="" style="display:none;"></select>
-                                <div class="acc-select-trigger transfer-acc-trigger" id="trigger-edit-transfer-from">
-                                    <span class="transfer-acc-label">转出</span>
-                                    <i class="bi bi-credit-card-2-front-fill"></i>
-                                    <span class="acc-trigger-text"></span>
-                                </div>
-                                <div class="acc-select-dropdown" id="dropdown-edit-transfer-from"></div>
-                            </div>
-                            <div class="transfer-flow-arrow"><i class="bi bi-arrow-right-circle-fill"></i></div>
-                            <div class="acc-select-wrapper transfer-acc-card" id="wrap-edit-transfer-to">
-                                <select class="form-select" id="edit-transfer-to" onchange="handleEditTransferAmountChange()" required="" style="display:none;"></select>
-                                <div class="acc-select-trigger transfer-acc-trigger" id="trigger-edit-transfer-to">
-                                    <span class="transfer-acc-label">转入</span>
-                                    <i class="bi bi-credit-card-2-back-fill"></i>
-                                    <span class="acc-trigger-text"></span>
-                                </div>
-                                <div class="acc-select-dropdown" id="dropdown-edit-transfer-to"></div>
-                            </div>
-                        </div>
-
-                        <!-- 转账备注：折叠式 -->
-                        <div class="mb-2" id="transfer-desc-collapse-wrap">
-                            <button type="button" class="btn-expand-field" id="transfer-desc-expand-btn" onclick="expandTransferDesc()">
-                                <i class="bi bi-plus-sm"></i> 添加备注
-                            </button>
-                            <div id="transfer-desc-expanded" style="display:none;">
-                                <label class="compact-form-label">备注</label>
-                                <input type="text" class="form-control compact-form-control" id="edit-transfer-desc" placeholder="添加备注...">
-                            </div>
+                        <div class="col-6">
+                            <label class="compact-form-label">转出金额</label>
+                            <input type="number" step="0.01" class="form-control compact-form-control" id="edit-transfer-amount-out" oninput="handleEditTransferAmountChange('out')" required="">
                         </div>
                     </div>
-
-                    <div class="trans-amount-bar" id="transfer-amount-bar">
-                        <div class="transfer-amount-row">
-                            <div class="transfer-amount-field">
-                                <label class="amt-label">转出金额</label>
-                                <input type="text" inputmode="decimal" placeholder="0.00" class="amount-input-v2 transfer-amount-input decimal-input" id="edit-transfer-amount-out" oninput="handleEditTransferAmountChange('out')" required="">
-                            </div>
-                            <div class="transfer-amount-field">
-                                <label class="amt-label">转入金额</label>
-                                <input type="text" inputmode="decimal" placeholder="0.00" class="amount-input-v2 transfer-amount-input decimal-input" id="edit-transfer-amount-in" oninput="handleEditTransferAmountChange('in')" required="">
-                            </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="compact-form-label">转入账户</label>
+                            <div class="acc-select-wrapper" id="wrap-edit-transfer-to"><select class="form-select compact-form-control" id="edit-transfer-to" onchange="handleEditTransferAmountChange()" required="" style="display:none;"></select><div class="acc-select-trigger compact-form-control form-select" id="trigger-edit-transfer-to"></div><div class="acc-select-dropdown" id="dropdown-edit-transfer-to"></div></div>
                         </div>
-                        <div class="trans-action-row">
-                            <button type="button" class="btn-delete-immersive d-md-none" id="edit-transfer-delete-btn" onclick="deleteCurrentTransfer()" style="display:none!important;">
-                                <i class="bi bi-trash"></i> 删除
-                            </button>
-                            <button type="submit" class="btn-save-immersive" id="edit-transfer-submit-btn">保存</button>
+                        <div class="col-6">
+                            <label class="compact-form-label">转入金额</label>
+                            <input type="number" step="0.01" class="form-control compact-form-control" id="edit-transfer-amount-in" oninput="handleEditTransferAmountChange('in')" required="">
                         </div>
                     </div>
+                    <div class="mb-2">
+                        <label class="compact-form-label">备注</label>
+                        <input type="text" class="form-control compact-form-control" id="edit-transfer-desc">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm w-100 mt-2" id="edit-transfer-submit-btn">保存</button>
+                    <button type="button" class="btn btn-outline-danger btn-sm w-100 mt-2 d-md-none" id="edit-transfer-delete-btn" onclick="deleteCurrentTransfer()" style="display:none!important;">删除转账</button>
                 </form>
 
             </div>
@@ -2983,7 +2201,6 @@ let userPlannedTransactions = [];
 let categories = {};
 let exchangeRates = {};
 let budgets = [];                // 预算列表：[{id, category:'__total__'|分类名, amount}]
-let categoryIcons = {};          // 自定义分类图标：{ 分类名: { icon: 'bi-xxx', color: '#xxxxxx' } }
 
 let currentUser = null;
 let currentUserName = null;
@@ -3020,36 +2237,6 @@ let currentUserFilterValue = localStorage.getItem('APP_trans_user_filter') || 'a
 
 const $ = id => document.getElementById(id);
 const $$ = selector => document.querySelectorAll(selector);
-
-// 金额类输入框统一用 type="text"，这里做实时清洗：
-// 支持德语等用 "," 作小数点的系统直接输入逗号，自动转成 "."；
-// 同时过滤非数字字符，只保留一个小数点，并限制小数位数（默认2位，可用 data-max-decimals 覆盖，如汇率用4位）。
-// 用捕获阶段保证比元素自身的 oninput 先执行。
-document.addEventListener('input', function (e) {
-    const el = e.target;
-    if (!el.classList || !el.classList.contains('decimal-input')) return;
-    const original = el.value;
-    let cleaned = original.replace(/,/g, '.').replace(/[^0-9.]/g, '');
-    const firstDot = cleaned.indexOf('.');
-    if (firstDot !== -1) {
-        cleaned = cleaned.slice(0, firstDot + 1) + cleaned.slice(firstDot + 1).replace(/\./g, '');
-    }
-    const maxDecimals = parseInt(el.dataset.maxDecimals || '2', 10);
-    const dotIdx = cleaned.indexOf('.');
-    if (dotIdx !== -1 && cleaned.length - dotIdx - 1 > maxDecimals) {
-        cleaned = cleaned.slice(0, dotIdx + 1 + maxDecimals);
-    }
-    if (cleaned !== original) {
-        const pos = el.selectionStart;
-        const diff = original.length - cleaned.length;
-        el.value = cleaned;
-        // 尽量保持光标位置稳定
-        if (pos !== null && el.setSelectionRange) {
-            const newPos = Math.max(0, pos - diff);
-            try { el.setSelectionRange(newPos, newPos); } catch (e2) {}
-        }
-    }
-}, true);
 
 /**
  * 将 Date 对象格式化为本地日期字符串 YYYY-MM-DD
@@ -3459,8 +2646,7 @@ function applyOcrResult(r) {
 
     if (r.amount && !isNaN(r.amount)) {
         $('edit-trans-amount').value = Math.abs(Number(r.amount)).toFixed(2);
-        const amtInput = $('edit-trans-amount');
-        if (amtInput) amtInput.classList.add('ocr-highlight');
+        $('edit-trans-amount').style.background = 'rgba(var(--bs-success-rgb),0.10)';
         filled.push(`金额 ${r.amount}${r.currency ? ' ' + r.currency : ''}`);
     }
     if (r.date) {
@@ -3472,7 +2658,6 @@ function applyOcrResult(r) {
         for (let i = 0; i < sel.options.length; i++) {
             if (sel.options[i].value === r.category) {
                 sel.value = r.category;
-                catGridSync('edit-trans-category', 'cat-grid-edit-trans-category');
                 filled.push(`类别「${r.category}」`);
                 break;
             }
@@ -3490,8 +2675,6 @@ function applyOcrResult(r) {
     }
     if (descVal) {
         $('edit-trans-desc').value = descVal;
-        // 自动展开备注区域，让用户看到识别结果
-        expandMetaField('desc');
         filled.push(`备注「${descVal}」`);
     }
 
@@ -3512,9 +2695,9 @@ function applyOcrResult(r) {
 function clearOcrBanner() {
     const banner = $('ocr-result-banner');
     if (banner) banner.style.display = 'none';
-    // 清除金额高亮
+    // 清除输入框高亮
     const amtInput = $('edit-trans-amount');
-    if (amtInput) amtInput.classList.remove('ocr-highlight');
+    if (amtInput) amtInput.style.background = '';
 }
 
 // 图片压缩（canvas 缩放 → base64 JPEG）
@@ -3751,7 +2934,6 @@ function onDataLoaded() {
 
     // 预算数据：全局共享（不分用户），跟随主数据文件一起加载
     budgets = inMemoryLoadedData.budgets || [];
-    categoryIcons = inMemoryLoadedData.categoryIcons || {};
 
     // 从数据文件读取用户列表（兼容旧格式：只有allUserData没有users字段）
     if (inMemoryLoadedData.users && inMemoryLoadedData.users.length > 0) {
@@ -4436,7 +3618,6 @@ function saveUserData() {
     inMemoryLoadedData.categories = categories;
     inMemoryLoadedData.exchangeRates = exchangeRates;
     inMemoryLoadedData.budgets = budgets;
-    inMemoryLoadedData.categoryIcons = categoryIcons;
 }
 
 /** 获取当前用户的账户顺序数组，不存在则返回 null */
@@ -5212,40 +4393,14 @@ function renderAccounts() {
     });
 
     const hiddenClass = amountsHidden ? 'amount-hidden' : '';
-    const isDesktop = window.innerWidth >= 769;
-
-    // 按货币统计净值
-    const byCurrency = {};
-    accounts.filter(a => a.ownerName === currentUserName).forEach(acc => {
-        const bal = calculateBalance(acc.id);
-        const cur = acc.currency || 'CNY';
-        if (!byCurrency[cur]) byCurrency[cur] = { assets: 0, liabilities: 0 };
-        if (acc.accountType === 'Liability') byCurrency[cur].liabilities += bal;
-        else byCurrency[cur].assets += bal;
-    });
-    const currencies = Object.keys(byCurrency);
-    const sym = c => CURRENCY_SYMBOLS[c] || c;
-
-    let summaryHtml = `<div class="row text-center">
-        <div class="col-4">总资产: <b class="text-success ${hiddenClass}">¥${totalAssets.toFixed(2)}</b></div>
-        <div class="col-4">总负债: <b class="text-danger ${hiddenClass}">¥${Math.abs(totalLiabilities).toFixed(2)}</b></div>
-        <div class="col-4">净值: <b class="text-primary ${hiddenClass}">¥${(totalAssets + totalLiabilities).toFixed(2)}</b></div>
-    </div>`;
-
-    if (isDesktop && currencies.length > 1) {
-        const pills = currencies.map(c => {
-            const net = byCurrency[c].assets + byCurrency[c].liabilities;
-            const cls = net >= 0 ? 'text-success' : 'text-danger';
-            return `<span class="badge bg-secondary-subtle text-body me-1" style="font-size:0.8rem;font-weight:500;">
-                ${c} <span class="${hiddenClass} ${cls}">${sym(c)}${Math.abs(net).toFixed(2)}</span>
-            </span>`;
-        }).join('');
-        summaryHtml += `<div class="mt-2 text-center" style="font-size:0.8rem;color:var(--bs-secondary-color);">
-            各币种净值：${pills}
+    $('net-worth-display').innerHTML = `
+        <div class="row text-center">
+            <div class="col-4">总资产: <b class="text-success ${hiddenClass}">¥${totalAssets.toFixed(2)}</b></div>
+            <div class="col-4">总负债: <b class="text-danger ${hiddenClass}">¥${Math.abs(totalLiabilities).toFixed(2)}</b></div>
+            <div class="col-4">净值: <b class="text-primary ${hiddenClass}">¥${(totalAssets + totalLiabilities).toFixed(2)}</b></div>
         </div>`;
-    }
 
-    $('net-worth-display').innerHTML = summaryHtml;
+    const isDesktop = window.innerWidth >= 769;
     ['Asset', 'Liability', 'Receivable'].forEach(type => {
         const rawAccs = userAccounts.filter(a => (a.accountType || 'Asset') === type);
         if (rawAccs.length === 0) return;
@@ -5368,16 +4523,11 @@ function getOrCreateBalanceAdjCategory(type) {
     return '余额调整';
 }
 
-// 金额运算用，避免浮点误差导致出现多位小数（如 0.1+0.2 = 0.30000000000000004）
-function roundMoney(n) {
-    return Math.round((n + Number.EPSILON) * 100) / 100;
-}
-
 function calculateBalance(accId) {
     const acc = accounts.find(a => a.id == accId);
     let bal = parseFloat(acc.initialBalance);
     transactions.filter(t => t.accountId == accId).forEach(t => bal += parseFloat(t.amount));
-    return roundMoney(bal);
+    return bal;
 }
 
 function deleteAccount(id) {
@@ -5441,7 +4591,7 @@ $('account-form').addEventListener('submit', (e) => {
     e.preventDefault();
     const mode = $('acc-mode').value;
     const name = $('acc-name').value;
-    const balance = roundMoney(parseFloat($('acc-balance').value));
+    const balance = parseFloat($('acc-balance').value);
     const notes = $('acc-notes').value.trim();
 
     if (mode === 'add') {
@@ -5464,7 +4614,7 @@ $('account-form').addEventListener('submit', (e) => {
         const acc = accounts.find(a => a.id === id);
         if (acc) {
             const oldBalance = calculateBalance(id);
-            const diff = roundMoney(balance - oldBalance);
+            const diff = balance - oldBalance;
             acc.name = name;
             acc.notes = notes;
             acc.updatedAt = Date.now();
@@ -5792,11 +4942,19 @@ function switchTransTab(tab, skipReset) {
     if (isTransfer && !transferDate && transDate) $('edit-transfer-date').value = transDate;
     if (!isTransfer && !transDate && transferDate) $('edit-trans-date').value = transferDate;
 
-    // tab 按钮高亮（沉浸式分段控件）
+    // tab 按钮高亮
     ['expense','income','transfer'].forEach(t => {
         const btn = $('tab-btn-' + t);
         if (!btn) return;
-        btn.classList.toggle('active', t === tab);
+        btn.classList.remove('active');
+        // reset outline class
+        btn.classList.remove('btn-danger','btn-success','btn-warning','btn-outline-danger','btn-outline-success','btn-outline-warning');
+        if (t === tab) {
+            btn.classList.add('active');
+            btn.classList.add(t === 'expense' ? 'btn-danger' : t === 'income' ? 'btn-success' : 'btn-warning');
+        } else {
+            btn.classList.add(t === 'expense' ? 'btn-outline-danger' : t === 'income' ? 'btn-outline-success' : 'btn-outline-warning');
+        }
     });
 
     if (isTransfer) {
@@ -5817,6 +4975,7 @@ function switchTransTab(tab, skipReset) {
             // 切换 tab 清空分类/金额
             resetInlineItems();
             $('edit-trans-amount').value = '';
+
         }
         updateEditFormCategories();
         const attachSec = $('attachment-section');
@@ -5827,8 +4986,8 @@ function switchTransTab(tab, skipReset) {
         if (ocrBtn) ocrBtn.style.display = tab === 'expense' ? '' : 'none';
         showSpendingTypeRow(tab === 'expense');
         // 拆分按钮仅在支出时显示
-        const splitBtn = $('split-toggle-btn');
-        if (splitBtn) splitBtn.style.display = tab === 'expense' ? '' : 'none';
+        const splitWrap = $('split-btn-wrap');
+        if (splitWrap) splitWrap.style.display = tab === 'expense' ? '' : 'none';
         // 切换 tab 时退出拆分模式
         if (_inSplitMode) exitSplitMode();
         else _splitData = [];
@@ -5842,7 +5001,6 @@ function _userTitle(base) {
 
 function _initNewTransModal(mode, title) {
     const today = new Date().toISOString().split('T')[0];
-    $('editTransactionModal').querySelector('.trans-modal-v2')?.classList.remove('view-only');
     $('edit-trans-id').value = '';
     $('edit-trans-mode').value = mode;
     // 同步重置转账表单状态，防止切 tab 后误走编辑分支
@@ -5851,8 +5009,6 @@ function _initNewTransModal(mode, title) {
     $('editTransactionModalTitle').textContent = _userTitle(title);
     $('edit-trans-submit-btn').textContent = '保存';
     $('edit-trans-delete-btn').style.setProperty('display','none','important');
-    $('edit-transfer-submit-btn').textContent = '保存';
-    $('edit-transfer-delete-btn').style.setProperty('display','none','important');
     // 两个表单的日期同步初始化
     $('edit-trans-date').value = today;
     $('edit-transfer-date').value = today;
@@ -5864,7 +5020,8 @@ function _initNewTransModal(mode, title) {
     resetAttachmentUI();
     resetSpendingType();
     clearOcrBanner();
-    resetMetaFieldsCollapse();
+    const amtInput = $('edit-trans-amount');
+    if (amtInput) amtInput.style.background = '';
     $('trans-tab-bar').style.display = '';
 }
 
@@ -5880,15 +5037,12 @@ function openNewTransFromDetail() {
         const opt = [...catSelect.options].find(o => o.value === prefs.category);
         if (opt) catSelect.value = prefs.category;
     }
-    catGridSync('edit-trans-category', 'cat-grid-edit-trans-category');
     new bootstrap.Modal($('editTransactionModal')).show();
 }
 
 function openNewTransferFromDetail() {
     openedFromDetail = true;
     const today = new Date().toISOString().split('T')[0];
-    $('editTransactionModal').querySelector('.trans-modal-v2')?.classList.remove('view-only');
-    $('editTransactionModal').querySelectorAll('input,select,textarea').forEach(el => el.disabled = false);
     $('editTransactionModalTitle').textContent = _userTitle('新增转账');
     $('edit-transfer-id').value = '';
     $('edit-transfer-mode').value = 'add';
@@ -5899,499 +5053,12 @@ function openNewTransferFromDetail() {
     $('edit-transfer-amount-out').value = '';
     $('edit-transfer-amount-in').value = '';
     $('edit-transfer-desc').value = '';
-    resetMetaFieldsCollapse();
     $('trans-tab-bar').style.display = '';
     switchTransTab('transfer', true);
     new bootstrap.Modal($('editTransactionModal')).show();
 }
 
-// ════════════════════════════════════════════════════════════════
-// 宽屏右侧详情面板 (dp = detail pane)
-// ════════════════════════════════════════════════════════════════
-
-let _dpCurrentId = null;      // 当前面板显示的交易 id（null = 空状态 / 新增）
-let _dpCurrentIsTransfer = false;
-let _dpSplitData = [];
-let _dpInSplitMode = false;
-
-function _isWidescreen() {
-    return window.innerWidth >= 769;
-}
-
-function _dpShowPanel(show) {
-    const empty = $('dp-empty-state');
-    const panel = $('dp-panel');
-    if (empty) empty.style.display = show ? 'none' : '';
-    if (panel) panel.style.display = show ? 'flex' : 'none';
-}
-
-/** 设置面板顶部标题和删除按钮 */
-function _dpSetHeader(title, showDelete) {
-    const t = $('dp-title'); if (t) t.textContent = title;
-    const d = $('dp-delete-btn'); if (d) d.classList.toggle('d-none', !showDelete);
-}
-
-/** 切换 dp tab（支出/收入/转账）*/
-function dpSwitchTab(type, silent) {
-    // 更新 tab 按钮状态
-    ['expense','income','transfer'].forEach(t => {
-        const btn = $('dp-tab-btn-' + t);
-        if (btn) btn.classList.toggle('active', t === type);
-    });
-    const isTransfer = type === 'transfer';
-    const txForm = $('dp-transaction-form');
-    const tfForm = $('dp-transfer-form');
-    if (txForm) txForm.style.display = isTransfer ? 'none' : '';
-    if (tfForm) tfForm.style.display = isTransfer ? '' : 'none';
-    if (!isTransfer) {
-        $('dp-trans-type').value = type;
-        // 消费类型仅支出可见
-        const stWrap = $('dp-spending-type-collapse-wrap');
-        if (stWrap) stWrap.style.display = type === 'expense' ? '' : 'none';
-        // 刷新分类列表
-        dpUpdateCategories(type);
-        // 金额颜色
-        const bar = $('dp-amount-bar');
-        if (bar) {
-            bar.classList.toggle('amt-expense', type === 'expense');
-            bar.classList.toggle('amt-income', type === 'income');
-        }
-    }
-    if (!silent) {
-        // 填充转账账户选项
-        if (isTransfer) _dpFillTransferSelects(null, null);
-    }
-}
-
-function dpUpdateCategories(type) {
-    const catSelect = $('dp-trans-category');
-    if (!catSelect) return;
-    catSelect.innerHTML = '';
-    (type === 'expense' ? categories.expense : categories.income)
-        .forEach(c => catSelect.add(new Option(c, c)));
-    catGridBuild('dp-trans-category', 'dp-cat-grid');
-}
-
-/** 重置面板折叠字段 */
-function _dpResetMetaCollapse() {
-    ['spending-type','tags','desc'].forEach(key => {
-        const exp = $('dp-' + key + '-expanded');
-        const btn = $('dp-' + key + '-expand-btn');
-        if (exp) exp.style.display = 'none';
-        if (btn) btn.style.display = '';
-    });
-    const tfExp = $('dp-transfer-desc-expanded');
-    const tfBtn = $('dp-transfer-desc-expand-btn');
-    if (tfExp) tfExp.style.display = 'none';
-    if (tfBtn) tfBtn.style.display = '';
-}
-
-function dpExpandMetaField(key) {
-    const exp = $('dp-' + key + '-expanded');
-    const btn = $('dp-' + key + '-expand-btn');
-    if (exp) exp.style.display = '';
-    if (btn) btn.style.display = 'none';
-    if (key === 'tags') { const i = $('dp-trans-tags'); if (i) setTimeout(() => i.focus(), 50); }
-    if (key === 'desc') { const i = $('dp-trans-desc'); if (i) setTimeout(() => i.focus(), 50); }
-}
-
-function dpExpandTransferDesc() {
-    const exp = $('dp-transfer-desc-expanded');
-    const btn = $('dp-transfer-desc-expand-btn');
-    if (exp) exp.style.display = '';
-    if (btn) btn.style.display = 'none';
-    const i = $('dp-transfer-desc'); if (i) setTimeout(() => i.focus(), 50);
-}
-
-function _dpExpandMetaForData(tags, desc, spendingType) {
-    if (tags) dpExpandMetaField('tags');
-    if (desc) dpExpandMetaField('desc');
-    if (spendingType) dpExpandMetaField('spending-type');
-}
-
-function dpSelectSpendingTypePill(val) {
-    const sel = $('dp-trans-spending-type'); if (sel) sel.value = val;
-    $$('#dp-st-pill-group .st-pill').forEach(p => p.classList.toggle('active', p.dataset.val === val));
-}
-
-function _dpSetSpendingType(val) {
-    const sel = $('dp-trans-spending-type'); if (sel) sel.value = val || '';
-    dpSelectSpendingTypePill(val || '');
-}
-
-/** 更新金额货币符号 */
-function _dpUpdateCurrencySymbol() {
-    const accId = $('dp-trans-account')?.value;
-    if (!accId) return;
-    const acc = accounts.find(a => a.id == accId);
-    const sym = acc ? (CURRENCY_SYMBOLS[acc.currency] || '¥') : '¥';
-    const el = $('dp-amount-currency-symbol');
-    if (el) el.textContent = sym;
-}
-
-/** 填充账户下拉 */
-function _dpFillAccountSelect() {
-    const sel = $('dp-trans-account');
-    if (!sel) return;
-    sel.innerHTML = '';
-    accounts.filter(a => a.ownerName === currentUserName)
-        .forEach(a => {
-            const name = getAccountDisplayName(a);
-            const opt = new Option(`${name} (${CURRENCY_SYMBOLS[a.currency]})`, a.id);
-            opt.setAttribute('data-name', name);
-            sel.add(opt);
-        });
-    accSelectSync('dp-trans-account');
-}
-
-function _dpFillTransferSelects(fromId, toId) {
-    const fromSel = $('dp-transfer-from');
-    const toSel   = $('dp-transfer-to');
-    if (!fromSel || !toSel) return;
-    fromSel.innerHTML = '';
-    sortedUserAccounts(accounts.filter(a => a.ownerName === currentUserName)).forEach(a => {
-        const name = `${getAccountDisplayName(a)} (${CURRENCY_SYMBOLS[a.currency]})`;
-        const opt = new Option(name, a.id);
-        opt.setAttribute('data-name', name);
-        opt.setAttribute('data-bal', calculateBalance(a.id).toFixed(2));
-        fromSel.add(opt);
-    });
-    toSel.innerHTML = '';
-    const sortedMine = sortedUserAccounts(accounts.filter(a => a.ownerName === currentUserName));
-    const others = accounts.filter(a => a.ownerName !== currentUserName);
-    [...sortedMine, ...others].forEach(a => {
-        const name = `${getAccountDisplayName(a)} (${CURRENCY_SYMBOLS[a.currency]})`;
-        const opt = new Option(name, a.id);
-        opt.setAttribute('data-name', name);
-        const isMine = a.ownerName === currentUserName;
-        if (isMine) opt.setAttribute('data-bal', calculateBalance(a.id).toFixed(2));
-        toSel.add(opt);
-    });
-    if (fromId) fromSel.value = fromId;
-    else if (fromSel.options.length > 0) fromSel.selectedIndex = 0;
-    if (toId) toSel.value = toId;
-    else {
-        const fid = fromSel.value;
-        const other = accounts.find(a => a.id != fid);
-        if (other) toSel.value = other.id;
-        else if (toSel.options.length > 1) toSel.selectedIndex = 1;
-    }
-    accSelectSync('dp-transfer-from');
-    accSelectSync('dp-transfer-to');
-}
-
-function dpHandleTransferAmountChange(dir) {
-    const outEl = $('dp-transfer-amount-out');
-    const inEl  = $('dp-transfer-amount-in');
-    const fromId = $('dp-transfer-from')?.value;
-    const toId   = $('dp-transfer-to')?.value;
-    if (!fromId || !toId) return;
-    const accFrom = accounts.find(a => a.id == fromId);
-    const accTo   = accounts.find(a => a.id == toId);
-    if (!accFrom || !accTo || accFrom.currency !== accTo.currency) return;
-    if (dir === 'out') inEl.value = outEl.value;
-    else if (dir === 'in') outEl.value = inEl.value;
-    else { if (outEl.value) inEl.value = outEl.value; else if (inEl.value) outEl.value = inEl.value; }
-}
-
-/** 打开新增（宽屏） */
-function dpOpenNew(type) {
-    if (!_isWidescreen()) { openNewTransaction(); return; }
-    _dpCurrentId = null;
-    _dpCurrentIsTransfer = false;
-    _dpSetHeader('新增交易', false);
-    _dpShowPanel(true);
-    // tab bar 可见
-    const tabBar = $('dp-tab-bar'); if (tabBar) tabBar.style.display = '';
-    const prefs = _lastTransPrefs;
-    dpSwitchTab(type || prefs.type || 'expense', true);
-    // 重置表单
-    $('dp-trans-id').value = '';
-    $('dp-trans-mode').value = 'add';
-    $('dp-trans-amount').value = '';
-    $('dp-trans-tags').value = '';
-    $('dp-trans-desc').value = '';
-    const dpHint = $('dp-trans-desc-hint');
-    if (dpHint) dpHint.style.display = 'none';
-    _dpSetSpendingType('');
-    _dpResetMetaCollapse();
-    // 填充账户 & 分类
-    _dpFillAccountSelect();
-    const accPref = prefs.accountId && accounts.find(a => a.id == prefs.accountId);
-    if (accPref) $('dp-trans-account').value = prefs.accountId;
-    accSelectSync('dp-trans-account');
-    _dpUpdateCurrencySymbol();
-    dpUpdateCategories($('dp-trans-type').value);
-    if (prefs.category) {
-        const catEl = $('dp-trans-category');
-        const opt = catEl && [...catEl.options].find(o => o.value === prefs.category);
-        if (opt) catEl.value = prefs.category;
-    }
-    catGridSync('dp-trans-category', 'dp-cat-grid');
-    // 重置拆分
-    _dpInSplitMode = false; _dpSplitData = [];
-    $('dp-split-items-section').style.display = 'none';
-    $('dp-single-item-row').style.display = '';
-    $('dp-single-meta-section').style.display = '';
-    // 转账日期
-    const today = new Date().toISOString().slice(0,10);
-    $('dp-trans-date').value = today;
-    $('dp-transfer-date').value = today;
-    // 清除表格选中
-    $$('#transaction-table-body tr').forEach(r => r.classList.remove('dp-selected'));
-}
-
-/** 打开编辑已有交易（宽屏） */
-function dpOpenEdit(id) {
-    if (!_isWidescreen()) { openEditTransaction(id); return; }
-    const pool = historyMode ? historyTransactions : transactions;
-    const t = pool.find(x => x.id == id);
-    if (!t) return;
-    if (t.isTransfer) { dpOpenEditTransfer(id); return; }
-
-    _dpCurrentId = id;
-    _dpCurrentIsTransfer = false;
-    const isOwner = t.ownerName === currentUserName && !t._isArchived;
-    _dpSetHeader(isOwner ? '编辑交易' : `查看交易（${t.ownerName}）`, isOwner);
-    _dpShowPanel(true);
-
-    // 隐藏 tab bar（固定类型）
-    const tabBar = $('dp-tab-bar'); if (tabBar) tabBar.style.display = 'none';
-    dpSwitchTab(t.type, true);
-
-    $('dp-trans-id').value = t.id;
-    $('dp-trans-mode').value = isOwner ? 'edit' : 'view';
-    $('dp-trans-submit-btn').style.display = isOwner ? '' : 'none';
-
-    $('dp-trans-date').value = t.date;
-    _dpFillAccountSelect();
-    $('dp-trans-account').value = t.accountId;
-    accSelectSync('dp-trans-account');
-    _dpUpdateCurrencySymbol();
-
-    $('dp-trans-tags').value = t.tags || '';
-    $('dp-trans-desc').value = t.desc || '';
-    _dpSetSpendingType(t.spendingType || '');
-    _dpResetMetaCollapse();
-    _dpExpandMetaForData(t.tags, t.desc, t.spendingType);
-
-    // 分类 & 金额
-    _dpInSplitMode = false; _dpSplitData = [];
-    $('dp-split-items-section').style.display = 'none';
-    $('dp-single-item-row').style.display = '';
-    $('dp-single-meta-section').style.display = '';
-    dpUpdateCategories(t.type);
-    $('dp-trans-category').value = t.category;
-    catGridSync('dp-trans-category', 'dp-cat-grid');
-    $('dp-trans-amount').value = Math.abs(t.amount);
-
-    // 只读
-    $('dp-transaction-form').querySelectorAll('input,select,textarea,button[type="button"]')
-        .forEach(el => { el.disabled = !isOwner; });
-
-    // 高亮行
-    $$('#transaction-table-body tr').forEach(r => {
-        r.classList.toggle('dp-selected', r.dataset.dpId == id);
-    });
-}
-
-/** 打开编辑已有转账（宽屏） */
-function dpOpenEditTransfer(id) {
-    if (!_isWidescreen()) { openEditTransfer(id); return; }
-    const pool = historyMode ? historyTransactions : transactions;
-    const t = pool.find(x => x.id == id);
-    if (!t || !t.isTransfer) return;
-
-    let tOut, tIn;
-    if (t.transferPairId) {
-        const pair = pool.filter(x => x.transferPairId === t.transferPairId);
-        tOut = pair.find(x => x.type === 'expense');
-        tIn  = pair.find(x => x.type === 'income');
-    } else {
-        if (t.type === 'expense') {
-            tOut = t;
-            tIn  = pool.find(x => x.isTransfer && x.type === 'income' && x.date === t.date && x.accountId === t.relatedAccountId);
-        } else {
-            tIn  = t;
-            tOut = pool.find(x => x.isTransfer && x.type === 'expense' && x.date === t.date && x.relatedAccountId === t.accountId);
-        }
-    }
-    if (!tOut || !tIn) { alert('找不到配对的转账记录'); return; }
-
-    _dpCurrentId = tOut.id;
-    _dpCurrentIsTransfer = true;
-    const isOwner = tOut.ownerName === currentUserName && !historyMode;
-    _dpSetHeader(isOwner ? '编辑转账' : `查看转账（${tOut.ownerName}）`, isOwner);
-    _dpShowPanel(true);
-
-    const tabBar = $('dp-tab-bar'); if (tabBar) tabBar.style.display = 'none';
-    dpSwitchTab('transfer', true);
-
-    $('dp-transfer-id').value = tOut.id;
-    $('dp-transfer-mode').value = isOwner ? 'edit' : 'view';
-    $('dp-transfer-submit-btn').style.display = isOwner ? '' : 'none';
-    $('dp-transfer-date').value = tOut.date;
-
-    _dpFillTransferSelects(tOut.accountId, tIn.accountId);
-    $('dp-transfer-amount-out').value = Math.abs(tOut.amount);
-    $('dp-transfer-amount-in').value = Math.abs(tIn.amount);
-    $('dp-transfer-desc').value = tOut.desc || '';
-    _dpResetMetaCollapse();
-    if (tOut.desc) dpExpandTransferDesc();
-
-    $('dp-transfer-form').querySelectorAll('input,select,textarea')
-        .forEach(el => { el.disabled = !isOwner; });
-
-    $$('#transaction-table-body tr').forEach(r => {
-        r.classList.toggle('dp-selected', r.dataset.dpId == tOut.id);
-    });
-}
-
-/** 删除当前面板交易 */
-function dpDeleteCurrent() {
-    if (_dpCurrentId == null) return;
-    if (confirm('确定删除？')) {
-        deleteTransaction(_dpCurrentId);
-        _dpCurrentId = null;
-        _dpShowPanel(false);
-        _dpSetHeader('详情', false);
-    }
-}
-
-/** 面板拆分按钮（简化版：暂不支持面板内拆分，直接打开 modal） */
-function dpHandleSplitBtn() {
-    // 面板内暂不实现拆分，转向 modal
-    if (_dpCurrentId) openEditTransaction(_dpCurrentId);
-    else openNewTransaction();
-}
-
-// 面板表单提交：支出/收入
-$('dp-transaction-form').addEventListener('submit', e => {
-    e.preventDefault();
-    const mode = $('dp-trans-mode').value;
-    if (mode === 'view') return;
-    const date  = $('dp-trans-date').value;
-    const type  = $('dp-trans-type').value;
-    const accId = $('dp-trans-account').value;
-    const tags  = $('dp-trans-tags').value;
-    const desc  = $('dp-trans-desc').value;
-    const stEl  = $('dp-trans-spending-type');
-    const spendingType = type === 'expense' ? (stEl?.value || '') : '';
-    const catEl = $('dp-trans-category');
-    catEl.removeAttribute('disabled');
-    const category = catEl.value;
-    const amtRaw = parseFloat($('dp-trans-amount').value);
-    if (isNaN(amtRaw) || amtRaw <= 0) { alert('请输入有效金额'); return; }
-    const amount = roundMoney(type === 'expense' ? -Math.abs(amtRaw) : Math.abs(amtRaw));
-
-    if (mode === 'add') {
-        _lastTransPrefs = { type, accountId: accId, category };
-        transactions.unshift({
-            id: Date.now() + Math.random(), date, type, accountId: accId,
-            amount, category, tags, desc,
-            ...(spendingType ? { spendingType } : {}),
-            ownerName: currentUserName, isTransfer: false, updatedAt: Date.now()
-        });
-        saveUserData(); triggerAutoSave(); loadAllData(); filterUserData();
-        displayedTransactionCount = 100; renderAllTransactions(); renderAccounts();
-        if ($('view-stats').classList.contains('active-view')) renderStats();
-        if (verboseToast) showToast('已添加', 'success', 1500);
-        // 保持面板打开，重置为新增状态
-        dpOpenNew(type);
-    } else {
-        const id = parseFloat($('dp-trans-id').value);
-        const t = transactions.find(x => x.id === id);
-        if (t) {
-            t.date = date; t.type = type; t.accountId = accId;
-            t.category = category; t.amount = amount; t.tags = tags; t.desc = desc;
-            if (spendingType) t.spendingType = spendingType; else delete t.spendingType;
-            t.updatedAt = Date.now();
-            saveUserData(); triggerAutoSave(); filterUserData();
-            displayedTransactionCount = 100; renderAllTransactions(); renderAccounts();
-            if ($('view-stats').classList.contains('active-view')) renderStats();
-            if (verboseToast) showToast('已保存', 'success', 1500);
-        }
-    }
-});
-
-// 面板表单提交：转账
-$('dp-transfer-form').addEventListener('submit', e => {
-    e.preventDefault();
-    const mode      = $('dp-transfer-mode').value;
-    if (mode === 'view') return;
-    const newDate   = $('dp-transfer-date').value;
-    const newFromId = $('dp-transfer-from').value;
-    const newToId   = $('dp-transfer-to').value;
-    const newAmtOut = parseFloat($('dp-transfer-amount-out').value);
-    const newAmtIn  = parseFloat($('dp-transfer-amount-in').value);
-    const newDesc   = $('dp-transfer-desc').value;
-
-    if (newFromId === newToId) { alert('转出账户和转入账户不能相同'); return; }
-    if (isNaN(newAmtOut) || isNaN(newAmtIn)) { alert('请输入有效的转账金额'); return; }
-
-    const accFrom = accounts.find(a => a.id == newFromId);
-    const accTo   = accounts.find(a => a.id == newToId);
-    if (!accFrom || !accTo) { alert('账户不存在'); return; }
-
-    if (mode === 'add') {
-        const uid = Date.now() + Math.random();
-        transactions.unshift({
-            id: uid, date: newDate, type: 'expense', accountId: newFromId,
-            amount: -Math.abs(newAmtOut), category: '',
-            desc: newDesc, ownerName: currentUserName,
-            isTransfer: true, relatedAccountId: newToId, transferPairId: uid, updatedAt: Date.now()
-        });
-        transactions.unshift({
-            id: Date.now() + Math.random(), date: newDate, type: 'income', accountId: newToId,
-            amount: Math.abs(newAmtIn), category: '',
-            desc: newDesc, ownerName: currentUserName,
-            isTransfer: true, relatedAccountId: newFromId, transferPairId: uid, updatedAt: Date.now()
-        });
-        saveUserData(); triggerAutoSave(); loadAllData(); filterUserData();
-        displayedTransactionCount = 100; renderAllTransactions(); renderAccounts();
-        if ($('view-stats').classList.contains('active-view')) renderStats();
-        if (verboseToast) showToast('转账已添加', 'success', 1500);
-        dpOpenNew('transfer');
-    } else {
-        const id = parseFloat($('dp-transfer-id').value);
-        const pool = historyMode ? historyTransactions : transactions;
-        let tOut, tIn;
-        const t = pool.find(x => x.id == id);
-        if (t && t.transferPairId) {
-            const pair = transactions.filter(x => x.transferPairId === t.transferPairId);
-            tOut = pair.find(x => x.type === 'expense');
-            tIn  = pair.find(x => x.type === 'income');
-        }
-        if (tOut && tIn) {
-            tOut.date = newDate; tOut.accountId = newFromId; tOut.amount = -Math.abs(newAmtOut);
-            tOut.relatedAccountId = newToId; tOut.desc = newDesc; tOut.updatedAt = Date.now();
-            tIn.date = newDate;  tIn.accountId = newToId;   tIn.amount = Math.abs(newAmtIn);
-            tIn.relatedAccountId = newFromId; tIn.desc = newDesc; tIn.updatedAt = Date.now();
-            saveUserData(); triggerAutoSave(); filterUserData();
-            displayedTransactionCount = 100; renderAllTransactions(); renderAccounts();
-            if ($('view-stats').classList.contains('active-view')) renderStats();
-            if (verboseToast) showToast('已保存', 'success', 1500);
-        }
-    }
-});
-
-// ── 表格行点击 → 宽屏打开面板，手机打开 modal ──
-function _attachTableRowClick(tr, t) {
-    tr.dataset.dpId = t.id;
-    tr.addEventListener('click', ev => {
-        // 忽略操作按钮列点击
-        if (ev.target.closest('td:last-child')) return;
-        if (_isWidescreen()) {
-            t.isTransfer ? dpOpenEditTransfer(t.id) : dpOpenEdit(t.id);
-        } else {
-            t.isTransfer ? openEditTransfer(t.id) : openEditTransaction(t.id);
-        }
-    });
-}
-
 function openNewTransaction() {
-    if (_isWidescreen()) { dpOpenNew(); return; }
-
     const prefs = _lastTransPrefs;
     _initNewTransModal('add', '新增交易');
     switchTransTab(prefs.type || 'expense', true);
@@ -6402,13 +5069,11 @@ function openNewTransaction() {
         if (lastAccOpt) accSelect.value = prefs.accountId;
         else accSelect.selectedIndex = 0;
     }
-    accSelectSync('edit-trans-account');
     const catSelect = $('edit-trans-category');
     if (catSelect && prefs.category) {
         const lastCatOpt = [...catSelect.options].find(o => o.value === prefs.category);
         if (lastCatOpt) catSelect.value = prefs.category;
     }
-    catGridSync('edit-trans-category', 'cat-grid-edit-trans-category');
     new bootstrap.Modal($('editTransactionModal')).show();
 }
 
@@ -6529,7 +5194,6 @@ function deleteTransaction(id) {
 }
 
 function openEditTransaction(id) {
-    if (_isWidescreen()) { dpOpenEdit(id); return; }
     const t = historyMode
         ? historyTransactions.find(x => x.id == id)
         : transactions.find(x => x.id == id);
@@ -6537,7 +5201,7 @@ function openEditTransaction(id) {
     if (t.isTransfer) { openEditTransfer(id); return; }
 
     const isOwner = t.ownerName === currentUserName;
-    const readOnly = !isOwner || !!t._isArchived;
+    const readOnly = !isOwner || t._isArchived;
 
     $('edit-trans-id').value = t.id;
     $('edit-trans-mode').value = readOnly ? 'view' : 'edit';
@@ -6553,9 +5217,6 @@ function openEditTransaction(id) {
     setSpendingType(t.spendingType || '');
     // 编辑时隐藏 tab bar（固定类型）
     $('trans-tab-bar').style.display = 'none';
-    // 根据已有数据展开折叠字段
-    resetMetaFieldsCollapse();
-    expandMetaFieldsForExistingData(t.tags, t.desc, t.spendingType);
     switchTransTab(t.type, true);
     // 加载分录
     if (t.items && t.items.length > 1) {
@@ -6564,9 +5225,7 @@ function openEditTransaction(id) {
         resetInlineItems();
         $('edit-trans-category').value = t.category;
         $('edit-trans-amount').value = Math.abs(t.amount);
-        catGridSync('edit-trans-category', 'cat-grid-edit-trans-category');
     }
-    updateAmountCurrencySymbol();
     // 加载附件
     resetAttachmentUI();
     if (t.attachmentId) {
@@ -6580,12 +5239,10 @@ function openEditTransaction(id) {
         if (el.id === 'edit-trans-submit-btn' || el.id === 'edit-trans-delete-btn') return;
         el.disabled = readOnly;
     });
-    $('editTransactionModal').querySelector('.trans-modal-v2')?.classList[readOnly ? 'add' : 'remove']('view-only');
     new bootstrap.Modal($('editTransactionModal')).show();
 }
 
 function openEditTransfer(id) {
-    if (_isWidescreen()) { dpOpenEditTransfer(id); return; }
     // 历史模式从 historyTransactions 找，正常模式从 transactions 找
     const pool = historyMode ? historyTransactions : transactions;
 
@@ -6630,9 +5287,6 @@ function openEditTransfer(id) {
     $('edit-transfer-amount-out').value = Math.abs(tOut.amount);
     $('edit-transfer-amount-in').value = Math.abs(tIn.amount);
     $('edit-transfer-desc').value = tOut.desc || '';
-    // 重置并按已有数据展开
-    resetMetaFieldsCollapse();
-    expandTransferDescForExistingData(tOut.desc);
 
     // 只读模式：禁用所有转账表单控件
     const form = $('editTransactionModal');
@@ -6640,7 +5294,6 @@ function openEditTransfer(id) {
         if (['edit-transfer-id','edit-transfer-mode'].includes(el.id)) return;
         el.disabled = readOnly;
     });
-    $('editTransactionModal').querySelector('.trans-modal-v2')?.classList[readOnly ? 'add' : 'remove']('view-only');
 
     new bootstrap.Modal($('editTransactionModal')).show();
 }
@@ -6700,7 +5353,7 @@ function _buildSplitItemCard(item, idx) {
         <div class="split-card-grid">
             <select class="form-select compact-form-control"
                     onchange="_splitData[${idx}].category=this.value">${catOpts}</select>
-            <input type="text" inputmode="decimal" class="form-control compact-form-control decimal-input"
+            <input type="number" step="0.01" min="0.01" class="form-control compact-form-control"
                    placeholder="金额"
                    value="${item.amount>0?item.amount:''}"
                    oninput="_splitData[${idx}].amount=parseFloat(this.value)||0;refreshSplitTotal()">
@@ -6795,8 +5448,7 @@ function enterSplitMode() {
     if (singleRow)   singleRow.style.display = 'none';
     if (metaSection) metaSection.style.display = 'none';
     if (splitSec)    splitSec.classList.add('split-active');
-    if (splitBtn)    { splitBtn.innerHTML = '<i class="bi bi-plus-lg"></i>'; splitBtn.classList.add('active'); splitBtn.title = '添加分录'; }
-    $('trans-amount-bar')?.classList.add('split-mode');
+    if (splitBtn)    { splitBtn.innerHTML = '<i class="bi bi-plus-lg"></i>'; splitBtn.classList.replace('btn-outline-secondary','btn-success'); splitBtn.title = '添加分录'; }
     // attachment-section stays visible (footer has its own attach button)
     const attachSec = $('attachment-section');
     if (attachSec) attachSec.style.display = '';
@@ -6817,8 +5469,7 @@ function exitSplitMode() {
     if (singleRow)   singleRow.style.display = '';
     if (metaSection) metaSection.style.display = '';
     if (splitSec)    splitSec.classList.remove('split-active');
-    if (splitBtn)    { splitBtn.innerHTML = '<i class="bi bi-scissors"></i>'; splitBtn.classList.remove('active'); splitBtn.title = '拆分账单'; }
-    $('trans-amount-bar')?.classList.remove('split-mode');
+    if (splitBtn)    { splitBtn.innerHTML = '<i class="bi bi-scissors"></i>'; splitBtn.classList.replace('btn-success','btn-outline-secondary'); splitBtn.title = '拆分账单'; }
     // restore required
     const amtInput = $('edit-trans-amount');
     if (amtInput) { amtInput.setAttribute('required',''); amtInput.value = ''; }
@@ -6887,72 +5538,17 @@ function getSpendingTypeConfig() {
 function setSpendingType(val) {
     const sel = $('edit-trans-spending-type');
     if (sel) sel.value = val || '';
-    spendingTypePillSync();
 }
 
 function resetSpendingType() {
     const sel = $('edit-trans-spending-type');
     if (sel) sel.value = '';
-    spendingTypePillSync();
 }
 
 function showSpendingTypeRow(show) {
-    // 消费类型折叠区随支出/收入 tab 显示或隐藏
-    const wrap = $('spending-type-collapse-wrap');
+    // 消费类型下拉框随支出/收入 tab 显示或隐藏
+    const wrap = $('spending-type-select-wrap');
     if (wrap) wrap.style.display = show ? '' : 'none';
-}
-
-// ── 折叠字段展开/收起 ──
-// fieldKey: 'spending-type' | 'tags' | 'desc'
-function expandMetaField(fieldKey) {
-    const expandedEl = $(fieldKey + '-expanded');
-    const btnEl = $(fieldKey + '-expand-btn');
-    if (!expandedEl) return;
-    expandedEl.style.display = '';
-    if (btnEl) btnEl.style.display = 'none';
-    // 自动聚焦
-    if (fieldKey === 'tags') {
-        const inp = $('edit-trans-tags');
-        if (inp) setTimeout(() => inp.focus(), 50);
-    } else if (fieldKey === 'desc') {
-        const inp = $('edit-trans-desc');
-        if (inp) setTimeout(() => inp.focus(), 50);
-    }
-}
-
-function expandTransferDesc() {
-    const expandedEl = $('transfer-desc-expanded');
-    const btnEl = $('transfer-desc-expand-btn');
-    if (expandedEl) expandedEl.style.display = '';
-    if (btnEl) btnEl.style.display = 'none';
-    const inp = $('edit-transfer-desc');
-    if (inp) setTimeout(() => inp.focus(), 50);
-}
-
-// 折叠所有 meta 字段（新增/切换 tab 时调用）
-function resetMetaFieldsCollapse() {
-    ['spending-type', 'tags', 'desc'].forEach(key => {
-        const expandedEl = $(key + '-expanded');
-        const btnEl = $(key + '-expand-btn');
-        if (expandedEl) expandedEl.style.display = 'none';
-        if (btnEl) btnEl.style.display = '';
-    });
-    // 转账备注
-    const tfExp = $('transfer-desc-expanded');
-    const tfBtn = $('transfer-desc-expand-btn');
-    if (tfExp) tfExp.style.display = 'none';
-    if (tfBtn) tfBtn.style.display = '';
-}
-
-// 根据已有值展开对应的 meta 字段
-function expandMetaFieldsForExistingData(tags, desc, spendingType) {
-    if (tags) expandMetaField('tags');
-    if (desc) expandMetaField('desc');
-    if (spendingType) expandMetaField('spending-type');
-}
-
-function expandTransferDescForExistingData(desc) {
-    if (desc) expandTransferDesc();
 }
 
 let saChartType = null, saChartTrend = null;
@@ -7342,241 +5938,11 @@ function deleteBudget(id) {
 }
 
 
-// ── 类别图标网格 ─────────────────────────────────────────────
-const CATEGORY_ICON_MAP = {
-    // ── 餐饮 ──
-    '餐饮': { icon: 'bi-cup-hot-fill', color: '#fd7e14' },
-    '早餐': { icon: 'bi-cup-hot-fill', color: '#fd7e14' },
-    '午餐': { icon: 'bi-egg-fried', color: '#fd7e14' },
-    '晚餐': { icon: 'bi-egg-fried', color: '#fd7e14' },
-    '夜宵': { icon: 'bi-moon-stars-fill', color: '#6610f2' },
-    '外卖': { icon: 'bi-bicycle', color: '#fd7e14' },
-    '聚餐': { icon: 'bi-people-fill', color: '#fd7e14' },
-    '咖啡': { icon: 'bi-cup-straw', color: '#6f4e37' },
-    '奶茶': { icon: 'bi-cup-straw', color: '#d63384' },
-    '烟酒': { icon: 'bi-cup-fill', color: '#6c757d' },
-    '零食': { icon: 'bi-egg-fried', color: '#fd7e14' },
-    '水果': { icon: 'bi-basket3-fill', color: '#198754' },
-    '蔬菜': { icon: 'bi-flower1', color: '#198754' },
-    '生鲜': { icon: 'bi-basket-fill', color: '#198754' },
-    '超市': { icon: 'bi-cart-fill', color: '#0d6efd' },
-
-    // ── 交通出行 ──
-    '交通': { icon: 'bi-bus-front-fill', color: '#0dcaf0' },
-    '打车': { icon: 'bi-car-front-fill', color: '#0dcaf0' },
-    '地铁': { icon: 'bi-train-front-fill', color: '#0dcaf0' },
-    '公交': { icon: 'bi-bus-front-fill', color: '#0dcaf0' },
-    '高铁': { icon: 'bi-train-front-fill', color: '#0d6efd' },
-    '机票': { icon: 'bi-airplane-fill', color: '#0dcaf0' },
-    '停车': { icon: 'bi-p-circle-fill', color: '#6c757d' },
-    '加油': { icon: 'bi-fuel-pump-fill', color: '#fd7e14' },
-    '车辆保养': { icon: 'bi-tools', color: '#6c757d' },
-    '洗车': { icon: 'bi-car-front-fill', color: '#0dcaf0' },
-    '共享单车': { icon: 'bi-bicycle', color: '#198754' },
-    '旅行': { icon: 'bi-airplane-fill', color: '#0dcaf0' },
-    '旅游': { icon: 'bi-airplane-fill', color: '#0dcaf0' },
-    '度假': { icon: 'bi-umbrella-fill', color: '#0dcaf0' },
-    '门票': { icon: 'bi-ticket-perforated-fill', color: '#fd7e14' },
-
-    // ── 居住 ──
-    '住房': { icon: 'bi-house-door-fill', color: '#6f42c1' },
-    '房租': { icon: 'bi-house-door-fill', color: '#6f42c1' },
-    '房贷': { icon: 'bi-bank', color: '#6f42c1' },
-    '物业费': { icon: 'bi-building', color: '#6f42c1' },
-    '装修': { icon: 'bi-hammer', color: '#6c757d' },
-    '家具': { icon: 'bi-house-gear-fill', color: '#6f42c1' },
-    '家电': { icon: 'bi-plug-fill', color: '#495057' },
-    '水电': { icon: 'bi-lightning-charge-fill', color: '#ffc107' },
-    '水电煤': { icon: 'bi-lightning-charge-fill', color: '#ffc107' },
-    '网费': { icon: 'bi-wifi', color: '#20c997' },
-    '物业': { icon: 'bi-building', color: '#6f42c1' },
-    '日用品': { icon: 'bi-basket2-fill', color: '#0d6efd' },
-
-    // ── 购物 ──
-    '购物': { icon: 'bi-bag-fill', color: '#d63384' },
-    '服饰': { icon: 'bi-handbag-fill', color: '#e83e8c' },
-    '数码': { icon: 'bi-laptop', color: '#495057' },
-    '化妆品': { icon: 'bi-stars', color: '#e83e8c' },
-    '美妆': { icon: 'bi-stars', color: '#e83e8c' },
-    '母婴': { icon: 'bi-emoji-laughing-fill', color: '#fd7e14' },
-    '宝宝用品': { icon: 'bi-emoji-laughing-fill', color: '#fd7e14' },
-    '玩具': { icon: 'bi-controller', color: '#6610f2' },
-
-    // ── 娱乐 ──
-    '娱乐': { icon: 'bi-controller', color: '#6610f2' },
-    '电影': { icon: 'bi-film', color: '#6610f2' },
-    'KTV': { icon: 'bi-mic-fill', color: '#d63384' },
-    '演出': { icon: 'bi-music-note-beamed', color: '#6610f2' },
-    '游戏': { icon: 'bi-controller', color: '#6610f2' },
-    '订阅': { icon: 'bi-collection-play-fill', color: '#6610f2' },
-    '会员': { icon: 'bi-patch-check-fill', color: '#6610f2' },
-
-    // ── 医疗健康 ──
-    '医疗': { icon: 'bi-heart-pulse-fill', color: '#dc3545' },
-    '药品': { icon: 'bi-capsule', color: '#dc3545' },
-    '体检': { icon: 'bi-clipboard2-pulse-fill', color: '#dc3545' },
-    '牙医': { icon: 'bi-emoji-smile', color: '#dc3545' },
-    '运动': { icon: 'bi-bicycle', color: '#198754' },
-    '健身': { icon: 'bi-bicycle', color: '#198754' },
-    '健身房': { icon: 'bi-trophy-fill', color: '#198754' },
-    '瑜伽': { icon: 'bi-person-arms-up', color: '#198754' },
-    '游泳': { icon: 'bi-water', color: '#0dcaf0' },
-    '球类': { icon: 'bi-trophy-fill', color: '#198754' },
-    '户外': { icon: 'bi-tree-fill', color: '#198754' },
-    '登山': { icon: 'bi-tree-fill', color: '#198754' },
-    '钓鱼': { icon: 'bi-water', color: '#0dcaf0' },
-    '美容': { icon: 'bi-stars', color: '#e83e8c' },
-    '美甲': { icon: 'bi-stars', color: '#e83e8c' },
-    '理发': { icon: 'bi-scissors', color: '#e83e8c' },
-    '护肤': { icon: 'bi-droplet-half', color: '#e83e8c' },
-
-    // ── 教育学习 ──
-    '教育': { icon: 'bi-mortarboard-fill', color: '#0d6efd' },
-    '课程': { icon: 'bi-mortarboard-fill', color: '#0d6efd' },
-    '培训': { icon: 'bi-easel2-fill', color: '#0d6efd' },
-    '考试': { icon: 'bi-pencil-square', color: '#0d6efd' },
-    '书籍': { icon: 'bi-book-fill', color: '#0d6efd' },
-    '文具': { icon: 'bi-pencil-fill', color: '#0d6efd' },
-
-    // ── 通讯数码 ──
-    '通讯': { icon: 'bi-phone-fill', color: '#20c997' },
-    '话费': { icon: 'bi-phone-fill', color: '#20c997' },
-
-    // ── 人情往来 ──
-    '人情': { icon: 'bi-gift-fill', color: '#d63384' },
-    '红包': { icon: 'bi-gift-fill', color: '#dc3545' },
-    '礼物': { icon: 'bi-gift-fill', color: '#d63384' },
-    '慈善': { icon: 'bi-heart-fill', color: '#dc3545' },
-    '捐款': { icon: 'bi-heart-fill', color: '#dc3545' },
-
-    // ── 宠物 ──
-    '宠物': { icon: 'bi-emoji-smile-fill', color: '#fd7e14' },
-    '猫粮': { icon: 'bi-emoji-smile-fill', color: '#fd7e14' },
-    '狗粮': { icon: 'bi-emoji-smile-fill', color: '#fd7e14' },
-    '宠物医疗': { icon: 'bi-heart-pulse-fill', color: '#fd7e14' },
-
-    // ── 金融与杂项支出 ──
-    '保险': { icon: 'bi-shield-check', color: '#0d6efd' },
-    '理财': { icon: 'bi-graph-up-arrow', color: '#198754' },
-    '税费': { icon: 'bi-receipt-cutoff', color: '#6c757d' },
-    '罚款': { icon: 'bi-exclamation-octagon-fill', color: '#dc3545' },
-    '手续费': { icon: 'bi-receipt', color: '#6c757d' },
-    '利息支出': { icon: 'bi-bank', color: '#6c757d' },
-    '违约金': { icon: 'bi-exclamation-octagon-fill', color: '#dc3545' },
-    '快递': { icon: 'bi-box-seam-fill', color: '#fd7e14' },
-    '维修': { icon: 'bi-tools', color: '#6c757d' },
-    '其他': { icon: 'bi-three-dots', color: '#6c757d' },
-    '未分类': { icon: 'bi-question-circle', color: '#6c757d' },
-    '余额调整': { icon: 'bi-sliders', color: '#6c757d' },
-
-    // ── 收入 ──
-    '工资': { icon: 'bi-cash-coin', color: '#198754' },
-    '兼职': { icon: 'bi-briefcase-fill', color: '#fd7e14' },
-    '副业': { icon: 'bi-briefcase-fill', color: '#fd7e14' },
-    '佣金': { icon: 'bi-briefcase-fill', color: '#198754' },
-    '奖金': { icon: 'bi-trophy-fill', color: '#198754' },
-    '年终奖': { icon: 'bi-trophy-fill', color: '#198754' },
-    '投资': { icon: 'bi-graph-up-arrow', color: '#0d6efd' },
-    '股息': { icon: 'bi-graph-up-arrow', color: '#0d6efd' },
-    '基金': { icon: 'bi-graph-up-arrow', color: '#0d6efd' },
-    '利息收入': { icon: 'bi-piggy-bank-fill', color: '#198754' },
-    '房租收入': { icon: 'bi-house-door-fill', color: '#198754' },
-    '礼金': { icon: 'bi-gift-fill', color: '#d63384' },
-    '报销': { icon: 'bi-receipt', color: '#20c997' },
-    '退款': { icon: 'bi-arrow-counterclockwise', color: '#20c997' },
-    '中奖': { icon: 'bi-stars', color: '#fd7e14' },
-    '补贴': { icon: 'bi-cash-coin', color: '#198754' },
-    '稿费': { icon: 'bi-pencil-fill', color: '#198754' },
-    '二手出售': { icon: 'bi-tag-fill', color: '#198754' },
-    '众筹': { icon: 'bi-people-fill', color: '#198754' },
-    '赔偿': { icon: 'bi-receipt', color: '#198754' },
-    '继承': { icon: 'bi-bank', color: '#198754' },
-};
-const CAT_FALLBACK_PALETTE = ['#0d6efd','#198754','#fd7e14','#d63384','#6610f2','#20c997','#dc3545','#6c757d'];
-
-function _hexToRgbStr(hex) {
-    const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    if (!m) return '13,110,253';
-    return `${parseInt(m[1],16)},${parseInt(m[2],16)},${parseInt(m[3],16)}`;
-}
-
-function getCatIcon(name) {
-    if (categoryIcons[name]) return categoryIcons[name];
-    if (CATEGORY_ICON_MAP[name]) return CATEGORY_ICON_MAP[name];
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
-    return { icon: 'bi-tag-fill', color: CAT_FALLBACK_PALETTE[hash % CAT_FALLBACK_PALETTE.length] };
-}
-
-function catGridBuild(selectId, gridId) {
-    const sel = $(selectId);
-    const grid = $(gridId);
-    if (!sel || !grid) return;
-    grid.innerHTML = '';
-    Array.from(sel.options).forEach((opt, i) => {
-        const meta = getCatIcon(opt.value);
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'cat-grid-item' + (i === sel.selectedIndex ? ' selected' : '');
-        btn.style.setProperty('--cat-color', meta.color);
-        btn.style.setProperty('--cat-color-rgb', _hexToRgbStr(meta.color));
-        btn.innerHTML = `<span class="cat-icon-circle"><i class="bi ${meta.icon}"></i></span><span class="cat-name">${opt.text}</span>`;
-        btn.addEventListener('click', () => {
-            sel.selectedIndex = i;
-            sel.dispatchEvent(new Event('change', { bubbles: true }));
-            catGridSync(selectId, gridId);
-        });
-        grid.appendChild(btn);
-    });
-}
-
-function catGridSync(selectId, gridId) {
-    const sel = $(selectId);
-    const grid = $(gridId);
-    if (!sel || !grid) return;
-    grid.querySelectorAll('.cat-grid-item').forEach((el, i) => {
-        el.classList.toggle('selected', i === sel.selectedIndex);
-    });
-}
-
-// 金额输入框颜色随支出/收入变化
-function updateAmountTypeClass(type) {
-    const bar = $('trans-amount-bar');
-    if (!bar) return;
-    bar.classList.remove('amt-expense', 'amt-income');
-    if (type === 'expense') bar.classList.add('amt-expense');
-    else if (type === 'income') bar.classList.add('amt-income');
-}
-
-// 金额前的货币符号随所选账户的币种变化
-function updateAmountCurrencySymbol() {
-    const accSel = $('edit-trans-account');
-    const symEl = $('amount-currency-symbol');
-    if (!accSel || !symEl) return;
-    const acc = accounts.find(a => a.id == accSel.value);
-    symEl.textContent = acc ? (CURRENCY_SYMBOLS[acc.currency] || acc.currency) : '¥';
-}
-
-// ── 消费类型分段药丸 ─────────────────────────────────────────
-function selectSpendingTypePill(val) {
-    setSpendingType(val);
-}
-
-function spendingTypePillSync() {
-    const sel = $('edit-trans-spending-type');
-    const val = sel ? (sel.value || '') : '';
-    $$('#st-pill-group .st-pill').forEach(p => {
-        p.classList.toggle('active', p.dataset.val === val);
-    });
-}
-
 function updateEditFormCategories() {
     const type = $('edit-trans-type').value;
     const catSelect = $('edit-trans-category');
     catSelect.innerHTML = '';
     (type === 'expense' ? categories.expense : categories.income).forEach(c => catSelect.add(new Option(c, c)));
-    catGridBuild('edit-trans-category', 'cat-grid-edit-trans-category');
-    updateAmountTypeClass(type);
     // 附件区域和相机按钮只在支出时显示
     const attachSec = $('attachment-section');
     const attachBtn = $('attachment-btn');
@@ -7593,16 +5959,10 @@ function onSubModalHide() {
     // 重置拆分状态
     if (_inSplitMode) exitSplitMode();
     _splitData = [];
-    // 重置只读状态（覆盖收/支/转账三个表单，避免下次新增时残留禁用态）
-    $('editTransactionModal').querySelectorAll('input,select,textarea').forEach(el => { el.disabled = false; });
-    $('editTransactionModal').querySelector('.trans-modal-v2')?.classList.remove('view-only');
+    // 重置只读状态
+    const form = $('edit-transaction-form');
+    form.querySelectorAll('input,select,textarea').forEach(el => { el.disabled = false; });
     $('edit-trans-submit-btn').style.display = '';
-    $('edit-transfer-submit-btn').style.display = '';
-    $('edit-trans-delete-btn').style.setProperty('display','none','important');
-    $('edit-transfer-delete-btn').style.setProperty('display','none','important');
-    $('edit-trans-submit-btn').textContent = '保存';
-    $('edit-transfer-submit-btn').textContent = '保存';
-    clearOcrBanner();
     // 确保单笔区域可见
     const singleRow = $('single-item-row');
     const metaSec = $('single-meta-section');
@@ -7630,14 +5990,14 @@ $('edit-transaction-form').addEventListener('submit', (e) => {
     if (_inSplitMode && itemsData === null) return;
     let category, finalAmount;
     if (itemsData) {
-        finalAmount = roundMoney(itemsData.reduce((s, it) => s + it.amount, 0));
+        finalAmount = itemsData.reduce((s, it) => s + it.amount, 0);
         category = itemsData[0].category;
     } else {
         $('edit-trans-category').removeAttribute('disabled');
         category = $('edit-trans-category').value;
         const amount = parseFloat($('edit-trans-amount').value);
         if (isNaN(amount) || amount <= 0) { alert('请输入有效金额'); return; }
-        finalAmount = roundMoney(type === 'expense' ? -Math.abs(amount) : Math.abs(amount));
+        finalAmount = type === 'expense' ? -Math.abs(amount) : Math.abs(amount);
     }
 
     if (mode === 'add') {
@@ -7661,7 +6021,6 @@ $('edit-transaction-form').addEventListener('submit', (e) => {
             const opt = [...catEl.options].find(o => o.value === category);
             if (opt) catEl.value = category;
         }
-        catGridSync('edit-trans-category', 'cat-grid-edit-trans-category');
         if (currentDetailAccountId) refreshDetailContent(currentDetailAccountId);
         resetInlineItems();
         resetSpendingType();
@@ -7998,12 +6357,12 @@ function renderAllTransactions() {
         }
 
         const canEdit = t.ownerName === currentUserName && !t._isArchived;
-        const canView = t.ownerName === currentUserName && t._isArchived;
+        const canView = t.ownerName === currentUserName && t._isArchived; // 历史模式：自己的存档交易可查看
         const editBtns = canEdit ? (t.isTransfer ?
-        `<i class="bi bi-pencil text-primary cursor-pointer me-2" style="cursor:pointer;" onclick="event.stopPropagation();(_isWidescreen()?dpOpenEditTransfer:openEditTransfer)(${t.id})"></i><i class="bi bi-trash text-danger cursor-pointer" style="cursor:pointer;" onclick="event.stopPropagation();deleteTransaction(${t.id})"></i>` :
-        `<i class="bi bi-pencil text-primary cursor-pointer me-2" style="cursor:pointer;" onclick="event.stopPropagation();(_isWidescreen()?dpOpenEdit:openEditTransaction)(${t.id})"></i><i class="bi bi-trash text-danger cursor-pointer" style="cursor:pointer;" onclick="event.stopPropagation();deleteTransaction(${t.id})"></i>`) :
-        (canView ? `<i class="bi bi-eye text-secondary" style="cursor:pointer;" title="查看" onclick="event.stopPropagation();${t.isTransfer ? `(_isWidescreen()?dpOpenEditTransfer:openEditTransfer)(${t.id})` : `(_isWidescreen()?dpOpenEdit:openEditTransaction)(${t.id})`}"></i>` :
-        (!t.isTransfer ? `<i class="bi bi-eye text-secondary" style="cursor:pointer;" title="查看" onclick="event.stopPropagation();(_isWidescreen()?dpOpenEdit:openEditTransaction)(${t.id})"></i>` : ''));
+        `<i class="bi bi-pencil text-primary cursor-pointer me-2" style="cursor:pointer;" onclick="openEditTransfer(${t.id})"></i><i class="bi bi-trash text-danger cursor-pointer" style="cursor:pointer;" onclick="deleteTransaction(${t.id})"></i>` :
+        `<i class="bi bi-pencil text-primary cursor-pointer me-2" style="cursor:pointer;" onclick="openEditTransaction(${t.id})"></i><i class="bi bi-trash text-danger cursor-pointer" style="cursor:pointer;" onclick="deleteTransaction(${t.id})"></i>`) :
+        (canView ? `<i class="bi bi-eye text-secondary" style="cursor:pointer;" title="查看" onclick="${t.isTransfer ? `openEditTransfer(${t.id})` : `openEditTransaction(${t.id})`}"></i>` :
+        (!t.isTransfer ? `<i class="bi bi-eye text-secondary" style="cursor:pointer;" title="查看" onclick="openEditTransaction(${t.id})"></i>` : ''));
 
         const tr = document.createElement('tr');
         const tDescDisplay = t.items && t.items.length > 1
@@ -8025,7 +6384,6 @@ function renderAllTransactions() {
             <td><span class="badge bg-secondary">${t.ownerName}</span></td>
             <td><div class="text-center">${editBtns}</div></td>`;
         tbody.appendChild(tr);
-        _attachTableRowClick(tr, t);
     });
 
     if (mobileContainer) {
@@ -8123,12 +6481,6 @@ function renderAllTransactions() {
         if (loadMoreContainer) loadMoreContainer.classList.add('d-none');
         if (mobileLoadMore) mobileLoadMore.classList.add('d-none');
     }
-    // 宽屏：恢复选中行高亮
-    if (_dpCurrentId != null) {
-        $$('#transaction-table-body tr').forEach(r => {
-            r.classList.toggle('dp-selected', r.dataset.dpId == _dpCurrentId);
-        });
-    }
 }
 
 function loadMoreTransactions() {
@@ -8204,9 +6556,8 @@ function updateDescHint(descId, hintId, typeId, catId, accId) {
     const hint = $(hintId);
     if (!hint) return;
     if (desc.trim().length < 2) { hint.style.display = 'none'; return; }
-    // 多笔模式下不推荐分类
-    const inSplit = descId === 'dp-trans-desc' ? _dpInSplitMode : _inSplitMode;
-    if (inSplit) { hint.style.display = 'none'; return; }
+    // 多笔模式下不推荐分类（一备注对多分类，推荐无意义）
+    if (_inSplitMode) { hint.style.display = 'none'; return; }
 
     const result = findBestCategoryFromHistory(desc, type);
     if (!result) { hint.style.display = 'none'; return; }
@@ -8429,11 +6780,7 @@ if (!confirm('确定删除这张附件吗？')) return;
 
 function applyDescHint(catId, category) {
     const catEl = $(catId);
-    if (!catEl) return;
-    catEl.value = category;
-    // 同步分类图标网格（modal 版 和 dp 面板版）
-    if (catId === 'edit-trans-category') catGridSync('edit-trans-category', 'cat-grid-edit-trans-category');
-    if (catId === 'dp-trans-category')   catGridSync('dp-trans-category', 'dp-cat-grid');
+    if (catEl) catEl.value = category;
 }
 /**
  * 自动校对：基于历史记忆，检测分类与相似备注不一致的交易
@@ -9789,7 +8136,7 @@ function renderExchangeRateSettings() {
         div.className = 'input-group mb-2';
         div.innerHTML = `
             <span class="input-group-text" style="width:100px;">1 ${cur.symbol} (${cur.code})</span>
-            <input type="text" inputmode="decimal" class="form-control decimal-input" data-max-decimals="4" id="${inputId}" value="${rate}">
+            <input type="number" step="0.0001" class="form-control" id="${inputId}" value="${rate}">
             <span class="input-group-text">¥</span>
             <button class="btn btn-outline-primary btn-sm" onclick="setExchangeRate('${cur.code}', 'RMB', $('${inputId}').value)">保存</button>`;
         container.appendChild(div);
@@ -9818,10 +8165,8 @@ function renderCategorySettings() {
         if (!categories[type]) return;
         categories[type].forEach((cat, idx) => {
             const el = document.createElement('span');
-            const meta = getCatIcon(cat);
-            el.className = 'badge bg-white text-dark border draggable-badge p-2 me-2 mb-2 d-inline-flex align-items-center';
-            el.innerHTML = `<span class="cat-icon-mini" style="--cat-color:${meta.color};--cat-color-rgb:${_hexToRgbStr(meta.color)};" onclick="openIconPicker('${type}','${cat}')" title="设置图标"><i class="bi ${meta.icon}"></i></span>` +
-                `<span class="cat-text" style="cursor:pointer;" title="点击修改名称" onclick="editCategoryName('${type}', '${cat}')">${cat}</span> <i class="bi bi-x text-danger ms-1" style="cursor:pointer;" onclick="removeCategory('${type}','${cat}')"></i>`;
+            el.className = 'badge bg-white text-dark border draggable-badge p-2 me-2 mb-2';
+            el.innerHTML = `<span class="cat-text" style="cursor:pointer;" title="点击修改名称" onclick="editCategoryName('${type}', '${cat}')">${cat}</span> <i class="bi bi-x text-danger ms-1" style="cursor:pointer;" onclick="removeCategory('${type}','${cat}')"></i>`;
             el.draggable = true; el.dataset.idx = idx; el.dataset.type = type;
             el.addEventListener('dragstart', function() { window.dragCatIdx = idx; window.dragCatType = type; this.classList.add('dragging'); });
             el.addEventListener('dragend', function() { this.classList.remove('dragging'); });
@@ -9868,91 +8213,9 @@ function removeCategory(type, cat) {
     categories[type] = categories[type].filter(c => c !== cat);
     transactions.forEach(t => { if (t.type === type && t.category === cat) t.category = '未分类'; });
     if (plannedTransactions) plannedTransactions.forEach(p => { if (p.type === type && p.category === cat) p.category = '未分类'; });
-    delete categoryIcons[cat];
     saveUserData(); triggerAutoSave(); renderCategorySettings();
     displayedTransactionCount = 100; renderAllTransactions(); renderStats();
     if (verboseToast) showToast(`分类 "${cat}" 已删除`, 'success');
-}
-
-// ── 分类图标选择器 ───────────────────────────────────────────
-const ICON_PICKER_LIST = [
-    'bi-cup-hot-fill','bi-egg-fried','bi-cart-fill','bi-bag-fill','bi-bus-front-fill','bi-car-front-fill',
-    'bi-airplane-fill','bi-train-front-fill','bi-house-door-fill','bi-building','bi-lightning-charge-fill','bi-droplet-fill',
-    'bi-controller','bi-film','bi-music-note-beamed','bi-dice-5-fill','bi-heart-pulse-fill','bi-capsule',
-    'bi-mortarboard-fill','bi-book-fill','bi-phone-fill','bi-wifi','bi-handbag-fill','bi-gem',
-    'bi-laptop','bi-camera-fill','bi-emoji-smile-fill','bi-gift-fill','bi-bicycle','bi-trophy-fill',
-    'bi-stars','bi-scissors','bi-shield-check','bi-graph-up-arrow','bi-cash-coin','bi-briefcase-fill',
-    'bi-piggy-bank-fill','bi-wallet2','bi-credit-card-fill','bi-receipt','bi-arrow-counterclockwise','bi-tools',
-    'bi-tree-fill','bi-cup-straw','bi-basket-fill','bi-umbrella-fill','bi-balloon-fill','bi-three-dots',
-    'bi-cup-fill','bi-flower1','bi-basket2-fill','bi-moon-stars-fill','bi-people-fill',
-    'bi-p-circle-fill','bi-fuel-pump-fill','bi-hammer','bi-house-gear-fill','bi-plug-fill','bi-ticket-perforated-fill',
-    'bi-mic-fill','bi-collection-play-fill','bi-patch-check-fill','bi-clipboard2-pulse-fill','bi-person-arms-up','bi-water',
-    'bi-easel2-fill','bi-pencil-square','bi-pencil-fill','bi-droplet-half','bi-heart-fill','bi-receipt-cutoff',
-    'bi-exclamation-octagon-fill','bi-box-seam-fill','bi-bank','bi-question-circle','bi-sliders','bi-tag-fill',
-    'bi-flower2','bi-basket3-fill','bi-droplet','bi-bag-check-fill',
-    'bi-bag-dash-fill','bi-bandaid-fill','bi-emoji-laughing-fill','bi-person-fill','bi-envelope-fill'
-];
-const ICON_PICKER_COLORS = ['#fd7e14','#dc3545','#d63384','#6610f2','#0d6efd','#0dcaf0','#198754','#6c757d'];
-
-let _iconPickerType = '';
-let _iconPickerCat = '';
-let _iconPickerIcon = '';
-let _iconPickerColor = '';
-
-function openIconPicker(type, cat) {
-    const current = getCatIcon(cat);
-    _iconPickerType = type;
-    _iconPickerCat = cat;
-    _iconPickerIcon = current.icon;
-    _iconPickerColor = current.color;
-    $('icon-picker-cat-name').textContent = cat;
-    $('icon-picker-type').value = type;
-    $('icon-picker-cat').value = cat;
-
-    const colorRow = $('icon-picker-color-row');
-    colorRow.innerHTML = ICON_PICKER_COLORS.map(c =>
-        `<div class="icon-picker-color-item${c === _iconPickerColor ? ' selected' : ''}" style="--swatch-color:${c};" onclick="selectIconPickerColor('${c}')"></div>`
-    ).join('');
-
-    renderIconPickerGrid();
-    bootstrap.Modal.getOrCreateInstance($('iconPickerModal')).show();
-}
-
-function renderIconPickerGrid() {
-    const grid = $('icon-picker-grid');
-    grid.style.setProperty('--picker-color', _iconPickerColor);
-    grid.style.setProperty('--picker-color-rgb', _hexToRgbStr(_iconPickerColor));
-    grid.innerHTML = ICON_PICKER_LIST.map(ic =>
-        `<div class="icon-picker-item${ic === _iconPickerIcon ? ' selected' : ''}" onclick="selectIconPickerIcon('${ic}')"><i class="bi ${ic}"></i></div>`
-    ).join('');
-}
-
-function selectIconPickerColor(color) {
-    _iconPickerColor = color;
-    $$('#icon-picker-color-row .icon-picker-color-item').forEach(el => {
-        el.classList.toggle('selected', el.style.getPropertyValue('--swatch-color') === color);
-    });
-    renderIconPickerGrid();
-    applyIconPickerSelection();
-}
-
-function selectIconPickerIcon(icon) {
-    _iconPickerIcon = icon;
-    renderIconPickerGrid();
-    applyIconPickerSelection();
-}
-
-function applyIconPickerSelection() {
-    categoryIcons[_iconPickerCat] = { icon: _iconPickerIcon, color: _iconPickerColor };
-    saveUserData(); triggerAutoSave();
-    renderCategorySettings();
-}
-
-function resetIconPicker() {
-    delete categoryIcons[_iconPickerCat];
-    saveUserData(); triggerAutoSave();
-    renderCategorySettings();
-    bootstrap.Modal.getInstance($('iconPickerModal'))?.hide();
 }
 
 function editCategoryName(type, oldName) {
@@ -11227,8 +9490,7 @@ function logGoPage(p) { _logCurrentPage = p; renderLogPage(); }
 
 
 // ── 自定义账户下拉组件 ──
-const ACC_SELECT_IDS = ['edit-trans-account', 'edit-transfer-from', 'edit-transfer-to',
-                        'dp-trans-account', 'dp-transfer-from', 'dp-transfer-to'];
+const ACC_SELECT_IDS = ['edit-trans-account', 'edit-transfer-from', 'edit-transfer-to'];
 
 function accSelectSync(selectId) {
     const sel = $(selectId);
@@ -11236,12 +9498,7 @@ function accSelectSync(selectId) {
     if (!sel || !trigger) return;
     const opt = sel.options[sel.selectedIndex];
     // 触发器只显示纯账户名（无余额），取 data-name 属性
-    const text = opt ? (opt.getAttribute('data-name') || opt.text) : '';
-    const textEl = trigger.querySelector('.acc-trigger-text');
-    if (textEl) textEl.textContent = text;
-    else trigger.textContent = text;
-    if (selectId === 'edit-trans-account') updateAmountCurrencySymbol();
-    if (selectId === 'dp-trans-account') _dpUpdateCurrencySymbol();
+    trigger.textContent = opt ? (opt.getAttribute('data-name') || opt.text) : '';
 }
 
 function accSelectBuild(selectId) {
@@ -11326,10 +9583,9 @@ function accSelectInit() {
     document.addEventListener('click', () => {
         ACC_SELECT_IDS.forEach(id => accSelectClose(id));
     });
-    // 表单内部滚动区滚动时同步下拉位置（v2 布局下真正滚动的是 .trans-scroll-area，不是 .modal-body）
-    document.querySelectorAll('#editTransactionModal .trans-scroll-area, #dp-panel .trans-scroll-area').forEach(el => {
-        el.addEventListener('scroll', accSelectRepositionAll, { passive: true });
-    });
+    // modal 滚动时同步下拉位置
+    const modalBody = document.querySelector('#editTransactionModal .modal-body');
+    if (modalBody) modalBody.addEventListener('scroll', accSelectRepositionAll, { passive: true });
 }
 
 // 页面加载后初始化
@@ -11342,15 +9598,15 @@ function _escHtml(s) {
 // ── 版本切换 ──
 const VERSION_PREF_KEY = 'jiyi_ui_version'; // 'new' | 'legacy'
 
-function switchToLegacy() {
-    localStorage.setItem(VERSION_PREF_KEY, 'legacy');
-    window.location.href = 'legacy.html';
+function switchToNew() {
+    localStorage.setItem(VERSION_PREF_KEY, 'new');
+    window.location.href = 'index.html';
 }
 
-// 页面加载时：若用户上次选了旧版，自动跳转
+// 页面加载时：若用户上次选了新版，自动跳转
 (function checkVersionPref() {
-    if (localStorage.getItem(VERSION_PREF_KEY) === 'legacy') {
-        window.location.replace('legacy.html');
+    if (localStorage.getItem(VERSION_PREF_KEY) === 'new') {
+        window.location.replace('index.html');
     }
 })();
 
