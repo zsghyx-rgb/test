@@ -655,25 +655,8 @@ select.compact-form-control { height: 2.1rem; }
         flex-direction: column;
         flex: 1 1 0;
         min-width: 0;
-        min-height: 0;
         overflow: hidden;
         border-right: 1px solid var(--bs-border-color);
-    }
-
-    /* 过滤栏固定高度，不参与伸缩 */
-    #trans-list-pane .page-sticky-header {
-        flex-shrink: 0;
-    }
-
-    /* 表格容器占满剩余高度并滚动 */
-    #trans-list-pane .excel-table-container {
-        flex: 1;
-        min-height: 0;
-        overflow: auto;
-        border-radius: 0;
-        border-left: none;
-        border-right: none;
-        border-bottom: none;
     }
 
     /* 右侧：详情/编辑面板 */
@@ -1589,8 +1572,10 @@ select.compact-form-control { height: 2.1rem; }
             <div id="user-buttons" class="d-flex gap-2 flex-wrap"></div>
         </div>
     </div>
-    <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;pointer-events:none;">
+    <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;">
         <span class="text-muted" style="font-size:0.7rem;">version 2.3.0</span>
+        <span class="text-muted" style="font-size:0.7rem;margin:0 6px;">·</span>
+        <a href="legacy.html" style="font-size:0.7rem;color:var(--bs-secondary-color);text-decoration:none;" onclick="localStorage.setItem('jiyi_ui_version','legacy')">旧版本</a>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
@@ -1976,10 +1961,7 @@ select.compact-form-control { height: 2.1rem; }
                                     </button>
                                     <div id="dp-desc-expanded" style="display:none;">
                                         <label class="compact-form-label">备注</label>
-                                        <input type="text" class="form-control compact-form-control" id="dp-trans-desc"
-                                               oninput="updateDescHint('dp-trans-desc','dp-trans-desc-hint','dp-trans-type','dp-trans-category','dp-trans-account')"
-                                               placeholder="添加备注...">
-                                        <div id="dp-trans-desc-hint" style="display:none;align-items:center;gap:6px;margin-top:3px;padding:3px 8px;border-radius:5px;background:rgba(var(--bs-primary-rgb),0.08);border:1px solid rgba(var(--bs-primary-rgb),0.2);font-size:0.78rem;"></div>
+                                        <input type="text" class="form-control compact-form-control" id="dp-trans-desc" placeholder="添加备注...">
                                     </div>
                                 </div>
                             </div>
@@ -2491,25 +2473,6 @@ select.compact-form-control { height: 2.1rem; }
 
                     </div>
                 </div>
-
-                <!-- 版本切换 -->
-                <div class="col-12">
-                    <div class="card shadow-sm">
-                        <div class="card-header bg-transparent fw-bold">
-                            <i class="bi bi-toggles"></i> 界面版本
-                        </div>
-                        <div class="card-body">
-                            <p class="text-muted small mb-3">当前使用的是<b>新版界面</b>（v2.3.0），支持宽屏分栏布局。如果你更习惯旧版弹窗风格，可切换到旧版。</p>
-                            <div class="d-flex align-items-center gap-3">
-                                <span class="badge bg-primary">当前：新版</span>
-                                <button class="btn btn-outline-secondary btn-sm" onclick="switchToLegacy()">
-                                    <i class="bi bi-arrow-left-circle"></i> 切换到旧版界面
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
             </div>
         </div>
     </div>
@@ -6128,8 +6091,6 @@ function dpOpenNew(type) {
     $('dp-trans-amount').value = '';
     $('dp-trans-tags').value = '';
     $('dp-trans-desc').value = '';
-    const dpHint = $('dp-trans-desc-hint');
-    if (dpHint) dpHint.style.display = 'none';
     _dpSetSpendingType('');
     _dpResetMetaCollapse();
     // 填充账户 & 分类
@@ -8221,9 +8182,8 @@ function updateDescHint(descId, hintId, typeId, catId, accId) {
     const hint = $(hintId);
     if (!hint) return;
     if (desc.trim().length < 2) { hint.style.display = 'none'; return; }
-    // 多笔模式下不推荐分类
-    const inSplit = descId === 'dp-trans-desc' ? _dpInSplitMode : _inSplitMode;
-    if (inSplit) { hint.style.display = 'none'; return; }
+    // 多笔模式下不推荐分类（一备注对多分类，推荐无意义）
+    if (_inSplitMode) { hint.style.display = 'none'; return; }
 
     const result = findBestCategoryFromHistory(desc, type);
     if (!result) { hint.style.display = 'none'; return; }
@@ -8446,11 +8406,7 @@ if (!confirm('确定删除这张附件吗？')) return;
 
 function applyDescHint(catId, category) {
     const catEl = $(catId);
-    if (!catEl) return;
-    catEl.value = category;
-    // 同步分类图标网格（modal 版 和 dp 面板版）
-    if (catId === 'edit-trans-category') catGridSync('edit-trans-category', 'cat-grid-edit-trans-category');
-    if (catId === 'dp-trans-category')   catGridSync('dp-trans-category', 'dp-cat-grid');
+    if (catEl) catEl.value = category;
 }
 /**
  * 自动校对：基于历史记忆，检测分类与相似备注不一致的交易
@@ -11357,14 +11313,13 @@ function _escHtml(s) {
 }
 
 // ── 版本切换 ──
-const VERSION_PREF_KEY = 'jiyi_ui_version'; // 'new' | 'legacy'
+const VERSION_PREF_KEY = 'jiyi_ui_version';
 
 function switchToLegacy() {
     localStorage.setItem(VERSION_PREF_KEY, 'legacy');
     window.location.href = 'legacy.html';
 }
 
-// 页面加载时：若用户上次选了旧版，自动跳转
 (function checkVersionPref() {
     if (localStorage.getItem(VERSION_PREF_KEY) === 'legacy') {
         window.location.replace('legacy.html');
