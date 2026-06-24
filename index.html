@@ -1202,6 +1202,114 @@ select.compact-form-control { height: 2.1rem; }
     opacity: 0.65;
 }
 
+/* ════════════════════════════════════════════════════════════════
+   经典样式（旧版 2.1.14）新增/编辑交易 & 转账弹窗
+   通过 .legacy-style 类切换：类别用普通下拉代替图标网格，消费类型/标签/
+   备注始终展开显示，金额输入与保存/删除按钮从沉浸式底部条改为表单内常规位置。
+   ════════════════════════════════════════════════════════════════ */
+.trans-modal-v2.legacy-style #cat-grid-edit-trans-category { display: none !important; }
+.trans-modal-v2.legacy-style select#edit-trans-category {
+    display: block !important;
+    width: 100%;
+}
+
+.trans-modal-v2.legacy-style #st-pill-group,
+.trans-modal-v2.legacy-style #spending-type-expand-btn,
+.trans-modal-v2.legacy-style #tags-expand-btn,
+.trans-modal-v2.legacy-style #desc-expand-btn,
+.trans-modal-v2.legacy-style #transfer-desc-expand-btn {
+    display: none !important;
+}
+.trans-modal-v2.legacy-style #spending-type-expanded,
+.trans-modal-v2.legacy-style #tags-expanded,
+.trans-modal-v2.legacy-style #desc-expanded,
+.trans-modal-v2.legacy-style #transfer-desc-expanded {
+    display: block !important;
+}
+.trans-modal-v2.legacy-style select#edit-trans-spending-type {
+    display: block !important;
+    width: 100%;
+}
+
+/* 沉浸式底部金额条整体隐藏，内容已被 JS 挪到经典槽位中 */
+.trans-modal-v2.legacy-style #trans-amount-bar,
+.trans-modal-v2.legacy-style #transfer-amount-bar {
+    display: none !important;
+}
+
+#classic-amount-row,
+#classic-transfer-amounts {
+    display: none;
+}
+.trans-modal-v2.legacy-style #classic-amount-row,
+.trans-modal-v2.legacy-style #classic-transfer-amounts {
+    display: block;
+    margin-bottom: 10px;
+}
+.trans-modal-v2.legacy-style #classic-amount-row .amount-input-row,
+.trans-modal-v2.legacy-style #classic-transfer-amounts .amount-input-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.375rem;
+    padding: 0.25rem 0.5rem;
+    height: 2.1rem;
+    background: var(--bs-body-bg);
+}
+.trans-modal-v2.legacy-style .amount-input-v2 {
+    font-size: 0.9rem !important;
+    font-weight: 400 !important;
+    flex: 1;
+    min-width: 0;
+}
+.trans-modal-v2.legacy-style #classic-transfer-amounts .transfer-amount-row {
+    display: flex;
+    gap: 8px;
+}
+.trans-modal-v2.legacy-style .amount-currency {
+    font-size: 0.85rem;
+}
+
+#classic-trans-buttons,
+#classic-transfer-buttons {
+    display: none;
+}
+.trans-modal-v2.legacy-style #classic-trans-buttons,
+.trans-modal-v2.legacy-style #classic-transfer-buttons {
+    display: block;
+    margin-top: 0.25rem;
+}
+.trans-modal-v2.legacy-style #classic-trans-buttons .btn-save-immersive,
+.trans-modal-v2.legacy-style #classic-transfer-buttons .btn-save-immersive {
+    position: static;
+    display: block;
+    width: 100%;
+    flex: none;
+    height: auto;
+    border-radius: 0.25rem;
+    font-size: 0.8rem;
+    padding: 0.375rem 0.5rem;
+    margin-top: 0.4rem;
+    background: var(--bs-primary);
+    border: 1px solid var(--bs-primary);
+    color: #fff;
+}
+.trans-modal-v2.legacy-style #classic-trans-buttons .btn-delete-immersive,
+.trans-modal-v2.legacy-style #classic-transfer-buttons .btn-delete-immersive {
+    position: static;
+    width: 100%;
+    flex: none;
+    height: auto;
+    border-radius: 0.25rem;
+    font-size: 0.8rem;
+    padding: 0.375rem 0.5rem;
+    margin-top: 0.4rem;
+    background: transparent;
+    border: 1px solid #dc3545;
+    color: #dc3545;
+}
+
 
 
 /* ── 智能提醒 Tab 按钮 ── */
@@ -2353,6 +2461,25 @@ select.compact-form-control { height: 2.1rem; }
                     </div>
                 </div>
 
+                <div class="col-12 col-md-6">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-transparent fw-bold">
+                            <i class="bi bi-palette"></i> 界面偏好
+                        </div>
+                        <div class="card-body">
+                            <label class="form-label small fw-bold mb-2">新增/编辑交易窗口样式</label>
+                            <div class="btn-group w-100" role="group" id="trans-modal-style-toggle">
+                                <button type="button" class="btn btn-outline-primary btn-sm" data-style="modern" onclick="setTransModalStyle('modern')">新版（沉浸式）</button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" data-style="classic" onclick="setTransModalStyle('classic')">经典（旧版）</button>
+                            </div>
+                            <p class="text-muted small mt-2 mb-0">
+                                <i class="bi bi-info-circle"></i>
+                                目前仅影响手机端弹窗中的新增/编辑交易和转账窗口，设置保存在本设备。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="col-12">
                     <!-- 手机端显示提示，桌面端显示完整管理 -->
                     <div class="card shadow-sm d-md-none">
@@ -2706,11 +2833,15 @@ select.compact-form-control { height: 2.1rem; }
                             </button>
                         </div>
 
-                        <!-- 单笔：类别图标网格 -->
+                        <!-- 单笔：类别图标网格（经典样式下显示为普通下拉） -->
                         <div id="single-item-row">
                             <div class="cat-grid-section" id="cat-grid-section">
-                                <select class="form-select" id="edit-trans-category" required="" style="display:none;"></select>
+                                <select class="form-select compact-form-control" id="edit-trans-category" required="" style="display:none;"></select>
                                 <div class="cat-grid" id="cat-grid-edit-trans-category"></div>
+                            </div>
+                            <!-- 经典样式槽位：金额输入行会被 JS 挪到这里 -->
+                            <div id="classic-amount-row" style="display:none;">
+                                <label class="compact-form-label">金额</label>
                             </div>
                         </div>
 
@@ -2737,7 +2868,7 @@ select.compact-form-control { height: 2.1rem; }
                                 <div id="spending-type-expanded" style="display:none;">
                                     <label class="compact-form-label">消费类型</label>
                                     <div id="spending-type-select-wrap">
-                                        <select id="edit-trans-spending-type" style="display:none;">
+                                        <select id="edit-trans-spending-type" class="form-select compact-form-control" style="display:none;">
                                             <option value="">未标记</option>
                                             <option value="need">必须的</option>
                                             <option value="want">想要的</option>
@@ -2812,13 +2943,16 @@ select.compact-form-control { height: 2.1rem; }
                         </div>
                     </div>
 
+                    <!-- 经典样式槽位：保存/删除按钮会被 JS 挪到这里 -->
+                    <div id="classic-trans-buttons" style="display:none;"></div>
+
                     <!-- 沉浸式金额（吸底，系统键盘输入） -->
                     <div class="trans-amount-bar" id="trans-amount-bar">
-                        <div class="amount-input-row">
+                        <div class="amount-input-row" id="trans-amount-input-row">
                             <span class="amount-currency" id="amount-currency-symbol">¥</span>
                             <input type="text" inputmode="decimal" placeholder="0.00" class="amount-input-v2 decimal-input" id="edit-trans-amount" required="">
                         </div>
-                        <div class="trans-action-row">
+                        <div class="trans-action-row" id="trans-action-row">
                             <button type="button" class="btn-delete-immersive" id="edit-trans-delete-btn" onclick="deleteCurrentTransaction()" style="display:none!important;">
                                 <i class="bi bi-trash"></i> 删除
                             </button>
@@ -2862,6 +2996,9 @@ select.compact-form-control { height: 2.1rem; }
                             </div>
                         </div>
 
+                        <!-- 经典样式槽位：转账金额行会被 JS 挪到这里 -->
+                        <div id="classic-transfer-amounts" style="display:none;"></div>
+
                         <!-- 转账备注：折叠式 -->
                         <div class="mb-2" id="transfer-desc-collapse-wrap">
                             <button type="button" class="btn-expand-field" id="transfer-desc-expand-btn" onclick="expandTransferDesc()">
@@ -2872,10 +3009,13 @@ select.compact-form-control { height: 2.1rem; }
                                 <input type="text" class="form-control compact-form-control" id="edit-transfer-desc" placeholder="添加备注...">
                             </div>
                         </div>
+
+                        <!-- 经典样式槽位：保存/删除按钮会被 JS 挪到这里 -->
+                        <div id="classic-transfer-buttons" style="display:none;"></div>
                     </div>
 
                     <div class="trans-amount-bar" id="transfer-amount-bar">
-                        <div class="transfer-amount-row">
+                        <div class="transfer-amount-row" id="transfer-amount-input-row">
                             <div class="transfer-amount-field">
                                 <label class="amt-label">转出金额</label>
                                 <input type="text" inputmode="decimal" placeholder="0.00" class="amount-input-v2 transfer-amount-input decimal-input" id="edit-transfer-amount-out" oninput="handleEditTransferAmountChange('out')" required="">
@@ -2885,7 +3025,7 @@ select.compact-form-control { height: 2.1rem; }
                                 <input type="text" inputmode="decimal" placeholder="0.00" class="amount-input-v2 transfer-amount-input decimal-input" id="edit-transfer-amount-in" oninput="handleEditTransferAmountChange('in')" required="">
                             </div>
                         </div>
-                        <div class="trans-action-row">
+                        <div class="trans-action-row" id="transfer-action-row">
                             <button type="button" class="btn-delete-immersive d-md-none" id="edit-transfer-delete-btn" onclick="deleteCurrentTransfer()" style="display:none!important;">
                                 <i class="bi bi-trash"></i> 删除
                             </button>
@@ -5747,6 +5887,79 @@ function deleteAccountFromDetail() {
         switchTab('accounts', document.querySelector('.nav-link[onclick*=accounts]'));
     }
 }
+
+// ════════════════════════════════════════════════════════════════
+// 新增/编辑交易窗口样式切换（经典 旧版 2.1.14 / 新版 沉浸式）
+// ════════════════════════════════════════════════════════════════
+const TRANS_MODAL_STYLE_KEY = 'APP_trans_modal_style';
+
+function getTransModalStyle() {
+    const v = localStorage.getItem(TRANS_MODAL_STYLE_KEY);
+    return (v === 'classic') ? 'classic' : 'modern';
+}
+
+function _moveTransModalNode(node, target, atStart) {
+    if (!node || !target) return;
+    if (atStart && target.firstChild) target.insertBefore(node, target.firstChild);
+    else target.appendChild(node);
+}
+
+function applyTransModalStyle() {
+    const style = getTransModalStyle();
+    const isClassic = style === 'classic';
+    const modalContent = document.querySelector('#editTransactionModal .trans-modal-v2');
+    if (modalContent) modalContent.classList.toggle('legacy-style', isClassic);
+
+    // 收支表单：金额输入行 + 保存/删除按钮行
+    const transAmountRow = $('trans-amount-input-row');
+    const transActionRow = $('trans-action-row');
+    const transAmountBar = $('trans-amount-bar');
+    const classicAmountSlot = $('classic-amount-row');
+    const classicTransBtnSlot = $('classic-trans-buttons');
+    if (isClassic) {
+        _moveTransModalNode(transAmountRow, classicAmountSlot);
+        _moveTransModalNode(transActionRow, classicTransBtnSlot);
+    } else {
+        _moveTransModalNode(transAmountRow, transAmountBar, true);
+        _moveTransModalNode(transActionRow, transAmountBar);
+    }
+
+    // 转账表单：金额输入行 + 保存/删除按钮行
+    const tfAmountRow = $('transfer-amount-input-row');
+    const tfActionRow = $('transfer-action-row');
+    const tfAmountBar = $('transfer-amount-bar');
+    const classicTfAmountSlot = $('classic-transfer-amounts');
+    const classicTfBtnSlot = $('classic-transfer-buttons');
+    if (isClassic) {
+        _moveTransModalNode(tfAmountRow, classicTfAmountSlot);
+        _moveTransModalNode(tfActionRow, classicTfBtnSlot);
+    } else {
+        _moveTransModalNode(tfAmountRow, tfAmountBar, true);
+        _moveTransModalNode(tfActionRow, tfAmountBar);
+    }
+}
+
+function syncTransModalStyleToggleUI() {
+    const style = getTransModalStyle();
+    document.querySelectorAll('#trans-modal-style-toggle [data-style]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.style === style);
+    });
+}
+
+function setTransModalStyle(style) {
+    style = (style === 'classic') ? 'classic' : 'modern';
+    localStorage.setItem(TRANS_MODAL_STYLE_KEY, style);
+    applyTransModalStyle();
+    syncTransModalStyleToggleUI();
+    if (typeof showToast === 'function') {
+        showToast(style === 'classic' ? '已切换为经典交易窗口样式' : '已切换为新版交易窗口样式', 'success', 1800);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    applyTransModalStyle();
+    syncTransModalStyleToggleUI();
+});
 
 function switchTransTab(tab, skipReset) {
     // tab: 'expense' | 'income' | 'transfer'
