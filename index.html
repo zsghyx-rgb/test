@@ -1,7 +1,7 @@
 <!DOCTYPE html><html lang="zh-CN" data-bs-theme="dark"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>记一笔 v2.2.8</title>
+    <title>记一笔 v2.3.0</title>
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0d6efd">
@@ -179,9 +179,10 @@ body {
     to { opacity: 1; }
 }
 
-.account-col { width: 40%; }
+.account-col { width: 40%; min-width: 200px; }
 
-@media (min-width: 992px) { .account-col { width: 30%; } }
+@media (min-width: 769px) { .account-col { width: calc(33.333% - 12px); } }
+@media (min-width: 1200px) { .account-col { width: calc(25% - 12px); } }
 
 .account-card h5 { font-size: 1rem !important; font-weight: bold; margin-bottom: 0; }
 
@@ -577,6 +578,69 @@ select.compact-form-control { height: 2.1rem; }
         margin-top: 4px;
         box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     }
+
+    /* ── 宽屏账户页 ── */
+
+    /* 净值汇总栏：三列等宽，字号稍大 */
+    #net-worth-display .row { font-size: 1rem; }
+    #net-worth-display .row b { font-size: 1.1rem; }
+
+    /* 账户卡片：固定高度，上下信息分布更对称 */
+    .account-card {
+        min-height: 72px;
+    }
+
+    /* 账户详情页：表格列更宽松 */
+    #view-account-detail .excel-table th,
+    #view-account-detail .excel-table td {
+        padding: 8px 12px;
+        font-size: 0.9rem;
+    }
+
+    /* ── 宽屏统计 Tab 布局 ── */
+
+    /* 概览：CSS grid，覆盖 Bootstrap .row/.col-* */
+    #stats-pane-overview #charts-container {
+        display: grid !important;
+        grid-template-columns: 40% 1fr;
+        gap: 16px;
+        align-items: start;
+    }
+    #stats-pane-overview #charts-container > * {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+        flex: none !important;
+    }
+    #stats-pane-overview #charts-container > *:nth-child(1) { grid-column: 1; grid-row: 1; }
+    #stats-pane-overview #charts-container > *:nth-child(2) { grid-column: 1; grid-row: 2; }
+    #stats-pane-overview #charts-container > *:nth-child(3) { grid-column: 2; grid-row: 1 / 3; }
+    #stats-pane-overview #charts-container > *:nth-child(4) { grid-column: 1; grid-row: 3; }
+    #stats-pane-overview #charts-container > *:nth-child(5) { grid-column: 2; grid-row: 3; }
+    #stats-pane-overview #charts-container > *:nth-child(6) { grid-column: 1 / 3; grid-row: 4; }
+    /* 月度趋势图跨两行，给足高度 */
+    #stats-pane-overview #charts-container > *:nth-child(3) .chart-scroll-container { height: 520px !important; }
+    /* 其余图表适当加高 */
+    #stats-pane-overview #charts-container .card-body > div[style*="height:350px"] { height: 380px !important; }
+    #stats-pane-overview #charts-container .chart-scroll-container[style*="height:300px"] { height: 340px !important; }
+
+    /* 收支汇总卡片字号稍大 */
+    #stats-pane-overview .alert .row { font-size: 1rem; }
+    #stats-pane-overview .alert .row b { font-size: 1.05rem; }
+
+    /* 消费类型子页：左右两列 */
+    #stats-pane-spending {
+        display: grid !important;
+        grid-template-columns: 40% 1fr;
+        gap: 16px;
+        align-items: start;
+    }
+    #stats-pane-spending > * { width: 100% !important; max-width: 100% !important; }
+    #sa-summary-cards                            { grid-column: 1 / 3 !important; }
+    #stats-pane-spending > .card:nth-of-type(1)  { grid-column: 1 !important; }
+    #stats-pane-spending > .card:nth-of-type(2)  { grid-column: 2 !important; }
+    #stats-pane-spending > .d-flex               { grid-column: 1 / 3 !important; }
+    #sa-detail-list                              { grid-column: 1 / 3 !important; }
 
     /* ── 宽屏交易 Tab 左右分栏 ── */
     #view-transactions.active-view {
@@ -1509,7 +1573,7 @@ select.compact-form-control { height: 2.1rem; }
         </div>
     </div>
     <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;pointer-events:none;">
-        <span class="text-muted" style="font-size:0.7rem;">version 2.2.8</span>
+        <span class="text-muted" style="font-size:0.7rem;">version 2.3.0</span>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
@@ -2051,7 +2115,7 @@ select.compact-form-control { height: 2.1rem; }
 
             <!-- 概览子页 -->
             <div id="stats-pane-overview" class="stats-sub-pane active">
-                <div class="alert alert-light border shadow-sm mb-4 clickable-amount" onclick="toggleAmountVisibility()">
+                <div class="alert alert-light border shadow-sm mb-3 clickable-amount" onclick="toggleAmountVisibility()" id="stats-summary-bar">
                     <div class="row text-center">
                         <div class="col-4">期间收入: <b class="text-success" id="stat-income-display">0.00</b></div>
                         <div class="col-4">期间支出: <b class="text-danger" id="stat-expense-display">0.00</b></div>
@@ -5126,14 +5190,40 @@ function renderAccounts() {
     });
 
     const hiddenClass = amountsHidden ? 'amount-hidden' : '';
-    $('net-worth-display').innerHTML = `
-        <div class="row text-center">
-            <div class="col-4">总资产: <b class="text-success ${hiddenClass}">¥${totalAssets.toFixed(2)}</b></div>
-            <div class="col-4">总负债: <b class="text-danger ${hiddenClass}">¥${Math.abs(totalLiabilities).toFixed(2)}</b></div>
-            <div class="col-4">净值: <b class="text-primary ${hiddenClass}">¥${(totalAssets + totalLiabilities).toFixed(2)}</b></div>
-        </div>`;
-
     const isDesktop = window.innerWidth >= 769;
+
+    // 按货币统计净值
+    const byCurrency = {};
+    accounts.filter(a => a.ownerName === currentUserName).forEach(acc => {
+        const bal = calculateBalance(acc.id);
+        const cur = acc.currency || 'CNY';
+        if (!byCurrency[cur]) byCurrency[cur] = { assets: 0, liabilities: 0 };
+        if (acc.accountType === 'Liability') byCurrency[cur].liabilities += bal;
+        else byCurrency[cur].assets += bal;
+    });
+    const currencies = Object.keys(byCurrency);
+    const sym = c => CURRENCY_SYMBOLS[c] || c;
+
+    let summaryHtml = `<div class="row text-center">
+        <div class="col-4">总资产: <b class="text-success ${hiddenClass}">¥${totalAssets.toFixed(2)}</b></div>
+        <div class="col-4">总负债: <b class="text-danger ${hiddenClass}">¥${Math.abs(totalLiabilities).toFixed(2)}</b></div>
+        <div class="col-4">净值: <b class="text-primary ${hiddenClass}">¥${(totalAssets + totalLiabilities).toFixed(2)}</b></div>
+    </div>`;
+
+    if (isDesktop && currencies.length > 1) {
+        const pills = currencies.map(c => {
+            const net = byCurrency[c].assets + byCurrency[c].liabilities;
+            const cls = net >= 0 ? 'text-success' : 'text-danger';
+            return `<span class="badge bg-secondary-subtle text-body me-1" style="font-size:0.8rem;font-weight:500;">
+                ${c} <span class="${hiddenClass} ${cls}">${sym(c)}${Math.abs(net).toFixed(2)}</span>
+            </span>`;
+        }).join('');
+        summaryHtml += `<div class="mt-2 text-center" style="font-size:0.8rem;color:var(--bs-secondary-color);">
+            各币种净值：${pills}
+        </div>`;
+    }
+
+    $('net-worth-display').innerHTML = summaryHtml;
     ['Asset', 'Liability', 'Receivable'].forEach(type => {
         const rawAccs = userAccounts.filter(a => (a.accountType || 'Asset') === type);
         if (rawAccs.length === 0) return;
