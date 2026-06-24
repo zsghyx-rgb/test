@@ -1,7 +1,7 @@
 <!DOCTYPE html><html lang="zh-CN" data-bs-theme="dark"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>记一笔 v2.2.7</title>
+    <title>记一笔 v2.2.8</title>
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0d6efd">
@@ -577,6 +577,95 @@ select.compact-form-control { height: 2.1rem; }
         margin-top: 4px;
         box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     }
+
+    /* ── 宽屏交易 Tab 左右分栏 ── */
+    #view-transactions.active-view {
+        flex-direction: row !important;
+        gap: 0;
+        overflow: hidden;
+    }
+
+    /* 左侧：表格 + 顶部过滤 */
+    #trans-list-pane {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 0;
+        min-width: 0;
+        overflow: hidden;
+        border-right: 1px solid var(--bs-border-color);
+    }
+
+    /* 右侧：详情/编辑面板 */
+    #trans-detail-pane {
+        width: 380px;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        background: var(--bs-body-bg);
+    }
+
+    /* 面板滚动区域 */
+    #dp-scroll-area {
+        flex: 1;
+        overflow-y: auto;
+        min-height: 0;
+    }
+
+    /* 面板空状态 */
+    #dp-empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        color: var(--bs-secondary-color);
+        gap: 10px;
+        font-size: 0.9rem;
+    }
+
+    /* 面板顶部栏 */
+    #dp-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px 8px;
+        border-bottom: 1px solid var(--bs-border-color);
+        flex-shrink: 0;
+    }
+    #dp-title { font-weight: 600; font-size: 0.95rem; flex: 1; }
+
+    /* 面板内的 trans-modal-v2 样式适配（非 modal） */
+    #dp-panel .trans-modal-v2 {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+        border-radius: 0;
+        border: none;
+        background: transparent;
+    }
+    #dp-panel .trans-form-v2 {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+    }
+    #dp-panel .trans-scroll-area {
+        flex: 1;
+        overflow-y: auto;
+        min-height: 0;
+        padding: 10px 14px;
+    }
+    #dp-panel .trans-amount-bar {
+        flex-shrink: 0;
+    }
+
+    /* 点击高亮选中行 */
+    .excel-table tbody tr.dp-selected {
+        background: rgba(var(--bs-primary-rgb), 0.12) !important;
+    }
+    .excel-table tbody tr { cursor: pointer; }
 }
 
 /* ── 标签建议下拉 ── */
@@ -1420,7 +1509,7 @@ select.compact-form-control { height: 2.1rem; }
         </div>
     </div>
     <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;pointer-events:none;">
-        <span class="text-muted" style="font-size:0.7rem;">version 2.2.7</span>
+        <span class="text-muted" style="font-size:0.7rem;">version 2.2.8</span>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
@@ -1568,6 +1657,8 @@ select.compact-form-control { height: 2.1rem; }
         </div>
 
         <div id="view-transactions" class="view-section active-view">
+        <!-- 左侧：过滤栏 + 表格 -->
+        <div id="trans-list-pane">
             <div class="page-sticky-header pt-1">
                 <!-- 标题行：标题 + 搜索 + 筛选 + 新增 -->
                 <div class="d-flex align-items-center gap-2 mb-1">
@@ -1575,8 +1666,8 @@ select.compact-form-control { height: 2.1rem; }
                     <button class="btn btn-sm btn-outline-secondary" id="trans-filter-btn" onclick="toggleTransFilter()" title="搜索与筛选">
                         <i class="bi bi-sliders"></i>
                     </button>
-                    <button class="btn btn-sm btn-primary d-none d-md-inline-flex" onclick="openNewTransaction()" title="新增交易">
-                        <i class="bi bi-plus-lg"></i>
+                    <button class="btn btn-sm btn-primary d-none d-md-inline-flex" onclick="dpOpenNew()" title="新增交易">
+                        <i class="bi bi-plus-lg"></i> 新增
                     </button>
                 </div>
 
@@ -1687,7 +1778,205 @@ select.compact-form-control { height: 2.1rem; }
                     <button class="btn btn-outline-primary" onclick="loadMoreTransactions()">加载更多</button>
                 </div>
             </div>
-        </div>
+        </div><!-- /trans-list-pane -->
+
+        <!-- 右侧详情/编辑面板（仅宽屏显示） -->
+        <div id="trans-detail-pane" class="d-none d-md-flex flex-column">
+            <!-- 面板顶部栏 -->
+            <div id="dp-header">
+                <span id="dp-title">详情</span>
+                <button type="button" class="btn btn-sm btn-outline-danger d-none" id="dp-delete-btn" onclick="dpDeleteCurrent()">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+            <!-- 面板内容滚动区 -->
+            <div id="dp-scroll-area">
+                <!-- 空状态 -->
+                <div id="dp-empty-state">
+                    <i class="bi bi-layout-sidebar-inset-reverse" style="font-size:2rem;opacity:0.3;"></i>
+                    <span>选择一笔交易查看详情</span>
+                    <button class="btn btn-primary btn-sm mt-2" onclick="dpOpenNew()"><i class="bi bi-plus-lg"></i> 新增交易</button>
+                </div>
+
+                <!-- 面板表单容器（动态渲染） -->
+                <div id="dp-panel" style="display:none; flex-direction:column; height:100%;">
+                    <!-- Tab 栏 -->
+                    <div class="px-3 pt-2 pb-1" id="dp-tab-bar">
+                        <div class="trans-type-segment" role="group">
+                            <button type="button" class="trans-type-btn active" data-type="expense" id="dp-tab-btn-expense" onclick="dpSwitchTab('expense')"><i class="bi bi-dash-circle-fill"></i> 支出</button>
+                            <button type="button" class="trans-type-btn" data-type="income" id="dp-tab-btn-income" onclick="dpSwitchTab('income')"><i class="bi bi-plus-circle-fill"></i> 收入</button>
+                            <button type="button" class="trans-type-btn" data-type="transfer" id="dp-tab-btn-transfer" onclick="dpSwitchTab('transfer')"><i class="bi bi-arrow-left-right"></i> 转账</button>
+                        </div>
+                    </div>
+
+                    <!-- 支出/收入表单 -->
+                    <form id="dp-transaction-form" class="trans-form-v2">
+                        <input type="hidden" id="dp-trans-id">
+                        <input type="hidden" id="dp-trans-mode" value="add">
+                        <input type="hidden" id="dp-trans-type" value="expense">
+
+                        <div class="trans-scroll-area">
+                            <div class="trans-chip-row">
+                                <div class="chip-date" onclick="this.querySelector('input').showPicker && this.querySelector('input').showPicker()">
+                                    <i class="bi bi-calendar3"></i>
+                                    <input type="date" class="chip-date-input" id="dp-trans-date" required="">
+                                </div>
+                                <div class="acc-select-wrapper chip-acc" id="dp-wrap-trans-account">
+                                    <select class="form-select" id="dp-trans-account" required="" style="display:none;"></select>
+                                    <div class="acc-select-trigger chip-acc-trigger" id="trigger-dp-trans-account">
+                                        <i class="bi bi-wallet2"></i><span class="acc-trigger-text"></span>
+                                    </div>
+                                    <div class="acc-select-dropdown" id="dropdown-dp-trans-account"></div>
+                                </div>
+                                <button type="button" id="dp-split-toggle-btn" class="chip-split-btn" title="拆分账单" onclick="dpHandleSplitBtn()">
+                                    <i class="bi bi-scissors"></i>
+                                </button>
+                            </div>
+
+                            <div id="dp-single-item-row">
+                                <div class="cat-grid-section" id="dp-cat-grid-section">
+                                    <select class="form-select" id="dp-trans-category" required="" style="display:none;"></select>
+                                    <div class="cat-grid" id="dp-cat-grid"></div>
+                                </div>
+                            </div>
+
+                            <div id="dp-split-items-section">
+                                <div id="dp-split-items-list"></div>
+                                <div class="d-flex align-items-center gap-2 py-2 border-top">
+                                    <span class="ms-auto small text-muted">合计：</span>
+                                    <span id="dp-split-total-amt" class="fw-bold text-danger" style="font-size:1rem;">0.00</span>
+                                </div>
+                            </div>
+
+                            <div id="dp-single-meta-section">
+                                <!-- 消费类型：折叠式 -->
+                                <div class="mb-2" id="dp-spending-type-collapse-wrap">
+                                    <button type="button" class="btn-expand-field" id="dp-spending-type-expand-btn" onclick="dpExpandMetaField('spending-type')">
+                                        <i class="bi bi-plus-sm"></i> 添加消费类型
+                                    </button>
+                                    <div id="dp-spending-type-expanded" style="display:none;">
+                                        <label class="compact-form-label">消费类型</label>
+                                        <div id="dp-spending-type-select-wrap">
+                                            <select id="dp-trans-spending-type" style="display:none;">
+                                                <option value="">未标记</option>
+                                                <option value="need">必须的</option>
+                                                <option value="want">想要的</option>
+                                                <option value="regret">后悔的</option>
+                                            </select>
+                                            <div class="st-pill-group" id="dp-st-pill-group">
+                                                <button type="button" class="st-pill" data-val="" onclick="dpSelectSpendingTypePill('')">未标记</button>
+                                                <button type="button" class="st-pill" data-val="need" onclick="dpSelectSpendingTypePill('need')">必须的</button>
+                                                <button type="button" class="st-pill" data-val="want" onclick="dpSelectSpendingTypePill('want')">想要的</button>
+                                                <button type="button" class="st-pill" data-val="regret" onclick="dpSelectSpendingTypePill('regret')">后悔的</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- 标签：折叠式 -->
+                                <div class="mb-2" id="dp-tags-collapse-wrap">
+                                    <button type="button" class="btn-expand-field" id="dp-tags-expand-btn" onclick="dpExpandMetaField('tags')">
+                                        <i class="bi bi-plus-sm"></i> 添加标签
+                                    </button>
+                                    <div id="dp-tags-expanded" style="display:none;">
+                                        <label class="compact-form-label">标签</label>
+                                        <div class="tag-suggest-wrap">
+                                            <input type="text" class="form-control compact-form-control" id="dp-trans-tags"
+                                                   placeholder="添加标签…" autocomplete="off"
+                                                   onfocus="openTagSuggest(this,'dp-ts-single')"
+                                                   onblur="scheduleCloseTagSuggest('dp-ts-single')">
+                                            <ul class="tag-suggest-list" id="dp-ts-single"></ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- 备注：折叠式 -->
+                                <div class="mb-2" id="dp-desc-collapse-wrap">
+                                    <button type="button" class="btn-expand-field" id="dp-desc-expand-btn" onclick="dpExpandMetaField('desc')">
+                                        <i class="bi bi-plus-sm"></i> 添加备注
+                                    </button>
+                                    <div id="dp-desc-expanded" style="display:none;">
+                                        <label class="compact-form-label">备注</label>
+                                        <input type="text" class="form-control compact-form-control" id="dp-trans-desc" placeholder="添加备注...">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="trans-amount-bar" id="dp-amount-bar">
+                            <div class="amount-input-row">
+                                <span class="amount-currency" id="dp-amount-currency-symbol">¥</span>
+                                <input type="text" inputmode="decimal" placeholder="0.00" class="amount-input-v2 decimal-input" id="dp-trans-amount" required="">
+                            </div>
+                            <div class="trans-action-row">
+                                <button type="submit" class="btn-save-immersive" id="dp-trans-submit-btn">保存</button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- 转账表单 -->
+                    <form id="dp-transfer-form" class="trans-form-v2" style="display:none;">
+                        <input type="hidden" id="dp-transfer-id">
+                        <input type="hidden" id="dp-transfer-mode" value="add">
+
+                        <div class="trans-scroll-area">
+                            <div class="trans-chip-row">
+                                <div class="chip-date" onclick="this.querySelector('input').showPicker && this.querySelector('input').showPicker()">
+                                    <i class="bi bi-calendar3"></i>
+                                    <input type="date" class="chip-date-input" id="dp-transfer-date" required="">
+                                </div>
+                            </div>
+                            <div class="transfer-flow-row">
+                                <div class="acc-select-wrapper transfer-acc-card" id="dp-wrap-transfer-from">
+                                    <select class="form-select" id="dp-transfer-from" onchange="dpHandleTransferAmountChange()" required="" style="display:none;"></select>
+                                    <div class="acc-select-trigger transfer-acc-trigger" id="trigger-dp-transfer-from">
+                                        <span class="transfer-acc-label">转出</span>
+                                        <i class="bi bi-credit-card-2-front-fill"></i>
+                                        <span class="acc-trigger-text"></span>
+                                    </div>
+                                    <div class="acc-select-dropdown" id="dropdown-dp-transfer-from"></div>
+                                </div>
+                                <div class="transfer-flow-arrow"><i class="bi bi-arrow-right-circle-fill"></i></div>
+                                <div class="acc-select-wrapper transfer-acc-card" id="dp-wrap-transfer-to">
+                                    <select class="form-select" id="dp-transfer-to" onchange="dpHandleTransferAmountChange()" required="" style="display:none;"></select>
+                                    <div class="acc-select-trigger transfer-acc-trigger" id="trigger-dp-transfer-to">
+                                        <span class="transfer-acc-label">转入</span>
+                                        <i class="bi bi-credit-card-2-back-fill"></i>
+                                        <span class="acc-trigger-text"></span>
+                                    </div>
+                                    <div class="acc-select-dropdown" id="dropdown-dp-transfer-to"></div>
+                                </div>
+                            </div>
+                            <!-- 转账备注：折叠式 -->
+                            <div class="mb-2" id="dp-transfer-desc-collapse-wrap">
+                                <button type="button" class="btn-expand-field" id="dp-transfer-desc-expand-btn" onclick="dpExpandTransferDesc()">
+                                    <i class="bi bi-plus-sm"></i> 添加备注
+                                </button>
+                                <div id="dp-transfer-desc-expanded" style="display:none;">
+                                    <label class="compact-form-label">备注</label>
+                                    <input type="text" class="form-control compact-form-control" id="dp-transfer-desc" placeholder="添加备注...">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="trans-amount-bar" id="dp-transfer-amount-bar">
+                            <div class="transfer-amount-row">
+                                <div class="transfer-amount-field">
+                                    <label class="amt-label">转出金额</label>
+                                    <input type="text" inputmode="decimal" placeholder="0.00" class="amount-input-v2 transfer-amount-input decimal-input" id="dp-transfer-amount-out" oninput="dpHandleTransferAmountChange('out')" required="">
+                                </div>
+                                <div class="transfer-amount-field">
+                                    <label class="amt-label">转入金额</label>
+                                    <input type="text" inputmode="decimal" placeholder="0.00" class="amount-input-v2 transfer-amount-input decimal-input" id="dp-transfer-amount-in" oninput="dpHandleTransferAmountChange('in')" required="">
+                                </div>
+                            </div>
+                            <div class="trans-action-row">
+                                <button type="submit" class="btn-save-immersive" id="dp-transfer-submit-btn">保存</button>
+                            </div>
+                        </div>
+                    </form>
+                </div><!-- /dp-panel -->
+            </div><!-- /dp-scroll-area -->
+        </div><!-- /trans-detail-pane -->
+        </div><!-- /view-transactions -->
 
         <div id="view-stats" class="view-section">
             <div class="page-sticky-header pt-1">
@@ -5504,7 +5793,491 @@ function openNewTransferFromDetail() {
     new bootstrap.Modal($('editTransactionModal')).show();
 }
 
+// ════════════════════════════════════════════════════════════════
+// 宽屏右侧详情面板 (dp = detail pane)
+// ════════════════════════════════════════════════════════════════
+
+let _dpCurrentId = null;      // 当前面板显示的交易 id（null = 空状态 / 新增）
+let _dpCurrentIsTransfer = false;
+let _dpSplitData = [];
+let _dpInSplitMode = false;
+
+function _isWidescreen() {
+    return window.innerWidth >= 769;
+}
+
+function _dpShowPanel(show) {
+    const empty = $('dp-empty-state');
+    const panel = $('dp-panel');
+    if (empty) empty.style.display = show ? 'none' : '';
+    if (panel) panel.style.display = show ? 'flex' : 'none';
+}
+
+/** 设置面板顶部标题和删除按钮 */
+function _dpSetHeader(title, showDelete) {
+    const t = $('dp-title'); if (t) t.textContent = title;
+    const d = $('dp-delete-btn'); if (d) d.classList.toggle('d-none', !showDelete);
+}
+
+/** 切换 dp tab（支出/收入/转账）*/
+function dpSwitchTab(type, silent) {
+    // 更新 tab 按钮状态
+    ['expense','income','transfer'].forEach(t => {
+        const btn = $('dp-tab-btn-' + t);
+        if (btn) btn.classList.toggle('active', t === type);
+    });
+    const isTransfer = type === 'transfer';
+    const txForm = $('dp-transaction-form');
+    const tfForm = $('dp-transfer-form');
+    if (txForm) txForm.style.display = isTransfer ? 'none' : '';
+    if (tfForm) tfForm.style.display = isTransfer ? '' : 'none';
+    if (!isTransfer) {
+        $('dp-trans-type').value = type;
+        // 消费类型仅支出可见
+        const stWrap = $('dp-spending-type-collapse-wrap');
+        if (stWrap) stWrap.style.display = type === 'expense' ? '' : 'none';
+        // 刷新分类列表
+        dpUpdateCategories(type);
+        // 金额颜色
+        const bar = $('dp-amount-bar');
+        if (bar) {
+            bar.classList.toggle('amt-expense', type === 'expense');
+            bar.classList.toggle('amt-income', type === 'income');
+        }
+    }
+    if (!silent) {
+        // 填充转账账户选项
+        if (isTransfer) _dpFillTransferSelects(null, null);
+    }
+}
+
+function dpUpdateCategories(type) {
+    const catSelect = $('dp-trans-category');
+    if (!catSelect) return;
+    catSelect.innerHTML = '';
+    (type === 'expense' ? categories.expense : categories.income)
+        .forEach(c => catSelect.add(new Option(c, c)));
+    catGridBuild('dp-trans-category', 'dp-cat-grid');
+}
+
+/** 重置面板折叠字段 */
+function _dpResetMetaCollapse() {
+    ['spending-type','tags','desc'].forEach(key => {
+        const exp = $('dp-' + key + '-expanded');
+        const btn = $('dp-' + key + '-expand-btn');
+        if (exp) exp.style.display = 'none';
+        if (btn) btn.style.display = '';
+    });
+    const tfExp = $('dp-transfer-desc-expanded');
+    const tfBtn = $('dp-transfer-desc-expand-btn');
+    if (tfExp) tfExp.style.display = 'none';
+    if (tfBtn) tfBtn.style.display = '';
+}
+
+function dpExpandMetaField(key) {
+    const exp = $('dp-' + key + '-expanded');
+    const btn = $('dp-' + key + '-expand-btn');
+    if (exp) exp.style.display = '';
+    if (btn) btn.style.display = 'none';
+    if (key === 'tags') { const i = $('dp-trans-tags'); if (i) setTimeout(() => i.focus(), 50); }
+    if (key === 'desc') { const i = $('dp-trans-desc'); if (i) setTimeout(() => i.focus(), 50); }
+}
+
+function dpExpandTransferDesc() {
+    const exp = $('dp-transfer-desc-expanded');
+    const btn = $('dp-transfer-desc-expand-btn');
+    if (exp) exp.style.display = '';
+    if (btn) btn.style.display = 'none';
+    const i = $('dp-transfer-desc'); if (i) setTimeout(() => i.focus(), 50);
+}
+
+function _dpExpandMetaForData(tags, desc, spendingType) {
+    if (tags) dpExpandMetaField('tags');
+    if (desc) dpExpandMetaField('desc');
+    if (spendingType) dpExpandMetaField('spending-type');
+}
+
+function dpSelectSpendingTypePill(val) {
+    const sel = $('dp-trans-spending-type'); if (sel) sel.value = val;
+    $$('#dp-st-pill-group .st-pill').forEach(p => p.classList.toggle('active', p.dataset.val === val));
+}
+
+function _dpSetSpendingType(val) {
+    const sel = $('dp-trans-spending-type'); if (sel) sel.value = val || '';
+    dpSelectSpendingTypePill(val || '');
+}
+
+/** 更新金额货币符号 */
+function _dpUpdateCurrencySymbol() {
+    const accId = $('dp-trans-account')?.value;
+    if (!accId) return;
+    const acc = accounts.find(a => a.id == accId);
+    const sym = acc ? (CURRENCY_SYMBOLS[acc.currency] || '¥') : '¥';
+    const el = $('dp-amount-currency-symbol');
+    if (el) el.textContent = sym;
+}
+
+/** 填充账户下拉 */
+function _dpFillAccountSelect() {
+    const sel = $('dp-trans-account');
+    if (!sel) return;
+    sel.innerHTML = '';
+    accounts.filter(a => a.ownerName === currentUserName)
+        .forEach(a => {
+            const name = getAccountDisplayName(a);
+            const opt = new Option(`${name} (${CURRENCY_SYMBOLS[a.currency]})`, a.id);
+            opt.setAttribute('data-name', name);
+            sel.add(opt);
+        });
+    accSelectSync('dp-trans-account');
+}
+
+function _dpFillTransferSelects(fromId, toId) {
+    const fromSel = $('dp-transfer-from');
+    const toSel   = $('dp-transfer-to');
+    if (!fromSel || !toSel) return;
+    fromSel.innerHTML = '';
+    sortedUserAccounts(accounts.filter(a => a.ownerName === currentUserName)).forEach(a => {
+        const name = `${getAccountDisplayName(a)} (${CURRENCY_SYMBOLS[a.currency]})`;
+        const opt = new Option(name, a.id);
+        opt.setAttribute('data-name', name);
+        opt.setAttribute('data-bal', calculateBalance(a.id).toFixed(2));
+        fromSel.add(opt);
+    });
+    toSel.innerHTML = '';
+    const sortedMine = sortedUserAccounts(accounts.filter(a => a.ownerName === currentUserName));
+    const others = accounts.filter(a => a.ownerName !== currentUserName);
+    [...sortedMine, ...others].forEach(a => {
+        const name = `${getAccountDisplayName(a)} (${CURRENCY_SYMBOLS[a.currency]})`;
+        const opt = new Option(name, a.id);
+        opt.setAttribute('data-name', name);
+        const isMine = a.ownerName === currentUserName;
+        if (isMine) opt.setAttribute('data-bal', calculateBalance(a.id).toFixed(2));
+        toSel.add(opt);
+    });
+    if (fromId) fromSel.value = fromId;
+    else if (fromSel.options.length > 0) fromSel.selectedIndex = 0;
+    if (toId) toSel.value = toId;
+    else {
+        const fid = fromSel.value;
+        const other = accounts.find(a => a.id != fid);
+        if (other) toSel.value = other.id;
+        else if (toSel.options.length > 1) toSel.selectedIndex = 1;
+    }
+    accSelectSync('dp-transfer-from');
+    accSelectSync('dp-transfer-to');
+}
+
+function dpHandleTransferAmountChange(dir) {
+    const outEl = $('dp-transfer-amount-out');
+    const inEl  = $('dp-transfer-amount-in');
+    const fromId = $('dp-transfer-from')?.value;
+    const toId   = $('dp-transfer-to')?.value;
+    if (!fromId || !toId) return;
+    const accFrom = accounts.find(a => a.id == fromId);
+    const accTo   = accounts.find(a => a.id == toId);
+    if (!accFrom || !accTo || accFrom.currency !== accTo.currency) return;
+    if (dir === 'out') inEl.value = outEl.value;
+    else if (dir === 'in') outEl.value = inEl.value;
+    else { if (outEl.value) inEl.value = outEl.value; else if (inEl.value) outEl.value = inEl.value; }
+}
+
+/** 打开新增（宽屏） */
+function dpOpenNew(type) {
+    if (!_isWidescreen()) { openNewTransaction(); return; }
+    _dpCurrentId = null;
+    _dpCurrentIsTransfer = false;
+    _dpSetHeader('新增交易', false);
+    _dpShowPanel(true);
+    // tab bar 可见
+    const tabBar = $('dp-tab-bar'); if (tabBar) tabBar.style.display = '';
+    const prefs = _lastTransPrefs;
+    dpSwitchTab(type || prefs.type || 'expense', true);
+    // 重置表单
+    $('dp-trans-id').value = '';
+    $('dp-trans-mode').value = 'add';
+    $('dp-trans-amount').value = '';
+    $('dp-trans-tags').value = '';
+    $('dp-trans-desc').value = '';
+    _dpSetSpendingType('');
+    _dpResetMetaCollapse();
+    // 填充账户 & 分类
+    _dpFillAccountSelect();
+    const accPref = prefs.accountId && accounts.find(a => a.id == prefs.accountId);
+    if (accPref) $('dp-trans-account').value = prefs.accountId;
+    accSelectSync('dp-trans-account');
+    _dpUpdateCurrencySymbol();
+    dpUpdateCategories($('dp-trans-type').value);
+    if (prefs.category) {
+        const catEl = $('dp-trans-category');
+        const opt = catEl && [...catEl.options].find(o => o.value === prefs.category);
+        if (opt) catEl.value = prefs.category;
+    }
+    catGridSync('dp-trans-category', 'dp-cat-grid');
+    // 重置拆分
+    _dpInSplitMode = false; _dpSplitData = [];
+    $('dp-split-items-section').style.display = 'none';
+    $('dp-single-item-row').style.display = '';
+    $('dp-single-meta-section').style.display = '';
+    // 转账日期
+    const today = new Date().toISOString().slice(0,10);
+    $('dp-trans-date').value = today;
+    $('dp-transfer-date').value = today;
+    // 清除表格选中
+    $$('#transaction-table-body tr').forEach(r => r.classList.remove('dp-selected'));
+}
+
+/** 打开编辑已有交易（宽屏） */
+function dpOpenEdit(id) {
+    if (!_isWidescreen()) { openEditTransaction(id); return; }
+    const pool = historyMode ? historyTransactions : transactions;
+    const t = pool.find(x => x.id == id);
+    if (!t) return;
+    if (t.isTransfer) { dpOpenEditTransfer(id); return; }
+
+    _dpCurrentId = id;
+    _dpCurrentIsTransfer = false;
+    const isOwner = t.ownerName === currentUserName && !t._isArchived;
+    _dpSetHeader(isOwner ? '编辑交易' : `查看交易（${t.ownerName}）`, isOwner);
+    _dpShowPanel(true);
+
+    // 隐藏 tab bar（固定类型）
+    const tabBar = $('dp-tab-bar'); if (tabBar) tabBar.style.display = 'none';
+    dpSwitchTab(t.type, true);
+
+    $('dp-trans-id').value = t.id;
+    $('dp-trans-mode').value = isOwner ? 'edit' : 'view';
+    $('dp-trans-submit-btn').style.display = isOwner ? '' : 'none';
+
+    $('dp-trans-date').value = t.date;
+    _dpFillAccountSelect();
+    $('dp-trans-account').value = t.accountId;
+    accSelectSync('dp-trans-account');
+    _dpUpdateCurrencySymbol();
+
+    $('dp-trans-tags').value = t.tags || '';
+    $('dp-trans-desc').value = t.desc || '';
+    _dpSetSpendingType(t.spendingType || '');
+    _dpResetMetaCollapse();
+    _dpExpandMetaForData(t.tags, t.desc, t.spendingType);
+
+    // 分类 & 金额
+    _dpInSplitMode = false; _dpSplitData = [];
+    $('dp-split-items-section').style.display = 'none';
+    $('dp-single-item-row').style.display = '';
+    $('dp-single-meta-section').style.display = '';
+    dpUpdateCategories(t.type);
+    $('dp-trans-category').value = t.category;
+    catGridSync('dp-trans-category', 'dp-cat-grid');
+    $('dp-trans-amount').value = Math.abs(t.amount);
+
+    // 只读
+    $('dp-transaction-form').querySelectorAll('input,select,textarea,button[type="button"]')
+        .forEach(el => { el.disabled = !isOwner; });
+
+    // 高亮行
+    $$('#transaction-table-body tr').forEach(r => {
+        r.classList.toggle('dp-selected', r.dataset.dpId == id);
+    });
+}
+
+/** 打开编辑已有转账（宽屏） */
+function dpOpenEditTransfer(id) {
+    if (!_isWidescreen()) { openEditTransfer(id); return; }
+    const pool = historyMode ? historyTransactions : transactions;
+    const t = pool.find(x => x.id == id);
+    if (!t || !t.isTransfer) return;
+
+    let tOut, tIn;
+    if (t.transferPairId) {
+        const pair = pool.filter(x => x.transferPairId === t.transferPairId);
+        tOut = pair.find(x => x.type === 'expense');
+        tIn  = pair.find(x => x.type === 'income');
+    } else {
+        if (t.type === 'expense') {
+            tOut = t;
+            tIn  = pool.find(x => x.isTransfer && x.type === 'income' && x.date === t.date && x.accountId === t.relatedAccountId);
+        } else {
+            tIn  = t;
+            tOut = pool.find(x => x.isTransfer && x.type === 'expense' && x.date === t.date && x.relatedAccountId === t.accountId);
+        }
+    }
+    if (!tOut || !tIn) { alert('找不到配对的转账记录'); return; }
+
+    _dpCurrentId = tOut.id;
+    _dpCurrentIsTransfer = true;
+    const isOwner = tOut.ownerName === currentUserName && !historyMode;
+    _dpSetHeader(isOwner ? '编辑转账' : `查看转账（${tOut.ownerName}）`, isOwner);
+    _dpShowPanel(true);
+
+    const tabBar = $('dp-tab-bar'); if (tabBar) tabBar.style.display = 'none';
+    dpSwitchTab('transfer', true);
+
+    $('dp-transfer-id').value = tOut.id;
+    $('dp-transfer-mode').value = isOwner ? 'edit' : 'view';
+    $('dp-transfer-submit-btn').style.display = isOwner ? '' : 'none';
+    $('dp-transfer-date').value = tOut.date;
+
+    _dpFillTransferSelects(tOut.accountId, tIn.accountId);
+    $('dp-transfer-amount-out').value = Math.abs(tOut.amount);
+    $('dp-transfer-amount-in').value = Math.abs(tIn.amount);
+    $('dp-transfer-desc').value = tOut.desc || '';
+    _dpResetMetaCollapse();
+    if (tOut.desc) dpExpandTransferDesc();
+
+    $('dp-transfer-form').querySelectorAll('input,select,textarea')
+        .forEach(el => { el.disabled = !isOwner; });
+
+    $$('#transaction-table-body tr').forEach(r => {
+        r.classList.toggle('dp-selected', r.dataset.dpId == tOut.id);
+    });
+}
+
+/** 删除当前面板交易 */
+function dpDeleteCurrent() {
+    if (_dpCurrentId == null) return;
+    if (confirm('确定删除？')) {
+        deleteTransaction(_dpCurrentId);
+        _dpCurrentId = null;
+        _dpShowPanel(false);
+        _dpSetHeader('详情', false);
+    }
+}
+
+/** 面板拆分按钮（简化版：暂不支持面板内拆分，直接打开 modal） */
+function dpHandleSplitBtn() {
+    // 面板内暂不实现拆分，转向 modal
+    if (_dpCurrentId) openEditTransaction(_dpCurrentId);
+    else openNewTransaction();
+}
+
+// 面板表单提交：支出/收入
+$('dp-transaction-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const mode = $('dp-trans-mode').value;
+    if (mode === 'view') return;
+    const date  = $('dp-trans-date').value;
+    const type  = $('dp-trans-type').value;
+    const accId = $('dp-trans-account').value;
+    const tags  = $('dp-trans-tags').value;
+    const desc  = $('dp-trans-desc').value;
+    const stEl  = $('dp-trans-spending-type');
+    const spendingType = type === 'expense' ? (stEl?.value || '') : '';
+    const catEl = $('dp-trans-category');
+    catEl.removeAttribute('disabled');
+    const category = catEl.value;
+    const amtRaw = parseFloat($('dp-trans-amount').value);
+    if (isNaN(amtRaw) || amtRaw <= 0) { alert('请输入有效金额'); return; }
+    const amount = roundMoney(type === 'expense' ? -Math.abs(amtRaw) : Math.abs(amtRaw));
+
+    if (mode === 'add') {
+        _lastTransPrefs = { type, accountId: accId, category };
+        transactions.unshift({
+            id: Date.now() + Math.random(), date, type, accountId: accId,
+            amount, category, tags, desc,
+            ...(spendingType ? { spendingType } : {}),
+            ownerName: currentUserName, isTransfer: false, updatedAt: Date.now()
+        });
+        saveUserData(); triggerAutoSave(); loadAllData(); filterUserData();
+        displayedTransactionCount = 100; renderAllTransactions(); renderAccounts();
+        if ($('view-stats').classList.contains('active-view')) renderStats();
+        if (verboseToast) showToast('已添加', 'success', 1500);
+        // 保持面板打开，重置为新增状态
+        dpOpenNew(type);
+    } else {
+        const id = parseFloat($('dp-trans-id').value);
+        const t = transactions.find(x => x.id === id);
+        if (t) {
+            t.date = date; t.type = type; t.accountId = accId;
+            t.category = category; t.amount = amount; t.tags = tags; t.desc = desc;
+            if (spendingType) t.spendingType = spendingType; else delete t.spendingType;
+            t.updatedAt = Date.now();
+            saveUserData(); triggerAutoSave(); filterUserData();
+            displayedTransactionCount = 100; renderAllTransactions(); renderAccounts();
+            if ($('view-stats').classList.contains('active-view')) renderStats();
+            if (verboseToast) showToast('已保存', 'success', 1500);
+        }
+    }
+});
+
+// 面板表单提交：转账
+$('dp-transfer-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const mode      = $('dp-transfer-mode').value;
+    if (mode === 'view') return;
+    const newDate   = $('dp-transfer-date').value;
+    const newFromId = $('dp-transfer-from').value;
+    const newToId   = $('dp-transfer-to').value;
+    const newAmtOut = parseFloat($('dp-transfer-amount-out').value);
+    const newAmtIn  = parseFloat($('dp-transfer-amount-in').value);
+    const newDesc   = $('dp-transfer-desc').value;
+
+    if (newFromId === newToId) { alert('转出账户和转入账户不能相同'); return; }
+    if (isNaN(newAmtOut) || isNaN(newAmtIn)) { alert('请输入有效的转账金额'); return; }
+
+    const accFrom = accounts.find(a => a.id == newFromId);
+    const accTo   = accounts.find(a => a.id == newToId);
+    if (!accFrom || !accTo) { alert('账户不存在'); return; }
+
+    if (mode === 'add') {
+        const uid = Date.now() + Math.random();
+        transactions.unshift({
+            id: uid, date: newDate, type: 'expense', accountId: newFromId,
+            amount: -Math.abs(newAmtOut), category: '',
+            desc: newDesc, ownerName: currentUserName,
+            isTransfer: true, relatedAccountId: newToId, transferPairId: uid, updatedAt: Date.now()
+        });
+        transactions.unshift({
+            id: Date.now() + Math.random(), date: newDate, type: 'income', accountId: newToId,
+            amount: Math.abs(newAmtIn), category: '',
+            desc: newDesc, ownerName: currentUserName,
+            isTransfer: true, relatedAccountId: newFromId, transferPairId: uid, updatedAt: Date.now()
+        });
+        saveUserData(); triggerAutoSave(); loadAllData(); filterUserData();
+        displayedTransactionCount = 100; renderAllTransactions(); renderAccounts();
+        if ($('view-stats').classList.contains('active-view')) renderStats();
+        if (verboseToast) showToast('转账已添加', 'success', 1500);
+        dpOpenNew('transfer');
+    } else {
+        const id = parseFloat($('dp-transfer-id').value);
+        const pool = historyMode ? historyTransactions : transactions;
+        let tOut, tIn;
+        const t = pool.find(x => x.id == id);
+        if (t && t.transferPairId) {
+            const pair = transactions.filter(x => x.transferPairId === t.transferPairId);
+            tOut = pair.find(x => x.type === 'expense');
+            tIn  = pair.find(x => x.type === 'income');
+        }
+        if (tOut && tIn) {
+            tOut.date = newDate; tOut.accountId = newFromId; tOut.amount = -Math.abs(newAmtOut);
+            tOut.relatedAccountId = newToId; tOut.desc = newDesc; tOut.updatedAt = Date.now();
+            tIn.date = newDate;  tIn.accountId = newToId;   tIn.amount = Math.abs(newAmtIn);
+            tIn.relatedAccountId = newFromId; tIn.desc = newDesc; tIn.updatedAt = Date.now();
+            saveUserData(); triggerAutoSave(); filterUserData();
+            displayedTransactionCount = 100; renderAllTransactions(); renderAccounts();
+            if ($('view-stats').classList.contains('active-view')) renderStats();
+            if (verboseToast) showToast('已保存', 'success', 1500);
+        }
+    }
+});
+
+// ── 表格行点击 → 宽屏打开面板，手机打开 modal ──
+function _attachTableRowClick(tr, t) {
+    tr.dataset.dpId = t.id;
+    tr.addEventListener('click', ev => {
+        // 忽略操作按钮列点击
+        if (ev.target.closest('td:last-child')) return;
+        if (_isWidescreen()) {
+            t.isTransfer ? dpOpenEditTransfer(t.id) : dpOpenEdit(t.id);
+        } else {
+            t.isTransfer ? openEditTransfer(t.id) : openEditTransaction(t.id);
+        }
+    });
+}
+
 function openNewTransaction() {
+    if (_isWidescreen()) { dpOpenNew(); return; }
+
     const prefs = _lastTransPrefs;
     _initNewTransModal('add', '新增交易');
     switchTransTab(prefs.type || 'expense', true);
@@ -5642,6 +6415,7 @@ function deleteTransaction(id) {
 }
 
 function openEditTransaction(id) {
+    if (_isWidescreen()) { dpOpenEdit(id); return; }
     const t = historyMode
         ? historyTransactions.find(x => x.id == id)
         : transactions.find(x => x.id == id);
@@ -5697,6 +6471,7 @@ function openEditTransaction(id) {
 }
 
 function openEditTransfer(id) {
+    if (_isWidescreen()) { dpOpenEditTransfer(id); return; }
     // 历史模式从 historyTransactions 找，正常模式从 transactions 找
     const pool = historyMode ? historyTransactions : transactions;
 
@@ -7109,12 +7884,12 @@ function renderAllTransactions() {
         }
 
         const canEdit = t.ownerName === currentUserName && !t._isArchived;
-        const canView = t.ownerName === currentUserName && t._isArchived; // 历史模式：自己的存档交易可查看
+        const canView = t.ownerName === currentUserName && t._isArchived;
         const editBtns = canEdit ? (t.isTransfer ?
-        `<i class="bi bi-pencil text-primary cursor-pointer me-2" style="cursor:pointer;" onclick="openEditTransfer(${t.id})"></i><i class="bi bi-trash text-danger cursor-pointer" style="cursor:pointer;" onclick="deleteTransaction(${t.id})"></i>` :
-        `<i class="bi bi-pencil text-primary cursor-pointer me-2" style="cursor:pointer;" onclick="openEditTransaction(${t.id})"></i><i class="bi bi-trash text-danger cursor-pointer" style="cursor:pointer;" onclick="deleteTransaction(${t.id})"></i>`) :
-        (canView ? `<i class="bi bi-eye text-secondary" style="cursor:pointer;" title="查看" onclick="${t.isTransfer ? `openEditTransfer(${t.id})` : `openEditTransaction(${t.id})`}"></i>` :
-        (!t.isTransfer ? `<i class="bi bi-eye text-secondary" style="cursor:pointer;" title="查看" onclick="openEditTransaction(${t.id})"></i>` : ''));
+        `<i class="bi bi-pencil text-primary cursor-pointer me-2" style="cursor:pointer;" onclick="event.stopPropagation();(_isWidescreen()?dpOpenEditTransfer:openEditTransfer)(${t.id})"></i><i class="bi bi-trash text-danger cursor-pointer" style="cursor:pointer;" onclick="event.stopPropagation();deleteTransaction(${t.id})"></i>` :
+        `<i class="bi bi-pencil text-primary cursor-pointer me-2" style="cursor:pointer;" onclick="event.stopPropagation();(_isWidescreen()?dpOpenEdit:openEditTransaction)(${t.id})"></i><i class="bi bi-trash text-danger cursor-pointer" style="cursor:pointer;" onclick="event.stopPropagation();deleteTransaction(${t.id})"></i>`) :
+        (canView ? `<i class="bi bi-eye text-secondary" style="cursor:pointer;" title="查看" onclick="event.stopPropagation();${t.isTransfer ? `(_isWidescreen()?dpOpenEditTransfer:openEditTransfer)(${t.id})` : `(_isWidescreen()?dpOpenEdit:openEditTransaction)(${t.id})`}"></i>` :
+        (!t.isTransfer ? `<i class="bi bi-eye text-secondary" style="cursor:pointer;" title="查看" onclick="event.stopPropagation();(_isWidescreen()?dpOpenEdit:openEditTransaction)(${t.id})"></i>` : ''));
 
         const tr = document.createElement('tr');
         const tDescDisplay = t.items && t.items.length > 1
@@ -7136,6 +7911,7 @@ function renderAllTransactions() {
             <td><span class="badge bg-secondary">${t.ownerName}</span></td>
             <td><div class="text-center">${editBtns}</div></td>`;
         tbody.appendChild(tr);
+        _attachTableRowClick(tr, t);
     });
 
     if (mobileContainer) {
@@ -7232,6 +8008,12 @@ function renderAllTransactions() {
     } else {
         if (loadMoreContainer) loadMoreContainer.classList.add('d-none');
         if (mobileLoadMore) mobileLoadMore.classList.add('d-none');
+    }
+    // 宽屏：恢复选中行高亮
+    if (_dpCurrentId != null) {
+        $$('#transaction-table-body tr').forEach(r => {
+            r.classList.toggle('dp-selected', r.dataset.dpId == _dpCurrentId);
+        });
     }
 }
 
@@ -10326,7 +11108,8 @@ function logGoPage(p) { _logCurrentPage = p; renderLogPage(); }
 
 
 // ── 自定义账户下拉组件 ──
-const ACC_SELECT_IDS = ['edit-trans-account', 'edit-transfer-from', 'edit-transfer-to'];
+const ACC_SELECT_IDS = ['edit-trans-account', 'edit-transfer-from', 'edit-transfer-to',
+                        'dp-trans-account', 'dp-transfer-from', 'dp-transfer-to'];
 
 function accSelectSync(selectId) {
     const sel = $(selectId);
@@ -10339,6 +11122,7 @@ function accSelectSync(selectId) {
     if (textEl) textEl.textContent = text;
     else trigger.textContent = text;
     if (selectId === 'edit-trans-account') updateAmountCurrencySymbol();
+    if (selectId === 'dp-trans-account') _dpUpdateCurrencySymbol();
 }
 
 function accSelectBuild(selectId) {
@@ -10424,7 +11208,7 @@ function accSelectInit() {
         ACC_SELECT_IDS.forEach(id => accSelectClose(id));
     });
     // 表单内部滚动区滚动时同步下拉位置（v2 布局下真正滚动的是 .trans-scroll-area，不是 .modal-body）
-    document.querySelectorAll('#editTransactionModal .trans-scroll-area').forEach(el => {
+    document.querySelectorAll('#editTransactionModal .trans-scroll-area, #dp-panel .trans-scroll-area').forEach(el => {
         el.addEventListener('scroll', accSelectRepositionAll, { passive: true });
     });
 }
