@@ -286,8 +286,26 @@ body {
     z-index: 5000;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     flex-direction: column;
+    overflow-y: auto;
+    padding: 20px 0;
+}
+#login-overlay > .card {
+    margin: auto;
+    max-height: calc(100dvh - 40px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+#login-card-body {
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+}
+#login-settings-panel {
+    max-height: 55vh;
+    overflow-y: auto;
 }
 
 /* 统一通知 toast */
@@ -1273,15 +1291,15 @@ select.compact-form-control { height: 2.1rem; }
 
 
 
-    <div class="card shadow p-3 p-md-4" style="width: 480px; max-width: 95%;">
-
-        <!-- 标题栏 + 齿轮 -->
-        <div class="d-flex align-items-center justify-content-between mb-3">
+    <div class="card shadow p-0" style="width: 480px; max-width: 95%;">
+        <!-- 标题栏（固定在顶部，不随内容滚动） -->
+        <div class="d-flex align-items-center justify-content-between p-3 pb-0 mb-1">
             <h4 class="mb-0 text-primary"><i class="bi bi-wallet2"></i> 记一笔</h4>
             <button class="btn btn-sm btn-outline-secondary" onclick="toggleLoginSettings()" title="连接设置">
                 <i class="bi bi-gear" id="login-settings-gear"></i>
             </button>
         </div>
+        <div id="login-card-body" class="p-3 pt-2">
 
         <!-- 齿轮设置面板 -->
         <div id="login-settings-panel" style="display:none;" class="border rounded p-3 mb-3 bg-body-tertiary">
@@ -1418,6 +1436,7 @@ select.compact-form-control { height: 2.1rem; }
             <label class="form-label small text-muted fw-bold">选择用户</label>
             <div id="user-buttons" class="d-flex gap-2 flex-wrap"></div>
         </div>
+        </div><!-- end login-card-body -->
     </div>
     <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;pointer-events:none;">
         <span class="text-muted" style="font-size:0.7rem;">version 2.2.7</span>
@@ -2031,6 +2050,20 @@ select.compact-form-control { height: 2.1rem; }
                         </div>
                     </div>
                     </div><!-- end d-none d-md-block -->
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-transparent fw-bold">
+                            <i class="bi bi-pie-chart"></i> 消费类型功能
+                        </div>
+                        <div class="card-body d-flex flex-column justify-content-between">
+                            <p class="text-muted small mb-3">控制是否在新增/编辑交易窗口及统计页显示「必须的/想要的/后悔的」消费类型分析。</p>
+                            <button id="spending-type-toggle-btn" class="btn btn-sm btn-outline-primary w-100" onclick="toggleSpendingTypeVisibility()">
+                                <i class="bi bi-eye"></i> 消费类型（显示中）
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="col-12">
@@ -3433,7 +3466,7 @@ function onDataLoaded() {
  * 新建数据文件
  */
 function createNewDataFile() {
-    const usersInput = prompt('输入用户名（多个用英文逗号分隔）：', 'abc,def');
+    const usersInput = prompt('输入用户名（多个用英文逗号分隔）：', 'A,B');
     if (!usersInput) return;
 
     const users = usersInput.split(',').map(u => u.trim()).filter(u => u.length > 0);
@@ -3445,8 +3478,17 @@ function createNewDataFile() {
     if (pwd !== pwdConfirm) { alert('两次密码不一致，请重试'); return; }
 
     const allUserData = {};
-    users.forEach(u => {
-        allUserData[u] = { accounts: [], transactions: [], plannedTransactions: [] };
+    users.forEach((u, idx) => {
+        // 为每个用户预设现金和银行卡账户
+        const baseId = (idx + 1) * 100;
+        allUserData[u] = {
+            accounts: [
+                { id: baseId + 1, name: '现金', currency: 'CNY', balance: 0, ownerName: u, sortOrder: 0 },
+                { id: baseId + 2, name: '银行卡', currency: 'CNY', balance: 0, ownerName: u, sortOrder: 1 },
+            ],
+            transactions: [],
+            plannedTransactions: []
+        };
     });
 
     inMemoryLoadedData = {
@@ -4027,6 +4069,9 @@ function initAppUI() {
     renderStats();
 
     renderExchangeRateSettings();
+    // 应用消费类型全局显示/隐藏设置
+    applySpendingTypeVisibility();
+    updateSpendingTypeToggleBtn();
 }
 
 function loadAllData() {
@@ -6012,9 +6057,46 @@ function resetSpendingType() {
 }
 
 function showSpendingTypeRow(show) {
-    // 消费类型折叠区随支出/收入 tab 显示或隐藏
+    // 消费类型折叠区随支出/收入 tab 显示或隐藏（若全局隐藏则始终隐藏）
+    if (getSpendingTypeHidden()) show = false;
     const wrap = $('spending-type-collapse-wrap');
     if (wrap) wrap.style.display = show ? '' : 'none';
+}
+
+function getSpendingTypeHidden() {
+    try { return localStorage.getItem('APP_hide_spending_type') === '1'; } catch(_) { return false; }
+}
+
+function toggleSpendingTypeVisibility() {
+    const hidden = getSpendingTypeHidden();
+    try { localStorage.setItem('APP_hide_spending_type', hidden ? '0' : '1'); } catch(_) {}
+    applySpendingTypeVisibility();
+    updateSpendingTypeToggleBtn();
+}
+
+function applySpendingTypeVisibility() {
+    const hidden = getSpendingTypeHidden();
+    // 新增/编辑窗口：消费类型折叠区
+    showSpendingTypeRow(!hidden); // showSpendingTypeRow already checks the flag
+    // 统计页 Tab
+    const tab = $('stats-tab-spending');
+    if (tab) tab.style.display = hidden ? 'none' : '';
+    // 若当前正停在消费类型子页，切回概览
+    if (hidden && $('stats-pane-spending')?.classList.contains('active')) {
+        switchStatsTab('overview');
+    }
+}
+
+function updateSpendingTypeToggleBtn() {
+    const btn = $('spending-type-toggle-btn');
+    if (!btn) return;
+    const hidden = getSpendingTypeHidden();
+    btn.innerHTML = hidden
+        ? '<i class="bi bi-eye-slash"></i> 消费类型（已隐藏）'
+        : '<i class="bi bi-eye"></i> 消费类型（显示中）';
+    btn.className = hidden
+        ? 'btn btn-sm btn-outline-secondary w-100'
+        : 'btn btn-sm btn-outline-primary w-100';
 }
 
 // ── 折叠字段展开/收起 ──
@@ -8979,21 +9061,41 @@ function removeCategory(type, cat) {
 
 // ── 分类图标选择器 ───────────────────────────────────────────
 const ICON_PICKER_LIST = [
-    'bi-cup-hot-fill','bi-egg-fried','bi-cart-fill','bi-bag-fill','bi-bus-front-fill','bi-car-front-fill',
-    'bi-airplane-fill','bi-train-front-fill','bi-house-door-fill','bi-building','bi-lightning-charge-fill','bi-droplet-fill',
-    'bi-controller','bi-film','bi-music-note-beamed','bi-dice-5-fill','bi-heart-pulse-fill','bi-capsule',
-    'bi-mortarboard-fill','bi-book-fill','bi-phone-fill','bi-wifi','bi-handbag-fill','bi-gem',
-    'bi-laptop','bi-camera-fill','bi-emoji-smile-fill','bi-gift-fill','bi-bicycle','bi-trophy-fill',
-    'bi-stars','bi-scissors','bi-shield-check','bi-graph-up-arrow','bi-cash-coin','bi-briefcase-fill',
-    'bi-piggy-bank-fill','bi-wallet2','bi-credit-card-fill','bi-receipt','bi-arrow-counterclockwise','bi-tools',
-    'bi-tree-fill','bi-cup-straw','bi-basket-fill','bi-umbrella-fill','bi-balloon-fill','bi-three-dots',
-    'bi-cup-fill','bi-flower1','bi-basket2-fill','bi-moon-stars-fill','bi-people-fill',
-    'bi-p-circle-fill','bi-fuel-pump-fill','bi-hammer','bi-house-gear-fill','bi-plug-fill','bi-ticket-perforated-fill',
-    'bi-mic-fill','bi-collection-play-fill','bi-patch-check-fill','bi-clipboard2-pulse-fill','bi-person-arms-up','bi-water',
-    'bi-easel2-fill','bi-pencil-square','bi-pencil-fill','bi-droplet-half','bi-heart-fill','bi-receipt-cutoff',
-    'bi-exclamation-octagon-fill','bi-box-seam-fill','bi-bank','bi-question-circle','bi-sliders','bi-tag-fill',
-    'bi-flower2','bi-basket3-fill','bi-droplet','bi-bag-check-fill',
-    'bi-bag-dash-fill','bi-bandaid-fill','bi-emoji-laughing-fill','bi-person-fill','bi-envelope-fill'
+    // 餐饮食物
+    'bi-cup-hot-fill','bi-cup-hot','bi-cup-straw','bi-cup-fill','bi-egg-fried','bi-egg','bi-egg-fill',
+    'bi-fork-knife','bi-fork-knife-fill','bi-basket-fill','bi-basket2-fill','bi-basket3-fill','bi-cart-fill','bi-cart','bi-bag-fill','bi-bag',
+    // 交通出行
+    'bi-bus-front-fill','bi-car-front-fill','bi-airplane-fill','bi-airplane','bi-train-front-fill','bi-train-front',
+    'bi-bicycle','bi-scooter','bi-ev-front-fill','bi-fuel-pump-fill','bi-truck-front-fill',
+    'bi-boat','bi-globe-americas','bi-luggage-fill','bi-luggage',
+    // 家居生活
+    'bi-house-door-fill','bi-house-fill','bi-house','bi-house-gear-fill','bi-building','bi-bucket-fill','bi-bucket',
+    'bi-droplet-fill','bi-droplet','bi-droplet-half','bi-water','bi-plug-fill','bi-lightning-charge-fill','bi-lightning-fill',
+    'bi-trash-fill','bi-trash','bi-tools','bi-hammer','bi-scissors',
+    // 购物消费
+    'bi-wallet2','bi-wallet-fill','bi-cash-coin','bi-credit-card-fill','bi-receipt','bi-receipt-cutoff','bi-piggy-bank-fill',
+    'bi-tag-fill','bi-handbag-fill','bi-gem','bi-box-seam-fill','bi-box','bi-gift-fill','bi-gift',
+    // 健康医疗
+    'bi-heart-pulse-fill','bi-capsule','bi-bandaid-fill','bi-bandaid','bi-thermometer-half','bi-activity',
+    'bi-clipboard2-pulse-fill','bi-hospital','bi-hospital-fill',
+    // 娱乐休闲
+    'bi-controller','bi-controller-fill','bi-film','bi-music-note-beamed','bi-dice-5-fill','bi-balloon-fill','bi-balloon',
+    'bi-collection-play-fill','bi-tv-fill','bi-tv','bi-camera-fill','bi-trophy-fill','bi-bicycle',
+    // 教育学习
+    'bi-mortarboard-fill','bi-book-fill','bi-pencil-square','bi-pencil-fill','bi-easel2-fill',
+    'bi-laptop','bi-phone-fill','bi-wifi','bi-patch-check-fill',
+    // 人物社交
+    'bi-person-fill','bi-people-fill','bi-people','bi-person-arms-up','bi-hearts','bi-heart-fill',
+    'bi-emoji-smile-fill','bi-emoji-laughing-fill','bi-emoji-heart-eyes-fill',
+    // 自然植物
+    'bi-tree-fill','bi-flower1','bi-flower2','bi-flower3','bi-sun-fill','bi-moon-stars-fill',
+    'bi-cloud-fill','bi-rainbow','bi-snow','bi-wind',
+    // 财务金融
+    'bi-bank','bi-graph-up-arrow','bi-graph-down-arrow','bi-bar-chart-fill','bi-briefcase-fill','bi-archive-fill',
+    // 特殊/其他
+    'bi-key-fill','bi-key','bi-shield-check','bi-lock-fill','bi-stars','bi-lightning-charge',
+    'bi-cake2-fill','bi-cake-fill','bi-mic-fill','bi-envelope-fill','bi-telephone-fill','bi-telephone',
+    'bi-three-dots','bi-question-circle','bi-exclamation-octagon-fill','bi-sliders','bi-p-circle-fill','bi-ticket-perforated-fill',
 ];
 const ICON_PICKER_COLORS = ['#fd7e14','#dc3545','#d63384','#6610f2','#0d6efd','#0dcaf0','#198754','#6c757d'];
 
