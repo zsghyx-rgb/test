@@ -10443,7 +10443,7 @@ function _escHtml(s) {
 // ── 版本切换 ──
 const VERSION_PREF_KEY = 'jiyi_ui_version'; // 'new' | 'legacy'
 
-// 页面加载时：若用户上次选了旧版，自动跳转
+// 页面加载时：若用户上次选了旧版，自动跳转回旧版
 (function checkVersionPref() {
     if (localStorage.getItem(VERSION_PREF_KEY) === 'legacy') {
         window.location.replace('index.html');
