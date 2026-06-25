@@ -1,7 +1,7 @@
 <!DOCTYPE html><html lang="zh-CN" data-bs-theme="dark"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>记一笔 v2.2.10</title>
+    <title>记一笔 v2.2.7</title>
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0d6efd">
@@ -1439,7 +1439,7 @@ select.compact-form-control { height: 2.1rem; }
         </div><!-- end login-card-body -->
     </div>
     <div style="text-align:center;padding:8px 0 4px;pointer-events:none;">
-        <span class="text-muted" style="font-size:0.7rem;">version 2.2.10</span>
+        <span class="text-muted" style="font-size:0.7rem;">version 2.2.9</span>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
@@ -7727,7 +7727,11 @@ const orphanTrans = transactions.filter(t =>
     !allValidCats.has(t.category)
 );
     // 去重：同一个孤立分类只提示一次，让用户选择新分类
-    });
+    const orphanGroups = orphanTrans.reduce((acc, t) => {
+        if (!acc[t.category]) acc[t.category] = [];
+        acc[t.category].push(t);
+        return acc;
+    }, {});
     Object.entries(orphanGroups).forEach(([orphanCat, txList]) => {
         suspects.push({ isOrphan: true, orphanCat, txList, t: txList[0], suggested: null });
     });
