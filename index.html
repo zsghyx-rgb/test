@@ -1438,7 +1438,7 @@ select.compact-form-control { height: 2.1rem; }
         </div>
         </div><!-- end login-card-body -->
     </div>
-    <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;pointer-events:none;">
+    <div style="text-align:center;padding:8px 0 4px;pointer-events:none;">
         <span class="text-muted" style="font-size:0.7rem;">version 2.2.8</span>
     </div>
 </div>
@@ -7167,7 +7167,6 @@ function initMobileSwipeGestures(card, transactionId) {
     });
 }
 
-function getTxnBadge(t) {
 function getTxnBadge(t) {
     if (historyMode) return ''; // 历史模式不显示新数据/已更新标签
     try {
