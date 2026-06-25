@@ -1439,7 +1439,7 @@ select.compact-form-control { height: 2.1rem; }
         </div><!-- end login-card-body -->
     </div>
     <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;pointer-events:none;">
-        <span class="text-muted" style="font-size:0.7rem;">version 2.2.7</span>
+        <span class="text-muted" style="font-size:0.7rem;">version 2.2.8</span>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
@@ -1502,11 +1502,8 @@ select.compact-form-control { height: 2.1rem; }
         </div>
 
     <div class="main-content">
-        <!-- 历史模式横幅 -->
-        <div id="history-mode-banner" class="d-none alert alert-warning mb-0 py-2 px-3 d-flex align-items-center justify-content-between flex-shrink-0" style="border-radius:0;border-left:none;border-right:none;border-top:none;z-index:10;">
-            <span><i class="bi bi-archive-fill me-1"></i>历史模式：<strong id="history-year-label"></strong> 年（只读）</span>
-            <button class="btn btn-sm btn-outline-secondary py-0" onclick="exitHistoryMode()"><i class="bi bi-x-lg"></i> 退出</button>
-        </div>
+        <!-- 历史模式横幅（已移入交易页标题行） -->
+        <div id="history-mode-banner" class="d-none" style="display:none!important;"></div>
         <div id="view-accounts" class="view-section">
             <div class="page-sticky-header d-flex justify-content-between align-items-center pt-1">
                 <h4 class="mb-0">我的资产</h4>
@@ -1590,7 +1587,14 @@ select.compact-form-control { height: 2.1rem; }
             <div class="page-sticky-header pt-1">
                 <!-- 标题行：标题 + 搜索 + 筛选 + 新增 -->
                 <div class="d-flex align-items-center gap-2 mb-1">
-                    <h4 class="mb-0 flex-grow-1">交易管理</h4>
+                    <h4 class="mb-0 flex-grow-1" id="trans-page-title">交易管理</h4>
+                    <!-- 历史模式内联提示（不遮挡筛选按钮） -->
+                    <span id="history-mode-inline" class="d-none badge bg-warning text-dark small align-self-center" style="font-size:0.72rem;white-space:nowrap;">
+                        <i class="bi bi-archive-fill"></i> <span id="history-year-label"></span> 年
+                    </span>
+                    <button id="history-exit-inline-btn" class="d-none btn btn-sm btn-outline-secondary py-0" onclick="exitHistoryMode()" title="退出历史模式">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
                     <button class="btn btn-sm btn-outline-secondary" id="trans-filter-btn" onclick="toggleTransFilter()" title="搜索与筛选">
                         <i class="bi bi-sliders"></i>
                     </button>
@@ -3922,11 +3926,13 @@ async function loadHistoryYear(year) {
         if (ssd) { ssd.value = yStart; ssd.min = yStart; ssd.max = yEnd; currentStatsFilter.startDate = yStart; }
         if (sed) { sed.value = yEnd;   sed.min = yStart; sed.max = yEnd; currentStatsFilter.endDate   = yEnd; }
         applyTransactionFilter();
-        // 显示历史模式横幅
-        const banner = $('history-mode-banner');
-        if (banner) { banner.classList.remove('d-none'); $('history-year-label').textContent = year; }
-        // 隐藏快速日期筛选按钮组
-        ['quick-date-filter-group', 'trans-custom-toggle', 'trans-filter-btn',
+        // 显示历史模式内联提示
+        const inlineBadge = $('history-mode-inline');
+        const exitBtn     = $('history-exit-inline-btn');
+        if (inlineBadge) { inlineBadge.classList.remove('d-none'); $('history-year-label').textContent = year; }
+        if (exitBtn)       exitBtn.classList.remove('d-none');
+        // 隐藏快速日期筛选按钮组（保留 trans-filter-btn 和 stats-filter-btn，不再遮挡）
+        ['quick-date-filter-group', 'trans-custom-toggle',
          'quick-stats-filter-group-1', 'stats-month-nav', 'stats-custom-toggle', 'stats-filter-btn']
             .forEach(id => { const el = $(id); if (el) el.style.display = 'none'; });
         // 隐藏账户导航按钮
@@ -3957,8 +3963,11 @@ function exitHistoryMode() {
     historyMode = false;
     historyYear = null;
 
-    const banner = $('history-mode-banner');
-    if (banner) banner.classList.add('d-none');
+    // 隐藏内联历史模式提示
+    const inlineBadge = $('history-mode-inline');
+    const exitBtn     = $('history-exit-inline-btn');
+    if (inlineBadge) inlineBadge.classList.add('d-none');
+    if (exitBtn)     exitBtn.classList.add('d-none');
 
     // 解除日期 min/max 限制
     ['filter-start-date', 'filter-end-date', 'stats-start-date', 'stats-end-date'].forEach(id => {
@@ -3988,8 +3997,8 @@ function exitHistoryMode() {
     // 恢复账户导航按钮
     const navAccounts = $('nav-btn-accounts');
     if (navAccounts) navAccounts.style.display = '';
-    // 恢复快速日期筛选按钮组
-    ['quick-date-filter-group', 'trans-custom-toggle', 'trans-filter-btn',
+    // 恢复快速日期筛选按钮组（trans-filter-btn 历史模式也保持显示，无需恢复）
+    ['quick-date-filter-group', 'trans-custom-toggle',
      'quick-stats-filter-group-1', 'stats-month-nav', 'stats-custom-toggle', 'stats-filter-btn']
         .forEach(id => { const el = $(id); if (el) el.style.display = ''; });
     filterUserData();
@@ -7159,6 +7168,8 @@ function initMobileSwipeGestures(card, transactionId) {
 }
 
 function getTxnBadge(t) {
+function getTxnBadge(t) {
+    if (historyMode) return ''; // 历史模式不显示新数据/已更新标签
     try {
         const raw = sessionStorage.getItem('knownTxnMap_' + currentUserName);
         if (!raw) return '';
@@ -8061,6 +8072,14 @@ function showChartDrawer(title, txList) {
                 }
 
                 tr.addEventListener('click', () => {
+                    // 记住当前抽屉状态，编辑框关闭后重新打开
+                    const savedTitle = titleEl.textContent;
+                    const savedTxList = txList;
+                    const reopenDrawer = () => showChartDrawer(savedTitle, savedTxList);
+                    const modalEl = $('editTransactionModal') || $('editTransferModal');
+                    if (modalEl) {
+                        modalEl.addEventListener('hidden.bs.modal', reopenDrawer, { once: true });
+                    }
                     closeChartDrawer();
                     setTimeout(() => {
                         if (t.isTransfer) openEditTransfer(t.id);
@@ -8112,6 +8131,13 @@ function showChartDrawer(title, txList) {
                 }
 
                 card.addEventListener('click', () => {
+                    const savedTitle = titleEl.textContent;
+                    const savedTxList = txList;
+                    const reopenDrawer = () => showChartDrawer(savedTitle, savedTxList);
+                    const modalEl = $('editTransactionModal') || $('editTransferModal');
+                    if (modalEl) {
+                        modalEl.addEventListener('hidden.bs.modal', reopenDrawer, { once: true });
+                    }
                     closeChartDrawer();
                     setTimeout(() => {
                         if (t.isTransfer) openEditTransfer(t.id);
