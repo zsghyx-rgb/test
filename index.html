@@ -2020,17 +2020,14 @@ select.compact-form-control { height: 2.1rem; }
                 </div>
 
                 <div class="col-12">
-                    <!-- 手机端显示提示，桌面端显示完整管理 -->
-                    <div class="card shadow-sm d-md-none">
-                        <div class="card-body py-3 text-center text-muted small">
-                            <i class="bi bi-laptop me-1"></i> 类别管理及账户排序请在电脑端操作
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-transparent fw-bold">类别管理
+                            <span class="text-muted fw-normal small d-none d-md-inline">（可拖拽排序）</span>
+                            <span class="text-muted fw-normal small d-inline d-md-none">（点击名称改名，点击 × 删除）</span>
                         </div>
-                    </div>
-                    <div class="card shadow-sm d-none d-md-block">
-                        <div class="card-header bg-transparent fw-bold">类别管理 (可拖拽排序)</div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6 mb-3 mb-md-0">
                                     <h6 class="text-danger border-bottom pb-2">支出类别</h6>
                                     <div id="expense-cat-container" class="d-flex flex-wrap gap-2 mb-3 p-2 rounded" style="background-color: var(--bs-tertiary-bg);" ondragover="allowDrop(event)" ondrop="dropCategory(event, 'expense')"></div>
                                     <form onsubmit="addCategory(event, 'expense')" class="input-group input-group-sm">
@@ -2038,7 +2035,7 @@ select.compact-form-control { height: 2.1rem; }
                                         <button class="btn btn-outline-danger" type="submit">添加</button>
                                     </form>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6">
                                     <h6 class="text-success border-bottom pb-2">收入类别</h6>
                                     <div id="income-cat-container" class="d-flex flex-wrap gap-2 mb-3 p-2 rounded" style="background-color: var(--bs-tertiary-bg);" ondragover="allowDrop(event)" ondrop="dropCategory(event, 'income')"></div>
                                     <form onsubmit="addCategory(event, 'income')" class="input-group input-group-sm">
@@ -2049,7 +2046,6 @@ select.compact-form-control { height: 2.1rem; }
                             </div>
                         </div>
                     </div>
-                    </div><!-- end d-none d-md-block -->
                 </div>
 
                 <div class="col-12 col-md-6">
@@ -2530,7 +2526,11 @@ select.compact-form-control { height: 2.1rem; }
                                 </div>
                                 <div class="acc-select-dropdown" id="dropdown-edit-transfer-from"></div>
                             </div>
-                            <div class="transfer-flow-arrow"><i class="bi bi-arrow-right-circle-fill"></i></div>
+                            <div class="transfer-flow-arrow">
+                                <button type="button" id="transfer-swap-btn" onclick="swapTransferAccounts()" title="互换账户" style="background:none;border:none;padding:4px;cursor:pointer;color:var(--bs-primary);display:flex;align-items:center;justify-content:center;border-radius:50%;transition:background 0.15s,transform 0.25s;">
+                                    <i class="bi bi-arrow-left-right" style="font-size:1.3rem;"></i>
+                                </button>
+                            </div>
                             <div class="acc-select-wrapper transfer-acc-card" id="wrap-edit-transfer-to">
                                 <select class="form-select" id="edit-transfer-to" onchange="handleEditTransferAmountChange()" required="" style="display:none;"></select>
                                 <div class="acc-select-trigger transfer-acc-trigger" id="trigger-edit-transfer-to">
@@ -3480,11 +3480,11 @@ function createNewDataFile() {
     const allUserData = {};
     users.forEach((u, idx) => {
         // 为每个用户预设现金和银行卡账户
-        const baseId = (idx + 1) * 100;
+        const now = Date.now();
         allUserData[u] = {
             accounts: [
-                { id: baseId + 1, name: '现金', currency: 'CNY', balance: 0, ownerName: u, sortOrder: 0 },
-                { id: baseId + 2, name: '银行卡', currency: 'CNY', balance: 0, ownerName: u, sortOrder: 1 },
+                { id: now + idx * 2,     name: '现金',  accountType: 'Asset', currency: 'RMB', initialBalance: 0, notes: '', ownerName: u, updatedAt: now + idx * 2 },
+                { id: now + idx * 2 + 1, name: '银行卡', accountType: 'Asset', currency: 'RMB', initialBalance: 0, notes: '', ownerName: u, updatedAt: now + idx * 2 + 1 },
             ],
             transactions: [],
             plannedTransactions: []
@@ -6124,6 +6124,31 @@ function expandTransferDesc() {
     if (btnEl) btnEl.style.display = 'none';
     const inp = $('edit-transfer-desc');
     if (inp) setTimeout(() => inp.focus(), 50);
+}
+
+function swapTransferAccounts() {
+    const fromSel = $('edit-transfer-from');
+    const toSel   = $('edit-transfer-to');
+    if (!fromSel || !toSel) return;
+    const fromVal = fromSel.value;
+    const toVal   = toSel.value;
+    fromSel.value = toVal;
+    toSel.value   = fromVal;
+    fromSel.dispatchEvent(new Event('change', { bubbles: true }));
+    toSel.dispatchEvent(new Event('change', { bubbles: true }));
+    accSelectSync('edit-transfer-from');
+    accSelectSync('edit-transfer-to');
+    // 旋转动画
+    const btn = $('transfer-swap-btn');
+    if (btn) {
+        btn.style.transform = 'rotate(180deg)';
+        btn.style.background = 'rgba(var(--bs-primary-rgb),0.12)';
+        setTimeout(() => {
+            btn.style.transform = '';
+            btn.style.background = '';
+        }, 300);
+    }
+    handleEditTransferAmountChange();
 }
 
 // 折叠所有 meta 字段（新增/切换 tab 时调用）
@@ -8996,6 +9021,7 @@ function setExchangeRate(from, to, rate) {
 }
 
 function renderCategorySettings() {
+    const isMobile = window.innerWidth <= 768;
     const render = (type, id) => {
         const div = $(id);
         if (!div) return;
@@ -9005,29 +9031,48 @@ function renderCategorySettings() {
             const el = document.createElement('span');
             const meta = getCatIcon(cat);
             el.className = 'badge bg-white text-dark border draggable-badge p-2 me-2 mb-2 d-inline-flex align-items-center';
-            el.innerHTML = `<span class="cat-icon-mini" style="--cat-color:${meta.color};--cat-color-rgb:${_hexToRgbStr(meta.color)};" onclick="openIconPicker('${type}','${cat}')" title="设置图标"><i class="bi ${meta.icon}"></i></span>` +
-                `<span class="cat-text" style="cursor:pointer;" title="点击修改名称" onclick="editCategoryName('${type}', '${cat}')">${cat}</span> <i class="bi bi-x text-danger ms-1" style="cursor:pointer;" onclick="removeCategory('${type}','${cat}')"></i>`;
-            el.draggable = true; el.dataset.idx = idx; el.dataset.type = type;
-            el.addEventListener('dragstart', function() { window.dragCatIdx = idx; window.dragCatType = type; this.classList.add('dragging'); });
-            el.addEventListener('dragend', function() { this.classList.remove('dragging'); });
-            el.addEventListener('dragover', e => e.preventDefault());
-            el.addEventListener('drop', (e) => {
-                e.preventDefault();
-                if (window.dragCatType !== type) return;
-                const badge = e.target.closest('.draggable-badge');
-                if (!badge) return;
-                const targetIdx = parseInt(badge.dataset.idx);
-                const list = categories[type];
-                const [moved] = list.splice(window.dragCatIdx, 1);
-                list.splice(targetIdx, 0, moved);
-                saveUserData(); triggerAutoSave(); renderCategorySettings();
-            });
+            // 手机端：加上移/下移按钮；桌面端：可拖拽排序
+            const mobileOrderBtns = isMobile
+                ? `<i class="bi bi-chevron-up text-secondary ms-1" style="cursor:pointer;font-size:0.75rem;" title="上移" onclick="moveCategoryOrder('${type}',${idx},-1)"></i>` +
+                  `<i class="bi bi-chevron-down text-secondary ms-1" style="cursor:pointer;font-size:0.75rem;" title="下移" onclick="moveCategoryOrder('${type}',${idx},1)"></i>`
+                : '';
+            el.innerHTML =
+                `<span class="cat-icon-mini" style="--cat-color:${meta.color};--cat-color-rgb:${_hexToRgbStr(meta.color)};" onclick="openIconPicker('${type}','${cat}')" title="设置图标"><i class="bi ${meta.icon}"></i></span>` +
+                `<span class="cat-text" style="cursor:pointer;" title="点击修改名称" onclick="editCategoryName('${type}', '${cat}')">${cat}</span>` +
+                mobileOrderBtns +
+                `<i class="bi bi-x text-danger ms-1" style="cursor:pointer;" onclick="removeCategory('${type}','${cat}')"></i>`;
+            el.draggable = !isMobile; el.dataset.idx = idx; el.dataset.type = type;
+            if (!isMobile) {
+                el.addEventListener('dragstart', function() { window.dragCatIdx = idx; window.dragCatType = type; this.classList.add('dragging'); });
+                el.addEventListener('dragend', function() { this.classList.remove('dragging'); });
+                el.addEventListener('dragover', e => e.preventDefault());
+                el.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    if (window.dragCatType !== type) return;
+                    const badge = e.target.closest('.draggable-badge');
+                    if (!badge) return;
+                    const targetIdx = parseInt(badge.dataset.idx);
+                    const list = categories[type];
+                    const [moved] = list.splice(window.dragCatIdx, 1);
+                    list.splice(targetIdx, 0, moved);
+                    saveUserData(); triggerAutoSave(); renderCategorySettings();
+                });
+            }
             div.appendChild(el);
         });
     };
     render('expense', 'expense-cat-container');
     render('income', 'income-cat-container');
     updateSelectOptions();
+}
+
+function moveCategoryOrder(type, idx, dir) {
+    const list = categories[type];
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= list.length) return;
+    const [moved] = list.splice(idx, 1);
+    list.splice(newIdx, 0, moved);
+    saveUserData(); triggerAutoSave(); renderCategorySettings();
 }
 
 function allowDrop(e) { e.preventDefault(); }
