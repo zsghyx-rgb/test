@@ -1439,7 +1439,7 @@ select.compact-form-control { height: 2.1rem; }
         </div><!-- end login-card-body -->
     </div>
     <div style="text-align:center;padding:8px 0 4px;pointer-events:none;">
-        <span class="text-muted" style="font-size:0.7rem;">version 2.2.8</span>
+        <span class="text-muted" style="font-size:0.7rem;">version 2.2.9</span>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
@@ -2025,29 +2025,14 @@ select.compact-form-control { height: 2.1rem; }
 
                 <div class="col-12">
                     <div class="card shadow-sm">
-                        <div class="card-header bg-transparent fw-bold">类别管理
-                            <span class="text-muted fw-normal small d-none d-md-inline">（可拖拽排序）</span>
-                            <span class="text-muted fw-normal small d-inline d-md-none">（点击名称改名，点击 × 删除）</span>
+                        <div class="card-header bg-transparent fw-bold">
+                            <i class="bi bi-tags"></i> 类别管理
                         </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-12 col-md-6 mb-3 mb-md-0">
-                                    <h6 class="text-danger border-bottom pb-2">支出类别</h6>
-                                    <div id="expense-cat-container" class="d-flex flex-wrap gap-2 mb-3 p-2 rounded" style="background-color: var(--bs-tertiary-bg);" ondragover="allowDrop(event)" ondrop="dropCategory(event, 'expense')"></div>
-                                    <form onsubmit="addCategory(event, 'expense')" class="input-group input-group-sm">
-                                        <input type="text" class="form-control" id="new-expense-cat" placeholder="新类别名" required="">
-                                        <button class="btn btn-outline-danger" type="submit">添加</button>
-                                    </form>
-                                </div>
-                                <div class="col-12 col-md-6">
-                                    <h6 class="text-success border-bottom pb-2">收入类别</h6>
-                                    <div id="income-cat-container" class="d-flex flex-wrap gap-2 mb-3 p-2 rounded" style="background-color: var(--bs-tertiary-bg);" ondragover="allowDrop(event)" ondrop="dropCategory(event, 'income')"></div>
-                                    <form onsubmit="addCategory(event, 'income')" class="input-group input-group-sm">
-                                        <input type="text" class="form-control" id="new-income-cat" placeholder="新类别名" required="">
-                                        <button class="btn btn-outline-success" type="submit">添加</button>
-                                    </form>
-                                </div>
-                            </div>
+                        <div class="card-body py-2">
+                            <p class="text-muted small mb-2">管理支出和收入的分类，支持添加、删除、重命名及排序。</p>
+                            <button class="btn btn-outline-primary btn-sm" onclick="openCategoryManageModal()">
+                                <i class="bi bi-pencil-square me-1"></i>管理类别
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -2344,6 +2329,50 @@ select.compact-form-control { height: 2.1rem; }
 </div>
 
 <!-- 编辑/新增交易 -->
+<div class="modal fade" id="categoryManageModal" tabindex="-1" aria-labelledby="categoryManageModalTitle">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="categoryManageModalTitle"><i class="bi bi-tags me-1"></i>类别管理</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <!-- 支出类别 -->
+                    <div class="col-12 col-md-6">
+                        <h6 class="text-danger border-bottom pb-2 d-flex align-items-center">
+                            <i class="bi bi-arrow-down-circle-fill me-1"></i>支出类别
+                            <span class="text-muted fw-normal small ms-2 d-none d-md-inline">（可拖拽排序）</span>
+                        </h6>
+                        <div id="expense-cat-container" class="mb-3 p-2 rounded" style="background-color:var(--bs-tertiary-bg);min-height:48px;"
+                             ondragover="allowDrop(event)" ondrop="dropCategory(event,'expense')"></div>
+                        <form onsubmit="addCategory(event,'expense')" class="input-group input-group-sm">
+                            <input type="text" class="form-control" id="new-expense-cat" placeholder="新支出类别名" required="">
+                            <button class="btn btn-outline-danger" type="submit"><i class="bi bi-plus-lg"></i> 添加</button>
+                        </form>
+                    </div>
+                    <!-- 收入类别 -->
+                    <div class="col-12 col-md-6">
+                        <h6 class="text-success border-bottom pb-2 d-flex align-items-center">
+                            <i class="bi bi-arrow-up-circle-fill me-1"></i>收入类别
+                            <span class="text-muted fw-normal small ms-2 d-none d-md-inline">（可拖拽排序）</span>
+                        </h6>
+                        <div id="income-cat-container" class="mb-3 p-2 rounded" style="background-color:var(--bs-tertiary-bg);min-height:48px;"
+                             ondragover="allowDrop(event)" ondrop="dropCategory(event,'income')"></div>
+                        <form onsubmit="addCategory(event,'income')" class="input-group input-group-sm">
+                            <input type="text" class="form-control" id="new-income-cat" placeholder="新收入类别名" required="">
+                            <button class="btn btn-outline-success" type="submit"><i class="bi bi-plus-lg"></i> 添加</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="editTransactionModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content trans-modal-v2">
@@ -7423,26 +7452,46 @@ function findBestCategoryFromHistory(desc, type) {
 /**
  * 更新备注输入框下方的提示气泡
  */
+
+
 function updateDescHint(descId, hintId, typeId, catId, accId) {
     const desc = $(descId)?.value || '';
     const type = $(typeId)?.value || 'expense';
     const hint = $(hintId);
     if (!hint) return;
+    // 收入不推荐分类
+    if (type === 'income') { hint.style.display = 'none'; return; }
     if (desc.trim().length < 2) { hint.style.display = 'none'; return; }
-    // 多笔模式下不推荐分类（一备注对多分类，推荐无意义）
+    // 多笔模式下不推荐分类
     if (_inSplitMode) { hint.style.display = 'none'; return; }
 
     const result = findBestCategoryFromHistory(desc, type);
     if (!result) { hint.style.display = 'none'; return; }
 
+    // 若推测分类与当前分类已匹配，不显示
+    const currentCat = $(catId)?.value || '';
+    if (currentCat === result.category) { hint.style.display = 'none'; return; }
+
     hint.style.display = 'flex';
+    hint.style.padding = '5px 12px';
+    hint.style.fontSize = '0.82rem';
     hint.innerHTML =
         `<span style="flex:1;">💡 <b>${result.category}</b>` +
-        ` <span style="color:var(--bs-secondary);font-size:0.72rem;">(${result.count}次)</span></span>` +
-        `<button type="button" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size:0.73rem;"` +
-        ` onclick="applyDescHint('${catId}','${result.category}')">应用</button>`;
+        ` <span style="color:var(--bs-secondary);font-size:0.75rem;">(${result.count}次)</span></span>` +
+        `<button type="button" class="btn btn-sm btn-outline-primary py-1 px-3" style="font-size:0.78rem;min-width:64px;"` +
+        ` onclick="applyDescHint('${catId}','${result.category}','${hintId}')">应用</button>`;
 }
 
+function applyDescHint(catId, category, hintId) {
+    const catEl = $(catId);
+    if (!catEl) return;
+    catEl.value = category;
+    // 同步 catGrid 视觉状态
+    const gridId = 'cat-grid-' + catId;
+    catGridSync(catId, gridId);
+    // 应用后隐藏提示
+    if (hintId) { const h = $(hintId); if (h) h.style.display = 'none'; }
+}
 
 function getDriveAttachmentUrl(fileId) {
     // 使用 Google Drive 直接预览链接
@@ -7668,10 +7717,6 @@ const orphanTrans = transactions.filter(t =>
     !allValidCats.has(t.category)
 );
     // 去重：同一个孤立分类只提示一次，让用户选择新分类
-    const orphanGroups = {};
-    orphanTrans.forEach(t => {
-        if (!orphanGroups[t.category]) orphanGroups[t.category] = [];
-        orphanGroups[t.category].push(t);
     });
     Object.entries(orphanGroups).forEach(([orphanCat, txList]) => {
         suspects.push({ isOrphan: true, orphanCat, txList, t: txList[0], suggested: null });
@@ -9045,33 +9090,43 @@ function setExchangeRate(from, to, rate) {
     if (verboseToast) showToast('汇率已更新', 'success');
 }
 
+function openCategoryManageModal() {
+    renderCategorySettings();
+    new bootstrap.Modal($('categoryManageModal')).show();
+}
+
 function renderCategorySettings() {
     const isMobile = window.innerWidth <= 768;
-    const render = (type, id) => {
-        const div = $(id);
+    const render = (type, containerId) => {
+        const div = $(containerId);
         if (!div) return;
         div.innerHTML = '';
         if (!categories[type]) return;
         categories[type].forEach((cat, idx) => {
-            const el = document.createElement('span');
             const meta = getCatIcon(cat);
-            el.className = 'badge bg-white text-dark border draggable-badge p-2 me-2 mb-2 d-inline-flex align-items-center';
-            // 手机端：加上移/下移按钮；桌面端：可拖拽排序
-            const mobileOrderBtns = isMobile
-                ? `<i class="bi bi-chevron-up text-secondary ms-1" style="cursor:pointer;font-size:0.75rem;" title="上移" onclick="moveCategoryOrder('${type}',${idx},-1)"></i>` +
-                  `<i class="bi bi-chevron-down text-secondary ms-1" style="cursor:pointer;font-size:0.75rem;" title="下移" onclick="moveCategoryOrder('${type}',${idx},1)"></i>`
-                : '';
-            el.innerHTML =
-                `<span class="cat-icon-mini" style="--cat-color:${meta.color};--cat-color-rgb:${_hexToRgbStr(meta.color)};" onclick="openIconPicker('${type}','${cat}')" title="设置图标"><i class="bi ${meta.icon}"></i></span>` +
-                `<span class="cat-text" style="cursor:pointer;" title="点击修改名称" onclick="editCategoryName('${type}', '${cat}')">${cat}</span>` +
-                mobileOrderBtns +
-                `<i class="bi bi-x text-danger ms-1" style="cursor:pointer;" onclick="removeCategory('${type}','${cat}')"></i>`;
-            el.draggable = !isMobile; el.dataset.idx = idx; el.dataset.type = type;
-            if (!isMobile) {
+            const el = document.createElement('div');
+            if (isMobile) {
+                // 手机端：每行一个，含大号上下移按钮
+                el.className = 'd-flex align-items-center gap-2 px-2 py-2 mb-1 rounded border bg-body';
+                el.style.cssText = 'background:var(--bs-body-bg);';
+                el.innerHTML =
+                    `<span class="cat-icon-mini" style="--cat-color:${meta.color};--cat-color-rgb:${_hexToRgbStr(meta.color)};cursor:pointer;" onclick="openIconPicker('${type}','${cat}')" title="设置图标"><i class="bi ${meta.icon}"></i></span>` +
+                    `<span class="flex-grow-1" style="cursor:pointer;font-size:0.95rem;" onclick="editCategoryName('${type}','${cat}')">${cat}</span>` +
+                    `<button class="btn btn-outline-secondary btn-sm px-2 py-1" onclick="moveCategoryOrder('${type}',${idx},-1)" ${idx===0?'disabled':''}><i class="bi bi-chevron-up"></i></button>` +
+                    `<button class="btn btn-outline-secondary btn-sm px-2 py-1" onclick="moveCategoryOrder('${type}',${idx},1)" ${idx===categories[type].length-1?'disabled':''}><i class="bi bi-chevron-down"></i></button>` +
+                    `<button class="btn btn-outline-danger btn-sm px-2 py-1" onclick="removeCategory('${type}','${cat}')"><i class="bi bi-x-lg"></i></button>`;
+            } else {
+                // 桌面端：badge 样式可拖拽
+                el.className = 'badge bg-white text-dark border draggable-badge p-2 me-2 mb-2 d-inline-flex align-items-center';
+                el.innerHTML =
+                    `<span class="cat-icon-mini" style="--cat-color:${meta.color};--cat-color-rgb:${_hexToRgbStr(meta.color)};" onclick="openIconPicker('${type}','${cat}')" title="设置图标"><i class="bi ${meta.icon}"></i></span>` +
+                    `<span class="cat-text" style="cursor:pointer;" title="点击修改名称" onclick="editCategoryName('${type}','${cat}')">${cat}</span>` +
+                    `<i class="bi bi-x text-danger ms-1" style="cursor:pointer;" onclick="removeCategory('${type}','${cat}')"></i>`;
+                el.draggable = true; el.dataset.idx = idx; el.dataset.type = type;
                 el.addEventListener('dragstart', function() { window.dragCatIdx = idx; window.dragCatType = type; this.classList.add('dragging'); });
-                el.addEventListener('dragend', function() { this.classList.remove('dragging'); });
-                el.addEventListener('dragover', e => e.preventDefault());
-                el.addEventListener('drop', (e) => {
+                el.addEventListener('dragend',   function() { this.classList.remove('dragging'); });
+                el.addEventListener('dragover',  e => e.preventDefault());
+                el.addEventListener('drop', e => {
                     e.preventDefault();
                     if (window.dragCatType !== type) return;
                     const badge = e.target.closest('.draggable-badge');
@@ -9082,9 +9137,14 @@ function renderCategorySettings() {
                     list.splice(targetIdx, 0, moved);
                     saveUserData(); triggerAutoSave(); renderCategorySettings();
                 });
+                // 桌面端容器改为 flex-wrap
+                div.classList.add('d-flex', 'flex-wrap');
             }
             div.appendChild(el);
         });
+        if (!isMobile) {
+            div.classList.add('d-flex', 'flex-wrap');
+        }
     };
     render('expense', 'expense-cat-container');
     render('income', 'income-cat-container');
