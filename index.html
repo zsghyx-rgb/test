@@ -4542,15 +4542,26 @@ async function loadFromDrive() {
     // ── 无缓存：走原有网络加载流程 ──
     showToast('正在从 Drive 加载数据…', 'syncing', 0);
 
+    // 超时辅助：10 秒后若还未完成，提示用户可离线使用
+    const _loadTimeout = setTimeout(() => {
+        showToast('网络连接超时，可切换"离线模式"或选择本地文件继续使用', 'warning', 0);
+    }, 10000);
+
     try {
         const localVersion = localStorage.getItem('APP_drive_version') || '0';
         let remoteVersion = '0';
         try {
-            const vResp = await fetch(gasRequestUrl({ action: 'version' }));
+            const _vCtrl = new AbortController();
+            const _vTimer = setTimeout(() => _vCtrl.abort(), 8000);
+            const vResp = await fetch(gasRequestUrl({ action: 'version' }), { signal: _vCtrl.signal });
+            clearTimeout(_vTimer);
             if (vResp.ok) remoteVersion = (await vResp.text()).trim();
         } catch (_) {}
 
-        const resp = await fetch(gasRequestUrl());
+        const _ctrl = new AbortController();
+        const _ctrlTimer = setTimeout(() => _ctrl.abort(), 8000);
+        const resp = await fetch(gasRequestUrl(), { signal: _ctrl.signal });
+        clearTimeout(_ctrlTimer);
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
         const raw = (await resp.text()).trim();
 
@@ -4588,7 +4599,10 @@ async function loadFromDrive() {
         $('password-section').style.display = 'block';
         $('login-password').focus();
     } catch (err) {
+        clearTimeout(_loadTimeout);
         showToast(`加载失败：${err.message}`, 'error', 0);
+    } finally {
+        clearTimeout(_loadTimeout);
     }
 }
 
@@ -10742,7 +10756,6 @@ window.addEventListener('online', () => {
     </div>
 </div>
 
-</body></html>
 <div id="log-drawer-backdrop" onclick="closeLogDrawer()" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1060;opacity:0;pointer-events:none;transition:opacity .25s;"></div>
 <div id="log-drawer" style="position:fixed;left:0;right:0;bottom:0;z-index:1061;background:var(--bs-body-bg);border-radius:16px 16px 0 0;box-shadow:0 -4px 24px rgba(0,0,0,0.2);max-height:85vh;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);">
     <!-- 抽屉顶栏 -->
