@@ -7,7 +7,7 @@
  *  - 其他同源资源（icon / manifest）：Cache First
  */
 
-const CACHE_NAME = 'app-libs-v1';
+const CACHE_NAME = 'app-libs-v2';
 
 // 需要预缓存的第三方库
 const PRECACHE_URLS = [
@@ -16,6 +16,9 @@ const PRECACHE_URLS = [
     'https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.min.js',
     'https://cdn.jsdelivr.net/npm/chart.js',
     'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js',
+    'manifest.json',
+    'icon-192.png',
+    'icon-512.png',
 ];
 
 // ==================== Install：预缓存第三方库 ====================
