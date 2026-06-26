@@ -1,7 +1,7 @@
 <!DOCTYPE html><html lang="zh-CN" data-bs-theme="dark"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>记一笔 v2.5.2</title>
+    <title>记一笔 v2.5.3</title>
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0d6efd">
@@ -697,9 +697,9 @@ select.compact-form-control { height: 2.1rem; }
 /* 手机端：宽度全屏、贴顶、无圆角、铺满全屏高度 */
 @media (max-width: 768px) {
     #editTransactionModal .modal-dialog {
-        margin: 0 !important;
-        width: 100vw !important;
-        max-width: 100vw !important;
+        margin: 0 12px !important;
+        width: calc(100vw - 24px) !important;
+        max-width: calc(100vw - 24px) !important;
         height: 100dvh !important;
         max-height: 100dvh !important;
         border-radius: 0;
@@ -1602,7 +1602,7 @@ select.compact-form-control { height: 2.1rem; }
         </div><!-- end login-card-body -->
     </div>
     <div style="text-align:center;padding:8px 0 4px;pointer-events:none;">
-        <span class="text-muted" style="font-size:0.7rem;">version 2.5.2</span>
+        <span class="text-muted" style="font-size:0.7rem;">version 2.5.3</span>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
@@ -1630,11 +1630,6 @@ select.compact-form-control { height: 2.1rem; }
             <li class="nav-item">
                 <button class="nav-link" onclick="switchTab('planned', this)">
                     <i class="bi bi-calendar-check"></i><span>计划</span>
-                </button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link" onclick="switchTab('ai', this)">
-                    <i class="bi bi-magic"></i><span>AI 分析</span>
                 </button>
             </li>
             <li class="nav-item">
@@ -1866,6 +1861,9 @@ select.compact-form-control { height: 2.1rem; }
                 <button class="stats-sub-tab-btn" id="stats-tab-budget" onclick="switchStatsTab('budget')">
                     <i class="bi bi-piggy-bank-fill"></i> 预算
                 </button>
+                <button class="stats-sub-tab-btn" id="stats-tab-ai" onclick="switchStatsTab('ai')">
+                    <i class="bi bi-magic"></i> AI 分析
+                </button>
             </div>
 
             <!-- 概览子页 -->
@@ -1989,23 +1987,11 @@ select.compact-form-control { height: 2.1rem; }
                 </div>
                 <div id="budget-list" class="mb-4"></div>
             </div>
-        </div>
 
-        <div id="view-planned" class="view-section">
-            <div class="page-sticky-header d-flex justify-content-between align-items-center pt-1">
-                <h4 class="mb-0">计划交易</h4>
-                <button class="btn btn-primary" onclick="openNewPlanned()">
-                    <i class="bi bi-plus-lg"></i>
-                </button>
-            </div>
-
-            <div id="planned-list-container"></div>
-        </div>
-
-        <div id="view-ai" class="view-section">
-            <div class="page-sticky-header pt-1">
+            <!-- AI 分析子页 -->
+            <div id="stats-pane-ai" class="stats-sub-pane">
                 <div class="d-flex align-items-center gap-2 mb-2">
-                    <h4 class="mb-0 flex-grow-1"><i class="bi bi-magic text-primary"></i> AI 分析</h4>
+                    <h5 class="mb-0 flex-grow-1"><i class="bi bi-magic text-primary"></i> AI 分析</h5>
                     <button class="btn btn-sm btn-primary" id="ai-analyze-btn" onclick="aiRunAnalysis()">
                         <i class="bi bi-play-fill"></i> 开始分析
                     </button>
@@ -2017,19 +2003,29 @@ select.compact-form-control { height: 2.1rem; }
                     <i class="bi bi-info-circle"></i>
                     <span id="ai-status-text">请先在设置中配置 AI 服务商和 API Key</span>
                 </div>
-            </div>
-            <div id="ai-content" style="overflow-y:auto;flex:1;min-height:0;padding-bottom:10px;">
-                <!-- AI 分析内容将渲染到这里 -->
-                <div class="text-center text-muted py-5" id="ai-empty-state">
-                    <i class="bi bi-robot" style="font-size:3rem;display:block;margin-bottom:12px;"></i>
-                    <div style="font-size:0.95rem;">AI 智能财务分析</div>
-                    <div class="small mt-2" style="max-width:320px;margin:0 auto;line-height:1.6;">
-                        配置 API Key 后点击「开始分析」，AI 将自动分析您的消费数据，<br>
-                        提供智能总结、异常预警和个性化建议。
+                <div id="ai-content" style="padding-bottom:10px;">
+                    <div class="text-center text-muted py-5" id="ai-empty-state">
+                        <i class="bi bi-robot" style="font-size:3rem;display:block;margin-bottom:12px;"></i>
+                        <div style="font-size:0.95rem;">AI 智能财务分析</div>
+                        <div class="small mt-2" style="max-width:320px;margin:0 auto;line-height:1.6;">
+                            配置 API Key 后点击「开始分析」，AI 将自动分析您的消费数据，<br>
+                            提供智能总结、异常预警和个性化建议。
+                        </div>
                     </div>
+                    <div id="ai-analysis-results" style="display:none;"></div>
                 </div>
-                <div id="ai-analysis-results" style="display:none;"></div>
             </div>
+        </div>
+
+        <div id="view-planned" class="view-section">
+            <div class="page-sticky-header d-flex justify-content-between align-items-center pt-1">
+                <h4 class="mb-0">计划交易</h4>
+                <button class="btn btn-primary" onclick="openNewPlanned()">
+                    <i class="bi bi-plus-lg"></i>
+                </button>
+            </div>
+
+            <div id="planned-list-container"></div>
         </div>
 
         <div id="view-settings" class="view-section">
@@ -2628,34 +2624,29 @@ select.compact-form-control { height: 2.1rem; }
                                 </div>
                             </div>
 
-                            <!-- 备注：折叠式 -->
+                            <!-- 备注：常开 -->
                             <div class="mb-2" id="desc-collapse-wrap">
-                                <button type="button" class="btn-expand-field" id="desc-expand-btn" onclick="expandMetaField('desc')">
-                                    <i class="bi bi-plus-sm"></i> 添加备注
-                                </button>
-                                <div id="desc-expanded" style="display:none;">
-                                    <label class="compact-form-label">备注</label>
-                                    <div class="input-group" id="desc-input-group">
-                                        <input type="text" class="form-control compact-form-control" id="edit-trans-desc"
-                                               oninput="updateDescHint('edit-trans-desc','edit-trans-desc-hint','edit-trans-type','edit-trans-category','edit-trans-account')"
-                                               placeholder="添加备注...">
-                                        <button type="button" class="btn btn-outline-secondary btn-sm" id="attachment-btn" style="width: 45px;" onclick="document.getElementById('attachment-file-input').click()">
-                                            <i class="bi bi-image"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-outline-primary btn-sm" id="ocr-scan-btn" style="width: 45px;" onclick="startOcrScan()" title="拍照识别小票">
-                                            <i class="bi bi-camera"></i>
-                                        </button>
-                                    </div>
-                                    <div id="edit-trans-desc-hint" style="display:none;align-items:center;gap:6px;margin-top:3px;padding:3px 8px;border-radius:5px;background:rgba(var(--bs-primary-rgb),0.08);border:1px solid rgba(var(--bs-primary-rgb),0.2);font-size:0.78rem;"></div>
-                                    <!-- OCR 识别状态横幅 -->
-                                    <div id="ocr-result-banner" style="display:none;margin-top:4px;padding:4px 8px;border-radius:6px;background:rgba(var(--bs-success-rgb),0.1);border:1px solid rgba(var(--bs-success-rgb),0.3);font-size:0.78rem;color:var(--bs-success);">
-                                        <i class="bi bi-stars"></i> <span id="ocr-result-text"></span>
-                                        <button type="button" class="btn-close btn-close-sm ms-2" style="font-size:0.6rem;float:right;margin-top:2px;" onclick="clearOcrBanner()"></button>
-                                    </div>
-                                    <!-- OCR 隐藏文件输入（相机优先） -->
-                                    <input type="file" id="ocr-file-input" accept="image/*" capture="environment" class="d-none" onchange="handleOcrFileSelected(this)">
+                                <label class="compact-form-label">备注</label>
+                                <div class="input-group" id="desc-input-group">
+                                    <input type="text" class="form-control compact-form-control" id="edit-trans-desc"
+                                           oninput="updateDescHint('edit-trans-desc','edit-trans-desc-hint','edit-trans-type','edit-trans-category','edit-trans-account')"
+                                           placeholder="添加备注...">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="attachment-btn" style="width: 45px;" onclick="document.getElementById('attachment-file-input').click()">
+                                        <i class="bi bi-image"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" id="ocr-scan-btn" style="width: 45px;" onclick="startOcrScan()" title="拍照识别小票">
+                                        <i class="bi bi-camera"></i>
+                                    </button>
                                 </div>
+                            <div id="edit-trans-desc-hint" style="display:none;align-items:center;gap:6px;margin-top:3px;padding:3px 8px;border-radius:5px;background:rgba(var(--bs-primary-rgb),0.08);border:1px solid rgba(var(--bs-primary-rgb),0.2);font-size:0.78rem;"></div>
+                            <!-- OCR 识别状态横幅 -->
+                            <div id="ocr-result-banner" style="display:none;margin-top:4px;padding:4px 8px;border-radius:6px;background:rgba(var(--bs-success-rgb),0.1);border:1px solid rgba(var(--bs-success-rgb),0.3);font-size:0.78rem;color:var(--bs-success);">
+                                <i class="bi bi-stars"></i> <span id="ocr-result-text"></span>
+                                <button type="button" class="btn-close btn-close-sm ms-2" style="font-size:0.6rem;float:right;margin-top:2px;" onclick="clearOcrBanner()"></button>
                             </div>
+                            <!-- OCR 隐藏文件输入（相机优先） -->
+                            <input type="file" id="ocr-file-input" accept="image/*" capture="environment" class="d-none" onchange="handleOcrFileSelected(this)">
+                        </div>
                         </div>
 
                         <!-- 附件（单笔和拆分都保留） -->
@@ -3123,30 +3114,43 @@ async function callOcrVisionAPI(base64, prompt) {
 
     // 所有提供商均使用 OpenAI 兼容的 chat/completions 格式（含 DeepSeek）
     const endpoint = provider === 'custom' ? customEndpoint : def.endpoint;
-    const resp = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${key}`
-        },
-        body: JSON.stringify({
-            model,
-            max_tokens: 800,
-            messages: [{
-                role: 'user',
-                content: [
-                    { type: 'text', text: prompt },
-                    { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64}` } }
-                ]
-            }]
-        })
-    });
-    if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}));
-        throw new Error(err?.error?.message || `HTTP ${resp.status}`);
+
+    // 45 秒超时，防止请求挂起
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 45000);
+
+    try {
+        const resp = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${key}`
+            },
+            body: JSON.stringify({
+                model,
+                max_tokens: 800,
+                messages: [{
+                    role: 'user',
+                    content: [
+                        { type: 'text', text: prompt },
+                        { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64}` } }
+                    ]
+                }]
+            }),
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            throw new Error(err?.error?.message || `HTTP ${resp.status}`);
+        }
+        const data = await resp.json();
+        return (data?.choices?.[0]?.message?.content || '').trim();
+    } catch (e) {
+        clearTimeout(timeoutId);
+        if (e.name === 'AbortError') throw new Error('请求超时，请检查网络或图片大小');
+        throw e;
     }
-    const data = await resp.json();
-    return (data?.choices?.[0]?.message?.content || '').trim();
 }
 
 async function handleOcrFileSelected(input) {
@@ -6138,12 +6142,13 @@ function swapTransferAccounts() {
 
 // 折叠所有 meta 字段（新增/切换 tab 时调用）
 function resetMetaFieldsCollapse() {
-    ['spending-type', 'tags', 'desc'].forEach(key => {
+    ['spending-type', 'tags'].forEach(key => {
         const expandedEl = $(key + '-expanded');
         const btnEl = $(key + '-expand-btn');
         if (expandedEl) expandedEl.style.display = 'none';
         if (btnEl) btnEl.style.display = '';
     });
+    // 备注已常开，无需折叠
     // 转账备注
     const tfExp = $('transfer-desc-expanded');
     const tfBtn = $('transfer-desc-expand-btn');
@@ -7723,6 +7728,7 @@ function switchStatsTab(tab) {
     $(`stats-pane-${tab}`).classList.add('active');
     if (tab === 'spending') renderSpendingAnalysis();
     if (tab === 'budget') renderBudgetPane();
+    if (tab === 'ai') aiInitView();
 }
 
 function navigateStatsMonth(delta) {
@@ -8732,7 +8738,6 @@ function switchTab(t, el) {
     if (t === 'stats') { renderStats(); maybeShowInsight(); }
     if (t === 'planned') renderPlannedTransactions();
     if (t === 'settings') { renderExchangeRateSettings(); initPasswordHint(); renderUserManagement(); renderArchiveManagementUI(); renderSettingsAiConfig(); }
-    if (t === 'ai') { aiInitView(); }
 }
 
 /**
