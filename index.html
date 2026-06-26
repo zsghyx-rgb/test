@@ -1,7 +1,7 @@
 <!DOCTYPE html><html lang="zh-CN" data-bs-theme="dark"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>记一笔 v2.5.3</title>
+    <title>记一笔 v2.5.4</title>
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0d6efd">
@@ -697,9 +697,9 @@ select.compact-form-control { height: 2.1rem; }
 /* 手机端：宽度全屏、贴顶、无圆角、铺满全屏高度 */
 @media (max-width: 768px) {
     #editTransactionModal .modal-dialog {
-        margin: 0 12px !important;
-        width: calc(100vw - 24px) !important;
-        max-width: calc(100vw - 24px) !important;
+        margin: 0 !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
         height: 100dvh !important;
         max-height: 100dvh !important;
         border-radius: 0;
@@ -709,6 +709,11 @@ select.compact-form-control { height: 2.1rem; }
         border: none !important;
         height: 100dvh !important;
         max-height: 100dvh !important;
+    }
+    /* 手机端弹窗内容左右加内边距，不贴屏幕边缘 */
+    #editTransactionModal .trans-form-v2 {
+        padding-left: 14px;
+        padding-right: 14px;
     }
 }
 
@@ -1012,13 +1017,6 @@ select.compact-form-control { height: 2.1rem; }
 }
 .trans-amount-bar.amt-expense .amount-input-v2 { color: #dc3545; }
 .trans-amount-bar.amt-income .amount-input-v2 { color: #198754; }
-.amount-input-v2.ocr-highlight {
-    animation: ocrPulse 1.4s ease-out 1;
-}
-@keyframes ocrPulse {
-    0%   { background-color: rgba(var(--bs-success-rgb), 0.18); }
-    100% { background-color: transparent; }
-}
 /* 隐藏数字输入框默认的上下箭头 */
 .amount-input-v2::-webkit-outer-spin-button,
 .amount-input-v2::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
@@ -1602,7 +1600,7 @@ select.compact-form-control { height: 2.1rem; }
         </div><!-- end login-card-body -->
     </div>
     <div style="text-align:center;padding:8px 0 4px;pointer-events:none;">
-        <span class="text-muted" style="font-size:0.7rem;">version 2.5.3</span>
+        <span class="text-muted" style="font-size:0.7rem;">version 2.5.4</span>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
@@ -2634,18 +2632,8 @@ select.compact-form-control { height: 2.1rem; }
                                     <button type="button" class="btn btn-outline-secondary btn-sm" id="attachment-btn" style="width: 45px;" onclick="document.getElementById('attachment-file-input').click()">
                                         <i class="bi bi-image"></i>
                                     </button>
-                                    <button type="button" class="btn btn-outline-primary btn-sm" id="ocr-scan-btn" style="width: 45px;" onclick="startOcrScan()" title="拍照识别小票">
-                                        <i class="bi bi-camera"></i>
-                                    </button>
                                 </div>
                             <div id="edit-trans-desc-hint" style="display:none;align-items:center;gap:6px;margin-top:3px;padding:3px 8px;border-radius:5px;background:rgba(var(--bs-primary-rgb),0.08);border:1px solid rgba(var(--bs-primary-rgb),0.2);font-size:0.78rem;"></div>
-                            <!-- OCR 识别状态横幅 -->
-                            <div id="ocr-result-banner" style="display:none;margin-top:4px;padding:4px 8px;border-radius:6px;background:rgba(var(--bs-success-rgb),0.1);border:1px solid rgba(var(--bs-success-rgb),0.3);font-size:0.78rem;color:var(--bs-success);">
-                                <i class="bi bi-stars"></i> <span id="ocr-result-text"></span>
-                                <button type="button" class="btn-close btn-close-sm ms-2" style="font-size:0.6rem;float:right;margin-top:2px;" onclick="clearOcrBanner()"></button>
-                            </div>
-                            <!-- OCR 隐藏文件输入（相机优先） -->
-                            <input type="file" id="ocr-file-input" accept="image/*" capture="environment" class="d-none" onchange="handleOcrFileSelected(this)">
                         </div>
                         </div>
 
@@ -3090,202 +3078,6 @@ const OCR_PROVIDER_DEFAULTS = {
     openai:    { endpoint: 'https://api.openai.com/v1/chat/completions',   model: 'gpt-4o-mini',         label: 'OpenAI',    keyHint: 'sk-...' },
     custom:    { endpoint: '',                                             model: 'gpt-4o-mini',         label: '自定义',    keyHint: 'API Key' }
 };
-
-function startOcrScan() {
-    const key = localStorage.getItem('APP_ocr_key') || '';
-    if (!key) {
-        showToast('请先在设置中配置 AI 服务商和 API Key', 'warning', 3000);
-        return;
-    }
-    // 重置 input 以允许重复选择同一文件
-    const fi = $('ocr-file-input');
-    fi.value = '';
-    fi.click();
-}
-
-// 调用对应服务商的视觉模型接口，返回模型输出的原始文本
-async function callOcrVisionAPI(base64, prompt) {
-    const provider = localStorage.getItem('APP_ocr_provider') || 'deepseek';
-    const key = localStorage.getItem('APP_ocr_key') || '';
-    const customEndpoint = localStorage.getItem('APP_ocr_endpoint') || '';
-    const customModel = localStorage.getItem('APP_ocr_model') || '';
-    const def = OCR_PROVIDER_DEFAULTS[provider] || OCR_PROVIDER_DEFAULTS.deepseek;
-    const model = customModel || def.model;
-
-    // 所有提供商均使用 OpenAI 兼容的 chat/completions 格式（含 DeepSeek）
-    const endpoint = provider === 'custom' ? customEndpoint : def.endpoint;
-
-    // 45 秒超时，防止请求挂起
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 45000);
-
-    try {
-        const resp = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${key}`
-            },
-            body: JSON.stringify({
-                model,
-                max_tokens: 800,
-                messages: [{
-                    role: 'user',
-                    content: [
-                        { type: 'text', text: prompt },
-                        { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64}` } }
-                    ]
-                }]
-            }),
-            signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        if (!resp.ok) {
-            const err = await resp.json().catch(() => ({}));
-            throw new Error(err?.error?.message || `HTTP ${resp.status}`);
-        }
-        const data = await resp.json();
-        return (data?.choices?.[0]?.message?.content || '').trim();
-    } catch (e) {
-        clearTimeout(timeoutId);
-        if (e.name === 'AbortError') throw new Error('请求超时，请检查网络或图片大小');
-        throw e;
-    }
-}
-
-async function handleOcrFileSelected(input) {
-    if (!input.files || !input.files[0]) return;
-    const file = input.files[0];
-
-    // 显示加载状态
-    const btn = $('ocr-scan-btn');
-    const origHTML = btn.innerHTML;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-    btn.disabled = true;
-
-    try {
-        // 压缩图片（最大 1200px 宽，JPEG 0.85）
-        const base64 = await compressImageToBase64(file, 1200, 0.85);
-
-        const txType = $('edit-trans-type').value; // 'expense' | 'income'
-        const catList = (categories[txType === 'income' ? 'income' : 'expense'] || []).join('、');
-
-        const prompt = `你是一个专业的多语言记账助手。这张图片可能是超市/商店的购物小票，也可能是购物网站的订单截图或转账记录。图片上的文字可能是中文、英语或德语，请将识别结果统一翻译/整理为中文后再输出。
-
-请只返回如下 JSON，不要输出任何其他文字、解释或 markdown 代码块包裹：
-{
-  "amount": <数字，小票/订单的总金额，按原始数字填写，不要换算汇率；完全无法识别填 null>,
-  "currency": <三位货币代码，如 "CNY"、"EUR"、"USD"，根据货币符号或文字判断；无法判断填 null>,
-  "merchant": <"商家/店铺名称"，翻译成中文；无法识别填 null>,
-  "date": <"YYYY-MM-DD" 格式日期；无法识别填 null>,
-  "category": <从下面列表中选最贴切的一项，必须是列表中的原文："${catList}">,
-  "items": [<逐条列出小票/订单上的商品或服务名称，全部翻译为中文，尽量简洁，例如 "包菜"、"食盐"、"樱桃"；如果是购物网站截图，列出每个商品的名称；完全无法识别任何条目则返回空数组>],
-  "desc": <"15字以内的简短备注，如果 items 非空可直接用顿号拼接商品名，否则用商家名称或场景概括，例如：超市购物、午餐、打车出行">
-}`;
-
-        const text = await callOcrVisionAPI(base64, prompt);
-        // 去除可能的 ```json ``` 包裹
-        const cleaned = text.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
-        const result = JSON.parse(cleaned);
-
-        applyOcrResult(result);
-
-    } catch (e) {
-        console.error('OCR error', e);
-        showToast('识别失败：' + (e.message || '未知错误'), 'danger', 4000);
-    } finally {
-        btn.innerHTML = origHTML;
-        btn.disabled = false;
-    }
-}
-
-function applyOcrResult(r) {
-    const filled = [];
-
-    if (r.amount && !isNaN(r.amount)) {
-        $('edit-trans-amount').value = Math.abs(Number(r.amount)).toFixed(2);
-        const amtInput = $('edit-trans-amount');
-        if (amtInput) amtInput.classList.add('ocr-highlight');
-        filled.push(`金额 ${r.amount}${r.currency ? ' ' + r.currency : ''}`);
-    }
-    if (r.date) {
-        $('edit-trans-date').value = r.date;
-        filled.push(`日期 ${r.date}`);
-    }
-    if (r.category) {
-        const sel = $('edit-trans-category');
-        for (let i = 0; i < sel.options.length; i++) {
-            if (sel.options[i].value === r.category) {
-                sel.value = r.category;
-                catGridSync('edit-trans-category', 'cat-grid-edit-trans-category');
-                filled.push(`类别「${r.category}」`);
-                break;
-            }
-        }
-    }
-
-    // 备注优先使用逐条商品清单，其次是 AI 生成的简短备注，最后回退到商家名
-    let descVal = '';
-    if (Array.isArray(r.items) && r.items.length > 0) {
-        descVal = r.items.join('、');
-    } else if (r.desc) {
-        descVal = r.desc;
-    } else if (r.merchant) {
-        descVal = r.merchant;
-    }
-    if (descVal) {
-        $('edit-trans-desc').value = descVal;
-        // 自动展开备注区域，让用户看到识别结果
-        expandMetaField('desc');
-        filled.push(`备注「${descVal}」`);
-        // OCR 填入备注后触发分类提示
-        updateDescHint('edit-trans-desc','edit-trans-desc-hint','edit-trans-type','edit-trans-category','edit-trans-account');
-    }
-
-    if (filled.length === 0) {
-        showToast('未能识别到有效信息，请手动填写', 'warning', 3000);
-        return;
-    }
-
-    // 显示结果横幅
-    const banner = $('ocr-result-banner');
-    const bannerText = $('ocr-result-text');
-    if (banner && bannerText) {
-        bannerText.textContent = '已识别：' + filled.join('、') + '，请确认后保存';
-        banner.style.display = 'block';
-    }
-}
-
-function clearOcrBanner() {
-    const banner = $('ocr-result-banner');
-    if (banner) banner.style.display = 'none';
-    // 清除金额高亮
-    const amtInput = $('edit-trans-amount');
-    if (amtInput) amtInput.classList.remove('ocr-highlight');
-}
-
-// 图片压缩（canvas 缩放 → base64 JPEG）
-function compressImageToBase64(file, maxWidth, quality) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onerror = reject;
-        reader.onload = e => {
-            const img = new Image();
-            img.onerror = reject;
-            img.onload = () => {
-                let w = img.width, h = img.height;
-                if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
-                const canvas = document.createElement('canvas');
-                canvas.width = w; canvas.height = h;
-                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                const dataURL = canvas.toDataURL('image/jpeg', quality);
-                resolve(dataURL.split(',')[1]); // 只返回 base64 部分
-            };
-            img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-    });
-}
 
 function initOfflineModeUI() {
     const btn = $('offline-mode-btn');
@@ -5462,8 +5254,6 @@ function switchTransTab(tab, skipReset) {
         const attachBtn = $('attachment-btn');
         if (attachSec) attachSec.style.display = tab === 'expense' ? '' : 'none';
         if (attachBtn) attachBtn.style.display = tab === 'expense' ? '' : 'none';
-        const ocrBtn = $('ocr-scan-btn');
-        if (ocrBtn) ocrBtn.style.display = tab === 'expense' ? '' : 'none';
         showSpendingTypeRow(tab === 'expense');
         // 拆分按钮仅在支出时显示
         const splitBtn = $('split-toggle-btn');
@@ -5502,7 +5292,6 @@ function _initNewTransModal(mode, title) {
     resetInlineItems();
     resetAttachmentUI();
     resetSpendingType();
-    clearOcrBanner();
     resetMetaFieldsCollapse();
     $('trans-tab-bar').style.display = '';
 }
@@ -6813,7 +6602,6 @@ function onSubModalHide() {
     $('edit-transfer-delete-btn').style.setProperty('display','none','important');
     $('edit-trans-submit-btn').textContent = '保存';
     $('edit-transfer-submit-btn').textContent = '保存';
-    clearOcrBanner();
     // 确保单笔区域可见
     const singleRow = $('single-item-row');
     const metaSec = $('single-meta-section');
@@ -7477,6 +7265,12 @@ async function handleAttachmentSelected(input) {
     const file = input.files[0];
     if (!file) return;
 
+    if (!GAS_URL) {
+        showToast('请先在登录界面配置云同步(GAS)地址', 'warning', 3000);
+        input.value = '';
+        return;
+    }
+
     const isPdf = file.type === 'application/pdf';
 
     let currentIds = $('edit-trans-attachment-id').value ? $('edit-trans-attachment-id').value.split(',').filter(id => id.trim()) : [];
@@ -7521,7 +7315,8 @@ async function handleAttachmentSelected(input) {
         const response = await fetch(`${GAS_URL}?token=${encodeURIComponent(GAS_TOKEN)}`, {
             method: 'POST',
             body: JSON.stringify({ action: 'uploadAttachment', filename: fileName, mimeType, data: base64Data }),
-            headers: { 'Content-Type': 'text/plain' }
+            headers: { 'Content-Type': 'text/plain' },
+            signal: AbortSignal.timeout(30000)
         });
         const result = await response.json();
 
