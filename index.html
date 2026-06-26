@@ -2115,6 +2115,46 @@ select.compact-form-control { height: 2.1rem; }
                 </div>
 
                 <div class="col-12 col-md-6">
+                    <div class="card shadow-sm h-100" id="ai-settings-card">
+                        <div class="card-header bg-transparent fw-bold">
+                            <i class="bi bi-robot"></i> AI 服务配置
+                        </div>
+                        <div class="card-body">
+                            <div id="ai-settings-status" class="small text-success mb-2">
+                                <span id="ai-cfg-status-text"><i class="bi bi-check-circle"></i> 已配置 DeepSeek</span>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small mb-1">AI 服务商</label>
+                                <select class="form-select form-select-sm" id="settings-ai-provider" onchange="onSettingsAiProviderChange()">
+                                    <option value="deepseek">DeepSeek（推荐）</option>
+                                    <option value="openai">OpenAI</option>
+                                    <option value="custom">自定义（OpenAI 兼容接口）</option>
+                                </select>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small mb-1">API Key</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="password" class="form-control" id="settings-ai-key" placeholder="sk-..." autocomplete="off">
+                                    <button class="btn btn-outline-success" onclick="saveSettingsAiKey()"><i class="bi bi-check-lg"></i></button>
+                                </div>
+                            </div>
+                            <div id="settings-ai-endpoint-wrap" style="display:none;" class="mb-2">
+                                <label class="form-label small mb-1">自定义接口地址</label>
+                                <input type="text" class="form-control form-control-sm" id="settings-ai-endpoint" placeholder="https://api.example.com/v1/chat/completions" autocomplete="off">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small mb-1">模型名称 <span class="text-muted">(可选)</span></label>
+                                <input type="text" class="form-control form-control-sm" id="settings-ai-model" placeholder="留空使用默认模型" autocomplete="off">
+                            </div>
+                            <div id="ai-cfg-hint" class="form-text small mt-1">
+                                <i class="bi bi-info-circle"></i> API Key 仅存储在本设备，不会上传到任何服务器。
+                                配置后可在「AI 分析」页使用智能分析功能。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-6">
                     <div class="card shadow-sm h-100">
                         <div class="card-header bg-transparent fw-bold">
                             <i class="bi bi-key"></i> 数据文件密码
@@ -8766,7 +8806,7 @@ function switchTab(t, el) {
 
     if (t === 'stats') { renderStats(); maybeShowInsight(); }
     if (t === 'planned') renderPlannedTransactions();
-    if (t === 'settings') { renderExchangeRateSettings(); initPasswordHint(); renderUserManagement(); renderArchiveManagementUI(); }
+    if (t === 'settings') { renderExchangeRateSettings(); initPasswordHint(); renderUserManagement(); renderArchiveManagementUI(); renderSettingsAiConfig(); }
     if (t === 'ai') { aiInitView(); }
 }
 
@@ -10539,7 +10579,7 @@ function aiInitView() {
     const btn = $('ai-analyze-btn');
     if (!btn) return;
     if (!aiIsConfigured()) {
-        aiUpdateStatus('nokey', '请先在右上角「设置」→ 连接设置中配置 AI 服务商和 API Key');
+        aiUpdateStatus('nokey', '请在「设置」→ AI 服务配置中设置 API Key');
         btn.disabled = true;
         btn.innerHTML = '<i class="bi bi-exclamation-circle"></i> 未配置 API';
         return;
@@ -11141,13 +11181,85 @@ function goToAiSettings() {
     } else {
         switchTab('settings', null);
     }
-    // 确保登录设置面板展开
+    // 滚动到 AI 配置卡片
     setTimeout(() => {
-        const panel = $('login-settings-panel');
-        if (panel && panel.style.display === 'none') {
-            toggleLoginSettings();
+        const card = $('ai-settings-card');
+        if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 350);
+}
+
+// ─── 设置页 AI 配置渲染 ───
+function renderSettingsAiConfig() {
+    const provider = localStorage.getItem('APP_ocr_provider') || 'deepseek';
+    const key = localStorage.getItem('APP_ocr_key') || '';
+    const endpoint = localStorage.getItem('APP_ocr_endpoint') || '';
+    const model = localStorage.getItem('APP_ocr_model') || '';
+
+    const sel = $('settings-ai-provider');
+    const keyInput = $('settings-ai-key');
+    const epInput = $('settings-ai-endpoint');
+    const modelInput = $('settings-ai-model');
+    const statusText = $('ai-cfg-status-text');
+    if (!sel) return;
+
+    sel.value = provider;
+    if (keyInput) keyInput.value = key;
+    if (epInput) epInput.value = endpoint;
+    if (modelInput) modelInput.value = model;
+
+    onSettingsAiProviderChange();
+
+    if (statusText) {
+        if (key) {
+            const label = OCR_PROVIDER_DEFAULTS[provider]?.label || provider;
+            statusText.innerHTML = `<i class="bi bi-check-circle"></i> 已配置 ${label}`;
+        } else {
+            statusText.innerHTML = `<i class="bi bi-exclamation-circle text-warning"></i> 未配置 API Key`;
         }
-    }, 300);
+    }
+}
+
+function onSettingsAiProviderChange() {
+    const sel = $('settings-ai-provider');
+    if (!sel) return;
+    const wrap = $('settings-ai-endpoint-wrap');
+    if (wrap) wrap.style.display = sel.value === 'custom' ? '' : 'none';
+
+    const def = OCR_PROVIDER_DEFAULTS[sel.value];
+    const keyInput = $('settings-ai-key');
+    if (keyInput && def) keyInput.placeholder = def.keyHint;
+}
+
+function saveSettingsAiKey() {
+    const provider = $('settings-ai-provider').value;
+    const key = ($('settings-ai-key').value || '').trim();
+    if (!key) { showToast('请输入 API Key', 'warning', 2000); return; }
+
+    let endpoint = '';
+    const def = OCR_PROVIDER_DEFAULTS[provider];
+    if (provider === 'custom') {
+        endpoint = ($('settings-ai-endpoint').value || '').trim();
+        if (!endpoint) { showToast('请输入自定义接口地址', 'warning', 2000); return; }
+    } else {
+        endpoint = def ? def.endpoint : '';
+    }
+    const model = ($('settings-ai-model').value || '').trim();
+
+    // 同步保存到 localStorage（与 OCR 共用同一套配置）
+    localStorage.setItem('APP_ocr_provider', provider);
+    localStorage.setItem('APP_ocr_key', key);
+    localStorage.setItem('APP_ocr_endpoint', endpoint);
+    localStorage.setItem('APP_ocr_model', model);
+
+    // 更新状态
+    const statusText = $('ai-cfg-status-text');
+    if (statusText) {
+        const label = def?.label || provider;
+        statusText.innerHTML = `<i class="bi bi-check-circle"></i> 已配置 ${label}`;
+    }
+    // 同步 AI 分析页状态
+    aiInvalidateCache();
+    showToast('AI 配置已保存', 'success', 2000);
 }
 
 // ══════════════════════════════════════════════════════
