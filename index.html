@@ -1,7 +1,7 @@
 <!DOCTYPE html><html lang="zh-CN" data-bs-theme="dark"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>记一笔 v2.5.0</title>
+    <title>记一笔 v2.5.2</title>
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0d6efd">
@@ -670,6 +670,7 @@ select.compact-form-control { height: 2.1rem; }
     height: 100dvh;
     max-height: 100dvh;
     margin: auto;
+    border-radius: 0;
 }
 #editTransactionModal .modal-content {
     height: 100dvh;
@@ -677,6 +678,7 @@ select.compact-form-control { height: 2.1rem; }
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    border-radius: 0;
 }
 #editTransactionModal .modal-body {
     display: flex !important;
@@ -707,6 +709,18 @@ select.compact-form-control { height: 2.1rem; }
         border: none !important;
         height: 100dvh !important;
         max-height: 100dvh !important;
+    }
+}
+
+/* 桌面端：弹窗带圆角和边距 */
+@media (min-width: 769px) {
+    #editTransactionModal .modal-dialog {
+        margin: 1.5rem auto;
+        max-width: 520px;
+        border-radius: 16px;
+    }
+    #editTransactionModal .modal-content {
+        border-radius: 16px;
     }
 }
 
@@ -799,6 +813,7 @@ select.compact-form-control { height: 2.1rem; }
     padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
     border-top: 1px solid var(--bs-border-color);
     background: var(--bs-body-bg);
+    margin-top: auto;
 }
 .trans-amount-bar.split-mode .amount-input-row { display: none; }
 
@@ -1510,34 +1525,6 @@ select.compact-form-control { height: 2.1rem; }
                     </div>
                 </div>
             </div>
-
-            <!-- AI 收据 OCR 识别（支持多家服务商） -->
-            <div class="mb-2">
-                <div id="ocr-key-saved-bar" class="d-flex align-items-center justify-content-between">
-                    <span class="small text-success"><i class="bi bi-camera-fill"></i> 收据识别已启用（<span id="ocr-provider-label"></span>）</span>
-                    <button class="btn btn-link btn-sm p-0 text-muted" onclick="showOcrKeyInput()">修改</button>
-                </div>
-                <div id="ocr-key-input-bar">
-                    <label class="form-label small mb-1">收据 OCR 识别 · AI 服务商</label>
-                    <select class="form-select form-select-sm mb-2" id="ocr-provider-select" onchange="onOcrProviderChange()">
-                        <option value="deepseek">DeepSeek（推荐）</option>
-                        <option value="openai">OpenAI</option>
-                        <option value="custom">自定义（OpenAI 兼容接口）</option>
-                    </select>
-                    <div class="input-group input-group-sm mb-2" id="ocr-endpoint-wrap" style="display:none;">
-                        <span class="input-group-text" style="font-size:0.75rem;">接口地址</span>
-                        <input type="text" class="form-control" id="ocr-endpoint-input" placeholder="https://api.example.com/v1/chat/completions" autocomplete="off" spellcheck="false">
-                    </div>
-                    <div class="input-group input-group-sm mb-2">
-                        <input type="password" class="form-control" id="ocr-key-input" placeholder="API Key" autocomplete="off" spellcheck="false">
-                    </div>
-                    <div class="input-group input-group-sm mb-2">
-                        <input type="text" class="form-control" id="ocr-model-input" placeholder="模型名称（可选，留空使用默认）" autocomplete="off" spellcheck="false">
-                    </div>
-                    <button class="btn btn-outline-success btn-sm w-100" type="button" onclick="saveOcrKey()"><i class="bi bi-check-lg"></i> 保存</button>
-                    <div class="form-text" id="ocr-key-hint">Key 仅存本地，不会上传到任何服务器</div>
-                </div>
-            </div>
             <div class="mb-3">
                 <label class="form-label small mb-1">设备昵称 <span class="text-muted">(可选，用于访问日志)</span></label>
                 <div class="input-group input-group-sm">
@@ -1615,7 +1602,7 @@ select.compact-form-control { height: 2.1rem; }
         </div><!-- end login-card-body -->
     </div>
     <div style="text-align:center;padding:8px 0 4px;pointer-events:none;">
-        <span class="text-muted" style="font-size:0.7rem;">version 2.5.0</span>
+        <span class="text-muted" style="font-size:0.7rem;">version 2.5.2</span>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
@@ -2148,7 +2135,7 @@ select.compact-form-control { height: 2.1rem; }
                             </div>
                             <div id="ai-cfg-hint" class="form-text small mt-1">
                                 <i class="bi bi-info-circle"></i> API Key 仅存储在本设备，不会上传到任何服务器。
-                                配置后可在「AI 分析」页使用智能分析功能。
+                                配置后可在「AI 分析」页使用智能分析，并在记账时拍照识别收据自动填入金额、类别和备注。
                             </div>
                         </div>
                     </div>
@@ -2973,7 +2960,6 @@ function initLoginSettingsUI() {
     initGasUrlUI();
     initGasTokenUI();
     initDeviceNameUI();
-    initOcrKeyUI();
     renderVerboseToastBtn();
 }
 
@@ -3109,71 +3095,10 @@ function saveDeviceName() {
 // ── OCR 收据识别（支持多家 AI 服务商）──────────────────────────
 
 const OCR_PROVIDER_DEFAULTS = {
-    deepseek:  { endpoint: 'https://api.deepseek.com/v1/chat/completions', model: 'deepseek-chat',       label: 'DeepSeek', keyHint: 'sk-...' },
+    deepseek:  { endpoint: 'https://api.deepseek.com/v1/chat/completions', model: 'deepseek-v4-flash',    label: 'DeepSeek', keyHint: 'sk-...' },
     openai:    { endpoint: 'https://api.openai.com/v1/chat/completions',   model: 'gpt-4o-mini',         label: 'OpenAI',    keyHint: 'sk-...' },
     custom:    { endpoint: '',                                             model: 'gpt-4o-mini',         label: '自定义',    keyHint: 'API Key' }
 };
-
-function onOcrProviderChange() {
-    const provider = $('ocr-provider-select').value;
-    const def = OCR_PROVIDER_DEFAULTS[provider] || OCR_PROVIDER_DEFAULTS.deepseek;
-    const endpointWrap = $('ocr-endpoint-wrap');
-    if (endpointWrap) endpointWrap.style.display = provider === 'custom' ? '' : 'none';
-    const keyInput = $('ocr-key-input');
-    if (keyInput) keyInput.placeholder = def.keyHint;
-    const modelInput = $('ocr-model-input');
-    if (modelInput) modelInput.placeholder = `模型名称（可选，默认 ${def.model}）`;
-}
-
-function initOcrKeyUI() {
-    const saved = localStorage.getItem('APP_ocr_key') || '';
-    const provider = localStorage.getItem('APP_ocr_provider') || 'deepseek';
-    const providerSel = $('ocr-provider-select');
-    if (providerSel) providerSel.value = provider;
-    onOcrProviderChange();
-    const savedBar = $('ocr-key-saved-bar');
-    const inputBar = $('ocr-key-input-bar');
-    if (!savedBar || !inputBar) return;
-    if (saved) {
-        savedBar.style.removeProperty('display');
-        inputBar.style.display = 'none';
-        const label = $('ocr-provider-label');
-        if (label) label.textContent = (OCR_PROVIDER_DEFAULTS[provider] || {}).label || provider;
-    } else {
-        savedBar.style.display = 'none';
-        inputBar.style.removeProperty('display');
-    }
-}
-
-function showOcrKeyInput() {
-    $('ocr-key-saved-bar').style.display = 'none';
-    $('ocr-key-input-bar').style.removeProperty('display');
-    const provider = localStorage.getItem('APP_ocr_provider') || 'anthropic';
-    $('ocr-provider-select').value = provider;
-    onOcrProviderChange();
-    $('ocr-key-input').value = localStorage.getItem('APP_ocr_key') || '';
-    $('ocr-endpoint-input').value = localStorage.getItem('APP_ocr_endpoint') || '';
-    $('ocr-model-input').value = localStorage.getItem('APP_ocr_model') || '';
-    $('ocr-key-input').focus();
-}
-
-function saveOcrKey() {
-    const provider = $('ocr-provider-select').value;
-    const key = ($('ocr-key-input').value || '').trim();
-    if (!key) { alert('请输入 API Key'); return; }
-    let endpoint = '';
-    if (provider === 'custom') {
-        endpoint = ($('ocr-endpoint-input').value || '').trim();
-        if (!endpoint) { alert('请输入自定义接口地址'); return; }
-    }
-    const model = ($('ocr-model-input').value || '').trim();
-    localStorage.setItem('APP_ocr_provider', provider);
-    localStorage.setItem('APP_ocr_key', key);
-    localStorage.setItem('APP_ocr_endpoint', endpoint);
-    localStorage.setItem('APP_ocr_model', model);
-    initOcrKeyUI();
-    showToast('AI 设置已保存，收据识别已启用 📷', 'success', 2500);
-}
 
 function startOcrScan() {
     const key = localStorage.getItem('APP_ocr_key') || '';
