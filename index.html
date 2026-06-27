@@ -1403,11 +1403,6 @@ select.compact-form-control { height: 2.1rem; }
                 </button>
             </li>
             <li class="nav-item">
-                <button class="nav-link" onclick="switchTab('planned', this)">
-                    <i class="bi bi-calendar-check"></i><span>计划</span>
-                </button>
-            </li>
-            <li class="nav-item">
                 <button class="nav-link" onclick="switchTab('settings', this)">
                     <i class="bi bi-gear"></i><span>设置</span>
                 </button>
@@ -1737,17 +1732,6 @@ select.compact-form-control { height: 2.1rem; }
             </div>
         </div>
 
-        <div id="view-planned" class="view-section">
-            <div class="page-sticky-header d-flex justify-content-between align-items-center pt-1">
-                <h4 class="mb-0">计划交易</h4>
-                <button class="btn btn-primary" onclick="openNewPlanned()">
-                    <i class="bi bi-plus-lg"></i>
-                </button>
-            </div>
-
-            <div id="planned-list-container"></div>
-        </div>
-
         <div id="view-settings" class="view-section">
             <div class="page-sticky-header pt-1">
                 <h4 class="mb-0">系统设置</h4>
@@ -1756,6 +1740,11 @@ select.compact-form-control { height: 2.1rem; }
             <!-- Settings Menu -->
             <div id="settings-menu">
                 <div class="settings-menu-list">
+                    <div class="settings-menu-item" onclick="showSettingsSubpage('planned')">
+                        <i class="bi bi-calendar-check"></i>
+                        <span>计划交易</span>
+                        <i class="bi bi-chevron-right"></i>
+                    </div>
                     <div class="settings-menu-item" onclick="showSettingsSubpage('exchange-rate')">
                         <i class="bi bi-currency-exchange"></i>
                         <span>汇率设置</span>
@@ -1805,6 +1794,18 @@ select.compact-form-control { height: 2.1rem; }
                         <i class="bi bi-box-arrow-left"></i> 退出登录(<span id="mobile-current-user"></span>)
                     </button>
                 </div>
+            </div>
+
+            <!-- Sub-page: 计划交易 -->
+            <div id="settings-sub-planned" class="settings-subpage">
+                <div class="subpage-header">
+                    <i class="bi bi-arrow-left" onclick="showSettingsMenu()"></i>
+                    <span>计划交易</span>
+                    <button class="btn btn-primary btn-sm ms-auto" onclick="openNewPlanned()">
+                        <i class="bi bi-plus-lg"></i> 新增
+                    </button>
+                </div>
+                <div id="planned-list-container"></div>
             </div>
 
             <!-- Sub-page: 汇率设置 -->
@@ -8068,7 +8069,8 @@ function switchTab(t, el) {
     if (t !== 'account-detail') currentDetailAccountId = null;
 
     $$('.view-section').forEach(v => v.classList.remove('active-view'));
-    $(`view-${t}`).classList.add('active-view');
+    const viewEl = $(`view-${t}`);
+    if (viewEl) viewEl.classList.add('active-view');
     $$('.nav-link').forEach(n => n.classList.remove('active'));
     if (el) el.classList.add('active');
 
@@ -8077,7 +8079,6 @@ function switchTab(t, el) {
     if (fab) fab.classList.toggle('d-none', t !== 'transactions' || historyMode || window.innerWidth > 768);
 
     if (t === 'stats') { renderStats(); maybeShowInsight(); }
-    if (t === 'planned') renderPlannedTransactions();
     if (t === 'settings') { showSettingsMenu(); renderExchangeRateSettings(); initPasswordHint(); renderUserManagement(); renderArchiveManagementUI(); }
 }
 
@@ -8096,6 +8097,7 @@ function showSettingsSubpage(name) {
     if (name === 'archive') renderArchiveManagementUI();
     if (name === 'password') initPasswordHint();
     if (name === 'ai-config') loadAiConfig();
+    if (name === 'planned') renderPlannedTransactions();
 }
 function saveAiConfig() {
     var url = $('ai-api-url').value.trim();
