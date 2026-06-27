@@ -434,8 +434,29 @@ select.compact-form-control { height: 2.1rem; }
 .mobile-transaction-card .amount-transfer{ color: #ff8c00; font-weight: bold; font-size: 1rem; }
 .mobile-transaction-card .category-text  { font-weight: bold; color: var(--bs-body-color); }
 
+/* ---- 交易页悬浮按钮：桌面端隐藏 ---- */
+#mobile-fab-group {
+    display: none !important;
+}
+
 @media (max-width: 768px) {
     body { padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
+
+/* ---- 交易页悬浮按钮（仅移动端） ---- */
+#mobile-fab-group {
+    display: flex !important;
+    position: fixed;
+    right: 18px;
+    bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 14px);
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    z-index: 1010;
+    transition: opacity 0.2s;
+}
+#mobile-fab-group.d-none {
+    display: none !important;
+}
 
     .sidebar {
         position: fixed;
@@ -461,19 +482,7 @@ select.compact-form-control { height: 2.1rem; }
 
     .sidebar-footer { display: none; }
 
-/* ---- 交易页悬浮按钮  ---- */
-#mobile-fab-group {
-    position: fixed;
-    right: 18px;
-    bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 14px);
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 12px;
-    z-index: 1010;
-    transition: opacity 0.2s;
-}
-#mobile-fab-group.d-none { display: none !important; }
+
 .fab-btn {
     width: 52px;
     height: 52px;
@@ -716,7 +725,7 @@ select.compact-form-control { height: 2.1rem; }
 }
 .trans-amount-bar {
     flex: 0 0 auto;
-    padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
+    padding: 6px 12px calc(6px + env(safe-area-inset-bottom, 0px));
     border-top: 1px solid var(--bs-border-color);
     background: var(--bs-body-bg);
 }
@@ -879,6 +888,7 @@ select.compact-form-control { height: 2.1rem; }
 }
 .btn-expand-field i { font-size: 0.85rem; }
 
+.btn-tag-filter {
     border: 1px solid var(--bs-border-color);
     background: transparent;
     color: var(--bs-secondary-color);
@@ -890,7 +900,7 @@ select.compact-form-control { height: 2.1rem; }
 /* 沉浸式金额输入（系统键盘） */
 .amount-input-row {
     display: flex; align-items: center; justify-content: center; gap: 6px;
-    padding: 6px 0 10px;
+    padding: 4px 0 6px;
 }
 .amount-currency { font-size: 1.3rem; font-weight: 600; color: var(--bs-secondary-color); }
 .amount-input-v2 {
@@ -958,7 +968,7 @@ select.compact-form-control { height: 2.1rem; }
 .transfer-flow-arrow { flex-shrink: 0; color: var(--bs-primary); font-size: 1.3rem; }
 
 /* 转账：双金额输入（系统键盘） */
-.transfer-amount-row { display: flex; gap: 8px; margin-bottom: 4px; }
+.transfer-amount-row { display: flex; gap: 8px; margin-bottom: 2px; }
 .transfer-amount-field {
     flex: 1;
     border: 1px solid var(--bs-border-color);
@@ -1423,7 +1433,7 @@ select.compact-form-control { height: 2.1rem; }
 
 
         <!-- 手机端悬浮操作按钮 (仅交易页显示) -->
-        <div id="mobile-fab-group" class="d-none d-md-none">
+        <div id="mobile-fab-group">
             <button class="fab-btn fab-btn-add" onclick="openNewTransaction()" title="新增交易">
                 <i class="bi bi-plus-lg"></i>
             </button>
@@ -1486,29 +1496,8 @@ select.compact-form-control { height: 2.1rem; }
                 </div>
             </div>
 
-            <!-- 桌面端表格 -->
-            <div class="excel-table-container d-none d-md-block mt-2">
-                <table class="table table-hover excel-table">
-                    <thead>
-                        <tr>
-                            <th style="width:110px;">日期</th>
-                            <th style="width:60px;">类型</th>
-                            <th style="width:90px;">类别</th>
-                            <th style="width:120px;">账户/转出</th>
-                            <th style="width:110px;">金额</th>
-                            <th style="width:130px;">转入账户</th>
-                            <th style="width:110px;">转入金额</th>
-                            <th style="min-width:140px;">备注</th>
-                            <th style="width:100px;">标签</th>
-                            <th style="width:80px;" class="text-center">操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="ad-table-body"></tbody>
-                </table>
-            </div>
-
             <!-- 手机端卡片列表 -->
-            <div id="account-detail-view-list" class="list-group list-group-flush d-md-none mt-2" style="border:1px solid var(--bs-border-color);border-radius:6px;"></div>
+            <div id="account-detail-view-list" class="list-group list-group-flush mt-2" style="border:1px solid var(--bs-border-color);border-radius:6px;"></div>
             <div id="account-detail-view-empty" class="text-center text-muted py-4 d-none">
                 <i class="bi bi-inbox fs-2"></i><br>暂无交易记录
             </div>
@@ -1522,7 +1511,7 @@ select.compact-form-control { height: 2.1rem; }
                     <button class="btn btn-sm btn-outline-secondary" id="trans-filter-btn" onclick="toggleTransFilter()" title="搜索与筛选">
                         <i class="bi bi-sliders"></i>
                     </button>
-                    <button class="btn btn-sm btn-primary d-none d-md-inline-flex" onclick="openNewTransaction()" title="新增交易">
+                    <button class="btn btn-sm btn-primary" onclick="openNewTransaction()" title="新增交易">
                         <i class="bi bi-plus-lg"></i>
                     </button>
                 </div>
@@ -1570,65 +1559,8 @@ select.compact-form-control { height: 2.1rem; }
                 </div>
             </div>
 
-            <!-- 桌面端表格 -->
-            <div class="excel-table-container">
-                <div id="transaction-table-container">
-                    <table class="table table-hover excel-table" id="transaction-table">
-                        <thead>
-                            <tr id="table-header-row">
-                                <th data-column="date" style="width:120px" onclick="sortTransactions('date')">
-                                    日期 <i class="bi bi-arrow-down-up sort-indicator"></i>
-                                    <div class="column-resizer" onmousedown="startColumnResize(event, this)"></div>
-                                </th>
-                                <th data-column="type" style="width:60px">
-                                    类型
-                                    <div class="column-resizer" onmousedown="startColumnResize(event, this)"></div>
-                                </th>
-                                <th data-column="category" style="width:120px">
-                                    类别
-                                    <div class="column-resizer" onmousedown="startColumnResize(event, this)"></div>
-                                </th>
-                                <th data-column="account" style="width:150px">
-                                    账户/转出
-                                    <div class="column-resizer" onmousedown="startColumnResize(event, this)"></div>
-                                </th>
-                                <th data-column="amount" style="width:120px" onclick="sortTransactions('amount')">
-                                    金额/转出 <i class="bi bi-arrow-down-up sort-indicator"></i>
-                                    <div class="column-resizer" onmousedown="startColumnResize(event, this)"></div>
-                                </th>
-                                <th data-column="toAccount" style="width:150px">
-                                    转入账户
-                                    <div class="column-resizer" onmousedown="startColumnResize(event, this)"></div>
-                                </th>
-                                <th data-column="amountIn" style="width:120px" onclick="sortTransactions('amountIn')">
-                                    转入金额 <i class="bi bi-arrow-down-up sort-indicator"></i>
-                                    <div class="column-resizer" onmousedown="startColumnResize(event, this)"></div>
-                                </th>
-                                <th data-column="desc" style="min-width:150px">
-                                    备注
-                                    <div class="column-resizer" onmousedown="startColumnResize(event, this)"></div>
-                                </th>
-                                <th data-column="tags" style="width:120px">
-                                    标签
-                                    <div class="column-resizer" onmousedown="startColumnResize(event, this)"></div>
-                                </th>
-                                <th data-column="user" style="width:80px">
-                                    用户
-                                    <div class="column-resizer" onmousedown="startColumnResize(event, this)"></div>
-                                </th>
-                                <th data-column="actions" style="width:80px" class="text-center">操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="transaction-table-body"></tbody>
-                    </table>
-                    <div id="load-more-container" class="text-center py-3 d-none">
-                        <button class="btn btn-outline-primary" onclick="loadMoreTransactions()">加载更多</button>
-                    </div>
-                </div>
-            </div>
-
             <!-- 移动端卡片列表 -->
-            <div id="mobile-transaction-list" style="display: none;">
+            <div id="mobile-transaction-list">
                 <div id="mobile-transaction-cards"></div>
                 <div id="mobile-load-more-container" class="text-center py-3 d-none">
                     <button class="btn btn-outline-primary" onclick="loadMoreTransactions()">加载更多</button>
@@ -1698,9 +1630,6 @@ select.compact-form-control { height: 2.1rem; }
             <div class="stats-sub-tabs mt-2">
                 <button class="stats-sub-tab-btn active" id="stats-tab-overview" onclick="switchStatsTab('overview')">
                     <i class="bi bi-bar-chart-line"></i> 概览
-                </button>
-                <button class="stats-sub-tab-btn" id="stats-tab-spending" onclick="switchStatsTab('spending')">
-                    <i class="bi bi-pie-chart-fill"></i> 消费类型
                 </button>
                 <button class="stats-sub-tab-btn" id="stats-tab-budget" onclick="switchStatsTab('budget')">
                     <i class="bi bi-piggy-bank-fill"></i> 预算
@@ -1791,36 +1720,6 @@ select.compact-form-control { height: 2.1rem; }
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- 消费类型子页 -->
-            <div id="stats-pane-spending" class="stats-sub-pane">
-                <div class="row g-2 mb-3" id="sa-summary-cards"></div>
-                <div class="card shadow-sm mb-3">
-                    <div class="card-body">
-                        <h6 class="card-title">占比分布</h6>
-                        <div style="height:260px;"><canvas id="saTypeChart"></canvas></div>
-                    </div>
-                </div>
-                <div class="card shadow-sm mb-3">
-                    <div class="card-body">
-                        <h6 class="card-title">月度趋势</h6>
-                        <div style="height:260px;overflow-x:auto;"><canvas id="saTrendChart"></canvas></div>
-                    </div>
-                </div>
-                <div class="d-flex gap-2 mb-2 flex-wrap align-items-center">
-                    <h6 class="mb-0 me-1">支出明细</h6>
-                    <select class="form-select form-select-sm" id="sa-filter-type" style="width:110px;" onchange="renderSaDetailList()">
-                        <option value="">全部类型</option>
-                        <option value="need">必须的</option>
-                        <option value="want">想要的</option>
-                        <option value="regret">后悔的</option>
-                        <option value="none">未标记</option>
-                    </select>
-                    <input type="text" class="form-control form-control-sm" id="sa-filter-search" style="width:150px;" placeholder="搜索类别/备注..." oninput="renderSaDetailList()">
-                    <span class="text-muted small ms-auto" id="sa-detail-count"></span>
-                </div>
-                <div id="sa-detail-list" class="mb-4"></div>
             </div>
 
             <!-- 预算子页 -->
@@ -2429,11 +2328,8 @@ select.compact-form-control { height: 2.1rem; }
                             </div>
                         </div>
 
-                        <!-- 单笔时的标签/备注/消费类型（拆分时隐藏） -->
+                        <!-- 单笔时的标签/备注（拆分时隐藏） -->
                         <div id="single-meta-section">
-                            <!-- 消费类型：折叠式 -->
-                            </div>
-                            </div>
 
                             <!-- 标签：折叠式 -->
                             <div class="mb-2" id="tags-collapse-wrap">
@@ -2558,7 +2454,7 @@ select.compact-form-control { height: 2.1rem; }
                             </div>
                         </div>
                         <div class="trans-action-row">
-                            <button type="button" class="btn-delete-immersive d-md-none" id="edit-transfer-delete-btn" onclick="deleteCurrentTransfer()" style="display:none!important;">
+                            <button type="button" class="btn-delete-immersive" id="edit-transfer-delete-btn" onclick="deleteCurrentTransfer()" style="display:none!important;">
                                 <i class="bi bi-trash"></i> 删除
                             </button>
                             <button type="submit" class="btn-save-immersive" id="edit-transfer-submit-btn">保存</button>
@@ -3239,9 +3135,9 @@ function loginWithUser(name) {
     } catch(_) {}
     initAppUI();
 
-    // 初始 tab = 交易页，显示悬浮按钮
+    // 初始 tab = 交易页，仅手机端显示悬浮按钮
     const fabInit = $('mobile-fab-group');
-    if (fabInit) fabInit.classList.remove('d-none');
+    if (fabInit && window.innerWidth <= 768) fabInit.classList.remove('d-none');
 
     // 更新离线模式状态显示
     const badge = $('offline-mode-badge');
@@ -4590,7 +4486,6 @@ function renderAccounts() {
             <div class="col-4">净值: <b class="text-primary ${hiddenClass}">¥${(totalAssets + totalLiabilities).toFixed(2)}</b></div>
         </div>`;
 
-    const isDesktop = window.innerWidth >= 769;
     ['Asset', 'Liability', 'Receivable'].forEach(type => {
         const rawAccs = userAccounts.filter(a => (a.accountType || 'Asset') === type);
         if (rawAccs.length === 0) return;
@@ -4606,13 +4501,9 @@ function renderAccounts() {
             col.className = 'account-col';
             col.dataset.accId = acc.id;
             const balClass = amountsHidden ? 'amount-hidden' : (bal < 0 ? 'text-danger' : 'text-success');
-            const dragHandle = isDesktop
-                ? `<div class="text-muted d-none d-md-flex align-items-center px-1" style="cursor:grab;opacity:0.35;font-size:0.85rem;" title="拖拽排序"><i class="bi bi-grip-vertical"></i></div>`
-                : '';
             col.innerHTML = `
                 <div class="card account-card p-3 shadow-sm d-flex flex-row align-items-center gap-1"
                      data-id="${acc.id}" style="cursor:pointer;">
-                    ${dragHandle}
                     <div class="flex-grow-1" onclick="openAccountDetail(${acc.id})">
                         <div class="d-flex justify-content-between align-items-start">
                             <div style="flex:1">
@@ -4626,37 +4517,6 @@ function renderAccounts() {
                         </div>
                     </div>
                 </div>`;
-            if (isDesktop) {
-                col.draggable = true;
-                col.addEventListener('dragstart', e => {
-                    e.dataTransfer.setData('accId', acc.id);
-                    e.dataTransfer.setData('accType', type);
-                    col.classList.add('dragging');
-                });
-                col.addEventListener('dragend', () => col.classList.remove('dragging'));
-                col.addEventListener('dragover', e => { e.preventDefault(); col.classList.add('drag-over'); });
-                col.addEventListener('dragleave', () => col.classList.remove('drag-over'));
-                col.addEventListener('drop', e => {
-                    e.preventDefault();
-                    col.classList.remove('drag-over');
-                    const fromId = Number(e.dataTransfer.getData('accId'));
-                    const fromType = e.dataTransfer.getData('accType');
-                    if (fromType !== type || fromId === acc.id) return;
-                    // Reorder: build new order from current DOM, swap
-                    const allOfType = sortedUserAccounts(userAccounts.filter(a => (a.accountType || 'Asset') === type));
-                    const ids = allOfType.map(a => a.id);
-                    const fi = ids.indexOf(fromId), ti = ids.indexOf(acc.id);
-                    if (fi < 0 || ti < 0) return;
-                    ids.splice(fi, 1); ids.splice(ti, 0, fromId);
-                    // Merge with order for other types
-                    const otherOrder = (getAccountOrder() || []).filter(id => !ids.includes(id));
-                    saveAccountOrder([...otherOrder.filter(id => {
-                        const a = accounts.find(x => x.id === id);
-                        return a && (a.accountType || 'Asset') !== type;
-                    }), ...ids]);
-                    renderAccounts();
-                });
-            }
             row.appendChild(col);
         });
         container.appendChild(row);
@@ -4861,7 +4721,6 @@ function renderDetailContent(id) {
         .sort((a, b) => b.date.localeCompare(a.date));
 
     const mobileContainer = $('account-detail-view-list');
-    const desktopTbody = $('ad-table-body');
     const empty = $('account-detail-view-empty');
 
     const resolveTransfer = (t) => {
@@ -4916,7 +4775,6 @@ function renderDetailContent(id) {
 
     if (filteredTrans.length === 0) {
         if (mobileContainer) mobileContainer.innerHTML = '';
-        if (desktopTbody) desktopTbody.innerHTML = '';
         if (empty) empty.classList.remove('d-none');
         return;
     }
@@ -4987,79 +4845,6 @@ function renderDetailContent(id) {
                 </div>
                 <div style="font-weight:700;font-size:0.88rem;color:${amtColor};margin-left:8px;white-space:nowrap;">${displayAmt}</div>`;
             mobileContainer.appendChild(item);
-        });
-    }
-
-    // ---- 桌面表格 ----
-    if (desktopTbody) {
-        desktopTbody.innerHTML = '';
-        filteredTrans.forEach(t => {
-            const isTransfer = t.isTransfer;
-            let canEdit = t.ownerName === currentUserName && !t._isArchived;
-
-            // 统一用 tOut 视角渲染转账（两侧账户详情页显示完全一致）
-            let typeText, typeColorClass, amtColorClass;
-            let accountOutDisplay = '', displayAmt = '';
-            let toAccDisplay = '', peerAmtDisplay = '';
-            let categoryDisplay = '', descDisplay = '';
-
-            if (isTransfer) {
-                const { tOut, tIn } = resolveTransfer(t);
-                if (tOut) canEdit = (tOut.ownerName === currentUserName) && !t._isArchived;
-
-                typeText = '转账';
-                typeColorClass = 'text-warning';
-                amtColorClass = 'text-warning';
-                categoryDisplay = '';
-
-                if (tOut) {
-                    const accOut = accounts.find(a => a.id == tOut.accountId);
-                    accountOutDisplay = accOut ? `<small>${getAccountDisplayName(accOut)}</small>` : '';
-                    displayAmt = `${CURRENCY_SYMBOLS[accOut ? accOut.currency : acc.currency]}${formatAmount(Math.abs(tOut.amount), accOut ? accOut.currency : acc.currency)}`;
-                    descDisplay = tOut.desc || '';
-                } else {
-                    displayAmt = `${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}`;
-                    descDisplay = t.desc || '';
-                }
-                if (tIn) {
-                    const accTo = accounts.find(a => a.id == tIn.accountId);
-                    if (accTo) {
-                        toAccDisplay = `<small>${getAccountDisplayName(accTo)}</small>`;
-                        peerAmtDisplay = `<div class="fw-bold text-warning">${CURRENCY_SYMBOLS[accTo.currency]}${formatAmount(Math.abs(tIn.amount), accTo.currency)}</div>`;
-                    }
-                }
-            } else {
-                typeText = t.amount < 0 ? '支出' : '收入';
-                typeColorClass = t.amount < 0 ? 'text-danger' : 'text-success';
-                amtColorClass = t.amount < 0 ? 'text-danger' : 'text-success';
-                accountOutDisplay = `<small>${getAccountDisplayName(acc)}</small>`;
-                displayAmt = `${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}`;
-                categoryDisplay = t.items && t.items.length > 1 ? t.items[0].category + '等' + (t.items.length-1) + '项' : (t.category || '');
-                descDisplay = t.desc || '';
-            }
-
-            const editBtns = canEdit
-                ? (isTransfer
-                    ? `<i class="bi bi-pencil text-primary me-2" style="cursor:pointer;" onclick="openedFromDetail=true;openEditTransfer(${t.id})"></i><i class="bi bi-trash text-danger" style="cursor:pointer;" onclick="deleteTransaction(${t.id})"></i>`
-                    : `<i class="bi bi-pencil text-primary me-2" style="cursor:pointer;" onclick="openedFromDetail=true;openEditTransaction(${t.id})"></i><i class="bi bi-trash text-danger" style="cursor:pointer;" onclick="deleteTransaction(${t.id})"></i>`)
-                : (t._isArchived ? '<span class="badge bg-secondary" style="font-size:0.6rem;">存档</span>' : '');
-
-            const trTagsDisplay = isTransfer
-                ? (() => { const { tOut } = resolveTransfer(t); return tOut ? (tOut.tags||'') : (t.tags||''); })()
-                : (t.tags||'');
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${t.date}</td>
-                <td><div class="${typeColorClass}">${typeText}</div></td>
-                <td>${categoryDisplay}${!isTransfer ? getTxnBadge(t) : ''}</td>
-                <td>${accountOutDisplay}${isTransfer ? getTxnBadge(t) : ''}</td>
-                <td><div class="fw-bold ${amtColorClass}">${displayAmt}</div></td>
-                <td>${toAccDisplay}</td>
-                <td>${peerAmtDisplay}</td>
-                <td><div class="desc-content" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;" title="${descDisplay.replace(/"/g,'&quot;')}">${descDisplay}</div></td>
-                <td>${trTagsDisplay}</td>
-                <td><div class="text-center">${editBtns}</div></td>`;
-            desktopTbody.appendChild(tr);
         });
     }
 }
@@ -5170,8 +4955,6 @@ function switchTransTab(tab, skipReset) {
         const attachBtn = $('attachment-btn');
         if (attachSec) attachSec.style.display = tab === 'expense' ? '' : 'none';
         if (attachBtn) attachBtn.style.display = tab === 'expense' ? '' : 'none';
-        const ocrBtn = $('ocr-scan-btn');
-        if (ocrBtn) ocrBtn.style.display = tab === 'expense' ? '' : 'none';
         // 拆分按钮仅在支出时显示
         const splitBtn = $('split-toggle-btn');
         if (splitBtn) splitBtn.style.display = tab === 'expense' ? '' : 'none';
@@ -5536,6 +5319,7 @@ function deleteCurrentTransfer() {
 
 let _inSplitMode = false;
 
+function _buildMarkOpts(selected) {
     return [
         {v:'', l:'未标记'}, {v:'need', l:'必须的'},
         {v:'want', l:'想要的'}, {v:'regret', l:'后悔的'},
@@ -5558,6 +5342,7 @@ function _buildSplitItemCard(item, idx) {
                    value="${item.amount>0?item.amount:''}"
                    oninput="_splitData[${idx}].amount=parseFloat(this.value)||0;refreshSplitTotal()">
             <select class="form-select compact-form-control" style="font-size:0.78rem;"
+                    onchange="_splitData[${idx}].mark=this.value">${_buildMarkOpts(item.mark||'')}</select>
             <div class="split-card-del">
                 <button type="button" class="btn btn-link text-danger btn-sm p-0"
                         onclick="removeSplitItem(${idx})"><i class="bi bi-x-lg"></i></button>
@@ -5716,30 +5501,6 @@ function loadInlineItems(items, type) {
     renderSplitItems();
 }
 
-
-
-const SPENDING_TYPE_CONFIG = {
-    need:   { label: '必须的', color: '#0d6efd', bg: 'rgba(13,110,253,0.12)' },
-    want:   { label: '想要的', color: '#fd7e14', bg: 'rgba(253,126,20,0.12)' },
-    regret: { label: '后悔的', color: '#dc3545', bg: 'rgba(220,53,69,0.12)' },
-};
-
-    return {
-        need:   { label: SPENDING_TYPE_CONFIG.need.label,   color: SPENDING_TYPE_CONFIG.need.color,   bg: SPENDING_TYPE_CONFIG.need.bg },
-        want:   { label: SPENDING_TYPE_CONFIG.want.label,   color: SPENDING_TYPE_CONFIG.want.color,   bg: SPENDING_TYPE_CONFIG.want.bg },
-        regret: { label: SPENDING_TYPE_CONFIG.regret.label, color: SPENDING_TYPE_CONFIG.regret.color, bg: SPENDING_TYPE_CONFIG.regret.bg },
-        '':     { label: '未标记', color: '#6c757d', bg: 'rgba(108,117,125,0.12)' },
-    };
-}
-
-
-
-
-
-    // 消费类型折叠区随支出/收入 tab 显示或隐藏
-    if (wrap) wrap.style.display = show ? '' : 'none';
-}
-
 // ── 折叠字段展开/收起 ──
 function expandMetaField(fieldKey) {
     const expandedEl = $(fieldKey + '-expanded');
@@ -5797,221 +5558,6 @@ function expandTransferDescForExistingData(desc) {
     if (desc) expandTransferDesc();
 }
 
-let saChartType = null, saChartTrend = null;
-
-let _saCurrentUser = ''; // '' = 所有用户
-
-function saCycleUser() {
-    const options = ['', ...dataUsers];
-    const idx = options.indexOf(_saCurrentUser);
-    _saCurrentUser = options[(idx + 1) % options.length];
-    const btn = $('sa-user-filter-btn');
-    const textEl = $('sa-user-filter-text');
-    if (textEl) textEl.textContent = _saCurrentUser || '所有用户';
-    if (btn) btn.className = _saCurrentUser
-        ? 'btn btn-sm btn-primary flex-shrink-0'
-        : 'btn btn-sm btn-outline-secondary flex-shrink-0';
-    renderSpendingAnalysis();
-}
-
-function openSpendingAnalysis() {
-    // 切换到统计页消费类型子Tab
-    switchTab('stats', document.querySelector('.nav-link[onclick*="stats"]') || document.querySelector('.nav-link[onclick*=stats]'));
-    switchStatsTab('spending');
-}
-
-function closeSpendingAnalysis() {
-    // 兼容旧调用，切回概览
-    switchStatsTab('overview');
-}
-
-function saQuickDate(p) {
-    quickStatsDateFilter(p);
-}
-
-function renderSpendingAnalysis() {
-    const start  = currentStatsFilter.startDate || '';
-    const end    = currentStatsFilter.endDate   || '';
-    const saUser = (currentStatsFilter.user !== 'all') ? currentStatsFilter.user : '';
-    const rawData = transactions.filter(t => {
-        if (t.isTransfer || t._isBaseline || t.amount >= 0) return false;
-        if (start && t.date < start) return false;
-        if (end   && t.date > end)   return false;
-        if (saUser && t.ownerName !== saUser) return false;
-        return true;
-    });
-
-    // 展开多笔分录：每条 item 作为独立统计单元
-    const data = [];
-    rawData.forEach(t => {
-        const acc = accounts.find(a => a.id == t.accountId);
-        if (t.items && t.items.length > 1) {
-            t.items.forEach(it => {
-                data.push({
-                    ...t,
-                    amount: it.amount,
-                    category: it.category,
-                    
-                    tags: it.tags !== undefined ? it.tags : (t.tags || ''),
-                    desc: it.desc !== undefined ? it.desc : (t.desc || ''),
-                    _parentId: t.id,
-                });
-            });
-        } else {
-            data.push(t);
-        }
-    });
-
-    const groups = { need: 0, want: 0, regret: 0, '': 0 };
-    data.forEach(t => {
-        const acc = accounts.find(a => a.id == t.accountId);
-        const amt = acc ? convertAmt(Math.abs(t.amount), acc.currency) : Math.abs(t.amount);
-        const key = undefined || '';
-        groups[key] = (groups[key] || 0) + amt;
-    });
-    const total = Object.values(groups).reduce((s, v) => s + v, 0);
-
-    // Summary cards
-    const cardsEl = $('sa-summary-cards');
-    cardsEl.innerHTML = '';
-    const types = [
-        { key: 'need', label: '必须的', icon: 'bi-shield-check', color: '#0d6efd' },
-        { key: 'want', label: '想要的', icon: 'bi-star', color: '#fd7e14' },
-        { key: 'regret', label: '后悔的', icon: 'bi-emoji-frown', color: '#dc3545' },
-        { key: '',     label: '未标记', icon: 'bi-question-circle', color: '#6c757d' },
-    ];
-    types.forEach(tp => {
-        const amt = groups[tp.key] || 0;
-        const pct = total > 0 ? ((amt / total) * 100).toFixed(1) : '0.0';
-        cardsEl.innerHTML += `<div class="col-6">
-            <div class="card shadow-sm text-center py-2">
-                <div style="color:${tp.color};font-size:1.3rem;"><i class="bi ${tp.icon}"></i></div>
-                <div class="fw-bold" style="font-size:0.85rem;">${tp.label}</div>
-                <div class="fw-bold" style="color:${tp.color};">${formatAmount(amt,'RMB')}</div>
-                <div class="text-muted" style="font-size:0.75rem;">${pct}%</div>
-            </div>
-        </div>`;
-    });
-
-    // Pie chart
-    if (saChartType) { saChartType.destroy(); saChartType = null; }
-    const ctxPie = $('saTypeChart');
-    const pieLabels = types.map(t => t.label);
-    const pieData   = types.map(t => groups[t.key] || 0);
-    const pieColors = types.map(t => t.color);
-    saChartType = new Chart(ctxPie, {
-        type: 'doughnut',
-        data: { labels: pieLabels, datasets: [{ data: pieData, backgroundColor: pieColors }] },
-        options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, animation: { duration: 400 } }
-    });
-
-    // Trend chart (monthly)
-    if (saChartTrend) { saChartTrend.destroy(); saChartTrend = null; }
-    const months = {};
-    data.forEach(t => {
-        const m = t.date.substring(0,7);
-        const acc = accounts.find(a => a.id == t.accountId);
-        const amt = acc ? convertAmt(Math.abs(t.amount), acc.currency) : Math.abs(t.amount);
-        if (!months[m]) months[m] = { need:0, want:0, regret:0, '':0 };
-        const key = undefined || '';
-        months[m][key] = (months[m][key] || 0) + amt;
-    });
-    const mLabels = Object.keys(months).sort();
-    const ctxTrend = $('saTrendChart');
-    ctxTrend.width = Math.max(mLabels.length * 70, 400);
-    saChartTrend = new Chart(ctxTrend, {
-        type: 'bar',
-        data: {
-            labels: mLabels,
-            datasets: [
-                { label:'必须', data: mLabels.map(m => months[m].need), backgroundColor:'#0d6efd' },
-                { label:'想要', data: mLabels.map(m => months[m].want), backgroundColor:'#fd7e14' },
-                { label:'后悔的', data: mLabels.map(m => months[m].regret), backgroundColor:'#dc3545', stack:'s' },
-                { label:'未标记', data: mLabels.map(m => months[m]['']), backgroundColor:'#adb5bd' },
-            ]
-        },
-        options: { maintainAspectRatio: false, scales:{ x:{ stacked:true }, y:{ stacked:true, beginAtZero:true } }, plugins:{ legend:{ position:'bottom' } }, animation:{ duration:400 } }
-    });
-
-    // store data for filter re-render
-    window._saCurrentData = data;
-    renderSaDetailList();
-}
-
-function renderSaDetailList() {
-    const data = window._saCurrentData || [];
-    const filterType   = $('sa-filter-type')?.value || '';
-    const filterSearch = ($('sa-filter-search')?.value || '').toLowerCase();
-
-    let filtered = [...data].sort((a,b) => b.date.localeCompare(a.date));
-    if (filterType === 'none') {
-        filtered = filtered.filter(t => !undefined || undefined === '');
-    } else if (filterType) {
-        filtered = filtered.filter(t => undefined === filterType);
-    }
-    if (filterSearch) {
-        filtered = filtered.filter(t =>
-            (t.category || '').toLowerCase().includes(filterSearch) ||
-            (t.desc || '').toLowerCase().includes(filterSearch)
-        );
-    }
-
-    const countEl = $('sa-detail-count');
-    if (countEl) countEl.textContent = `共 ${filtered.length} 条`;
-
-    const listEl = $('sa-detail-list');
-    listEl.innerHTML = '';
-
-    filtered.slice(0, 100).forEach(t => {
-        const acc = accounts.find(a => a.id == t.accountId);
-        if (!acc) return;
-        const sym = CURRENCY_SYMBOLS[acc.currency] || '';
-        const accDisplayName = getAccountDisplayName(acc);
-        const editId = t._parentId || t.id;
-        const isExpanded = !!t._parentId;
-        const descClean = t.desc || '';
-        const tagsHtml = t.tags
-            ? `<span style="color:var(--bs-secondary);font-size:0.78rem;"> <i class="bi bi-tag" style="font-size:0.62rem;"></i> ${t.tags}</span>`
-            : '';
-        const noteHtml = descClean
-            ? `<span style="color:var(--bs-secondary);font-size:0.78rem;"> <i class="bi bi-chat-left-text" style="font-size:0.62rem;"></i> ${descClean}</span>`
-            : '';
-        const stBadge = `<span style="font-size:0.62rem;background:${cfg.bg || cfg.color};color:${cfg.color};border-radius:3px;padding:0 4px;margin-left:4px;border:1px solid ${cfg.color};vertical-align:middle;">${cfg.label}</span>`;
-
-        const card = document.createElement('div');
-        card.className = 'mobile-transaction-card';
-        card.style.cursor = 'pointer';
-        card.innerHTML = `
-            <div class="card-line-1">
-                <span class="category-text">${t.category || ''}${stBadge}${isExpanded ? '' : ''}${tagsHtml}${getTxnBadge(t)}</span>
-                <div class="amount-expense fw-bold">${sym}${formatAmount(Math.abs(t.amount), acc.currency)}</div>
-            </div>
-            <div class="card-line-2">
-                <span class="text-muted small">${t.date} · ${accDisplayName}${noteHtml}</span>
-            </div>`;
-
-        const isOwn = t.ownerName === currentUserName && !t._isArchived;
-        if (isOwn) {
-            card.addEventListener('click', () => {
-                const modalEl = $('editTransactionModal');
-                modalEl.style.zIndex = '2100';
-                const backdrop = () => { document.querySelectorAll('.modal-backdrop').forEach(b => b.style.zIndex = '2050'); };
-                const onHide = () => {
-                    modalEl.style.zIndex = '';
-                    document.querySelectorAll('.modal-backdrop').forEach(b => b.style.zIndex = '');
-                    modalEl.removeEventListener('hidden.bs.modal', onHide);
-                };
-                modalEl.addEventListener('hidden.bs.modal', onHide);
-                openEditTransaction(editId);
-                setTimeout(backdrop, 50);
-            });
-        } else {
-            card.style.cursor = 'default';
-            card.style.opacity = '0.75';
-        }
-        listEl.appendChild(card);
-    });
-}
 
 // ── 预算管理 ────────────────────────────────────────────────────
 
@@ -6873,8 +6419,6 @@ const NEW_BADGE = '<em style="font-size:0.68rem;color:#fd7e14;font-style:italic;
 const UPDATED_BADGE = '<em style="font-size:0.68rem;color:#0d6efd;font-style:italic;margin-left:4px;">已更新</em>';
 function renderAllTransactions() {
     _statsDataVersion++; // 交易数据可能已变化，使统计页缓存失效
-    const tbody = $('transaction-table-body');
-    tbody.innerHTML = '';
     const mobileContainer = $('mobile-transaction-cards');
     if (mobileContainer) mobileContainer.innerHTML = '';
 
@@ -6897,57 +6441,7 @@ function renderAllTransactions() {
 
     const displayData = filtered.slice(0, Math.min(displayedTransactionCount, filtered.length));
 
-    displayData.forEach(t => {
-        const acc = accounts.find(a => a.id == t.accountId);
-        if (!acc) return;
-        const typeText = t.isTransfer ? '转账' : (t.amount < 0 ? '支出' : '收入');
-        const typeColorClass = t.isTransfer ? 'text-warning' : (t.amount < 0 ? 'text-danger' : 'text-success');
-
-        let toAccountDisplay = '', amountInDisplay = '';
-        if (t.isTransfer && t.type === 'expense') {
-            const accTo = accounts.find(a => a.id == t.relatedAccountId);
-            if (accTo) {
-                toAccountDisplay = `<small>${getAccountDisplayName(accTo)}</small>`;
-                let tIn = t.transferPairId ?
-                    transactions.find(tx => tx.transferPairId === t.transferPairId && tx.type === 'income') :
-                    transactions.find(tx => tx.isTransfer && tx.type === 'income' && tx.date === t.date && tx.relatedAccountId == t.accountId);
-                const amountIn = tIn ? Math.abs(tIn.amount) : Math.abs(t.amount);
-                amountInDisplay = `<div class="fw-bold text-warning">${CURRENCY_SYMBOLS[accTo.currency]}${formatAmount(amountIn, accTo.currency)}</div>`;
-            }
-        } else if (t.isTransfer && t.type === 'income') {
-            return; // 跳过转入记录
-        }
-
-        const canEdit = t.ownerName === currentUserName && !t._isArchived;
-        const canView = t.ownerName === currentUserName && t._isArchived; // 历史模式：自己的存档交易可查看
-        const editBtns = canEdit ? (t.isTransfer ?
-        `<i class="bi bi-pencil text-primary cursor-pointer me-2" style="cursor:pointer;" onclick="openEditTransfer(${t.id})"></i><i class="bi bi-trash text-danger cursor-pointer" style="cursor:pointer;" onclick="deleteTransaction(${t.id})"></i>` :
-        `<i class="bi bi-pencil text-primary cursor-pointer me-2" style="cursor:pointer;" onclick="openEditTransaction(${t.id})"></i><i class="bi bi-trash text-danger cursor-pointer" style="cursor:pointer;" onclick="deleteTransaction(${t.id})"></i>`) :
-        (canView ? `<i class="bi bi-eye text-secondary" style="cursor:pointer;" title="查看" onclick="${t.isTransfer ? `openEditTransfer(${t.id})` : `openEditTransaction(${t.id})`}"></i>` :
-        (!t.isTransfer ? `<i class="bi bi-eye text-secondary" style="cursor:pointer;" title="查看" onclick="openEditTransaction(${t.id})"></i>` : ''));
-
-        const tr = document.createElement('tr');
-        const tDescDisplay = t.items && t.items.length > 1
-            ? t.items.filter(it => it.desc).map(it => it.desc).join(' / ')
-            : (t.desc||'');
-        const tTagsDisplay = t.items && t.items.length > 1
-            ? t.items.filter(it => it.tags).map(it => `@${it.tags}`).join(' ')
-            : (t.tags||'');
-        tr.innerHTML = `
-            <td>${t.date}</td>
-            <td><div class="text-start ps-2 ${typeColorClass}">${typeText}</div></td>
-            <td>${t.isTransfer ? '' : (t.items && t.items.length > 1 ? t.items[0].category + '等' + (t.items.length-1) + '项' : (t.category || ''))}${!t.isTransfer ? getTxnBadge(t) : ''}</td>
-            <td><small>${getAccountDisplayName(acc)}</small>${t.isTransfer ? getTxnBadge(t) : ''}</td>
-            <td><div class="fw-bold ${t.isTransfer ? 'text-warning' : (t.amount < 0 ? 'text-danger' : 'text-success')}">${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}</div></td>
-            <td>${toAccountDisplay}</td>
-            <td>${amountInDisplay}</td>
-            <td><div class="desc-content" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:250px;" title="${tDescDisplay.replace(/"/g,'&quot;')}">${tDescDisplay}${t.attachmentId ? ` <a href="${getDriveAttachmentUrl(t.attachmentId)}" target="_blank" title="查看附件" onclick="event.stopPropagation()"><i class="bi bi-paperclip text-muted"></i></a>` : ''}</div></td>
-            <td>${tTagsDisplay}</td>
-            <td><span class="badge bg-secondary">${t.ownerName}</span></td>
-            <td><div class="text-center">${editBtns}</div></td>`;
-        tbody.appendChild(tr);
-    });
-
+    // 移动端卡片
     if (mobileContainer) {
         displayData.forEach(t => {
             const acc = accounts.find(a => a.id == t.accountId);
@@ -7475,7 +6969,6 @@ function switchStatsTab(tab) {
     $$('.stats-sub-pane').forEach(p => p.classList.remove('active'));
     $(`stats-tab-${tab}`).classList.add('active');
     $(`stats-pane-${tab}`).classList.add('active');
-    if (tab === 'spending') renderSpendingAnalysis();
     if (tab === 'budget') renderBudgetPane();
     if (tab === 'ai') renderAiAnalysis();
 }
@@ -7685,8 +7178,7 @@ function renderStats() {
         categories.expense.forEach(c => sel.add(new Option(c, c)));
         if (categories.expense[0]) renderCategoryTrendChart(filtered);
     }
-    // 消费类型 / 预算子页若当前可见，同步刷新（集中在此处理，避免各个筛选入口各自维护一份遗漏）
-    if ($('stats-pane-spending')?.classList.contains('active')) renderSpendingAnalysis();
+    // 预算子页若当前可见，同步刷新（集中在此处理，避免各个筛选入口各自维护一份遗漏）
     if ($('stats-pane-budget')?.classList.contains('active')) renderBudgetPane();
 }
 
@@ -7697,7 +7189,6 @@ function showChartDrawer(title, txList) {
     const titleEl   = $('chart-drawer-title');
     const summaryEl = $('chart-drawer-summary');
     const body      = $('chart-drawer-body');
-    const isDesktop = window.innerWidth >= 768;
 
     titleEl.textContent = title;
     _chartDrawerData = { title: title, txList: txList };
@@ -7722,62 +7213,8 @@ function showChartDrawer(title, txList) {
             .filter(t => !(t.isTransfer && t.type === 'income'))
             .sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
 
-        if (isDesktop) {
-            // ── 桌面：表格 ──
-            const table = document.createElement('table');
-            table.className = 'drawer-table';
-            table.innerHTML = `<thead><tr>
-                <th>日期</th><th>类别</th><th>账户</th><th>备注</th><th>标签</th><th style="text-align:right;">金额</th>
-            </tr></thead>`;
-            const tbody = document.createElement('tbody');
-
-            sorted.forEach(t => {
-                const acc = accounts.find(a => a.id == t.accountId);
-                if (!acc) return;
-                const tr = document.createElement('tr');
-
-                if (t.isTransfer && t.type === 'expense') {
-                    const accTo = accounts.find(a => a.id == t.relatedAccountId);
-                    const toName = accTo ? getAccountDisplayName(accTo) : '?';
-                    tr.innerHTML = `
-                        <td>${t.date}</td>
-                        <td><span class="text-primary"><i class="bi bi-arrow-left-right"></i> 转账</span></td>
-                        <td>${getAccountDisplayName(acc)} → ${toName}</td>
-                        <td class="text-muted">${t.desc || ''}</td>
-                        <td class="text-muted">${t.tags || ''}</td>
-                        <td style="text-align:right;" class="amount-transfer fw-bold">${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}</td>`;
-                } else {
-                    const catDisplay = t.items && t.items.length > 1
-                        ? t.items[0].category + ' 等' + (t.items.length - 1) + '项'
-                        : (t.category || '') + (t._splitPortion ? ' <span class="text-muted" style="font-size:.72rem;">(拆分)</span>' : '');
-                    const amountClass = t.amount < 0 ? 'amount-expense' : 'amount-income';
-                    const attachIcon  = t.attachmentId ? ' <i class="bi bi-paperclip text-muted" style="font-size:.72rem;"></i>' : '';
-                    tr.innerHTML = `
-                        <td>${t.date}</td>
-                        <td>${catDisplay}${attachIcon}</td>
-                        <td class="text-muted">${getAccountDisplayName(acc)}</td>
-                        <td class="text-muted">${t.desc || ''}</td>
-                        <td class="text-muted" style="font-size:.8rem;">${t.tags ? '<i class="bi bi-tag" style="font-size:.65rem;"></i> ' + t.tags : ''}</td>
-                        <td style="text-align:right;" class="${amountClass} fw-bold">${CURRENCY_SYMBOLS[acc.currency]}${formatAmount(Math.abs(t.amount), acc.currency)}</td>`;
-                }
-
-                tr.addEventListener('click', () => {
-                    _fromChartDrawer = true;
-                    closeChartDrawer();
-                    setTimeout(() => {
-                        if (t.isTransfer) openEditTransfer(t.id);
-                        else openEditTransaction(t.id);
-                    }, 280);
-                });
-                tbody.appendChild(tr);
-            });
-
-            table.appendChild(tbody);
-            body.appendChild(table);
-
-        } else {
-            // ── 手机：卡片 ──
-            sorted.forEach(t => {
+        // ── 卡片 ──
+        sorted.forEach(t => {
                 const acc = accounts.find(a => a.id == t.accountId);
                 if (!acc) return;
                 const card = document.createElement('div');
@@ -7824,7 +7261,6 @@ function showChartDrawer(title, txList) {
                 body.appendChild(card);
             });
         }
-    }
 
     backdrop.classList.add('show');
     drawer.classList.add('show');
@@ -8536,8 +7972,8 @@ function switchTab(t, el) {
     if (el) el.classList.add('active');
 
     const fab = $('mobile-fab-group');
-    // 历史模式下始终隐藏新增悬浮按钮
-    if (fab) fab.classList.toggle('d-none', t !== 'transactions' || historyMode);
+    // 历史模式或桌面端下始终隐藏悬浮按钮
+    if (fab) fab.classList.toggle('d-none', t !== 'transactions' || historyMode || window.innerWidth > 768);
 
     if (t === 'stats') { renderStats(); maybeShowInsight(); }
     if (t === 'planned') renderPlannedTransactions();
@@ -10400,7 +9836,6 @@ window.addEventListener('online', () => {
     </div>
 </div>
 
-</body></html>
 <div id="log-drawer-backdrop" onclick="closeLogDrawer()" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1060;opacity:0;pointer-events:none;transition:opacity .25s;"></div>
 <div id="log-drawer" style="position:fixed;left:0;right:0;bottom:0;z-index:1061;background:var(--bs-body-bg);border-radius:16px 16px 0 0;box-shadow:0 -4px 24px rgba(0,0,0,0.2);max-height:85vh;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);">
     <!-- 抽屉顶栏 -->
