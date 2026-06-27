@@ -5728,6 +5728,84 @@ function deleteBudget(id) {
 }
 
 // AI data analysis
+// ── AI 分类修改建议执行 ──────────────────────────────────────
+function applyAiCatSuggestion(btnEl, type, action, oldName, newName) {
+    const card = btnEl.closest('.ai-cat-suggestion-card');
+    if (action === 'rename') {
+        if (!categories[type]) return;
+        const trimmed = (newName || '').trim();
+        if (!trimmed || trimmed === oldName) return;
+        if (categories[type].includes(trimmed)) { showToast('分类名已存在：' + trimmed, 'warning'); return; }
+        const idx = categories[type].indexOf(oldName);
+        if (idx > -1) categories[type][idx] = trimmed;
+        transactions.forEach(function(t) { if (t.type === type && t.category === oldName) t.category = trimmed; });
+        if (plannedTransactions) plannedTransactions.forEach(function(p) { if (p.type === type && p.category === oldName) p.category = trimmed; });
+        saveUserData(); triggerAutoSave(); renderCategorySettings();
+        displayedTransactionCount = 100; renderAllTransactions(); renderStats();
+        showToast('分类已重命名：' + oldName + ' → ' + trimmed, 'success');
+    } else if (action === 'delete') {
+        if (!categories[type]) return;
+        const transCount = transactions.filter(function(t) { return t.type === type && t.category === oldName; }).length;
+        if (transCount > 0 && !confirm('删除分类 "' + oldName + '"？\n将影响 ' + transCount + ' 条记录（改为"未分类"）')) return;
+        categories[type] = categories[type].filter(function(c) { return c !== oldName; });
+        transactions.forEach(function(t) { if (t.type === type && t.category === oldName) t.category = '未分类'; });
+        if (plannedTransactions) plannedTransactions.forEach(function(p) { if (p.type === type && p.category === oldName) p.category = '未分类'; });
+        delete categoryIcons[oldName];
+        saveUserData(); triggerAutoSave(); renderCategorySettings();
+        displayedTransactionCount = 100; renderAllTransactions(); renderStats();
+        showToast('分类已删除：' + oldName, 'success');
+    } else if (action === 'add') {
+        if (!categories[type]) return;
+        const trimmed = (newName || '').trim();
+        if (!trimmed) return;
+        if (categories[type].includes(trimmed)) { showToast('分类已存在：' + trimmed, 'warning'); return; }
+        categories[type].push(trimmed);
+        saveUserData(); triggerAutoSave(); renderCategorySettings();
+        showToast('已添加分类：' + trimmed, 'success');
+    }
+    if (card) {
+        card.style.opacity = '0.45';
+        card.querySelectorAll('button').forEach(function(b) { b.disabled = true; });
+        const badge = card.querySelector('.ai-cat-badge');
+        if (badge) { badge.textContent = '已应用'; badge.className = 'ai-cat-badge badge bg-success ms-2'; badge.style.display = ''; }
+    }
+}
+
+function renderAiCatSuggestions(suggestions, container) {
+    if (!suggestions || suggestions.length === 0) return;
+    const actionLabel = { rename: '重命名', delete: '删除', add: '添加' };
+    const actionColor = { rename: 'warning', delete: 'danger', add: 'success' };
+    const typeLabel = { expense: '支出', income: '收入' };
+    let html = '<div class="card shadow-sm mt-3 border-warning">';
+    html += '<div class="card-header bg-transparent fw-bold"><i class="bi bi-magic text-warning"></i> AI 分类优化建议 <span class="badge bg-warning text-dark ms-1">' + suggestions.length + ' 项</span></div>';
+    html += '<div class="card-body p-2">';
+    suggestions.forEach(function(s) {
+        const actLbl = actionLabel[s.action] || s.action;
+        const actColor = actionColor[s.action] || 'secondary';
+        const typeLbl = typeLabel[s.type] || s.type;
+        let desc = '';
+        if (s.action === 'rename') desc = '"' + s.old_name + '" → "' + s.new_name + '"';
+        else if (s.action === 'delete') desc = '"' + s.old_name + '"';
+        else if (s.action === 'add') desc = '"' + s.new_name + '"';
+        const oldEsc = (s.old_name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        const newEsc = (s.new_name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        html += '<div class="ai-cat-suggestion-card d-flex align-items-start gap-2 p-2 mb-1 rounded border" style="transition:opacity .3s;">';
+        html += '<div class="flex-grow-1" style="font-size:0.88rem;">';
+        html += '<span class="badge bg-' + actColor + ' me-1">' + actLbl + '</span>';
+        html += '<span class="badge bg-secondary me-1">' + typeLbl + '</span>';
+        html += '<span>' + _escHtml(desc) + '</span>';
+        html += '<span class="ai-cat-badge badge ms-2" style="display:none;"></span>';
+        if (s.reason) html += '<div class="text-muted small mt-1">' + _escHtml(s.reason) + '</div>';
+        html += '</div>';
+        html += '<div class="d-flex gap-1 flex-shrink-0">';
+        html += '<button class="btn btn-sm btn-outline-' + actColor + ' py-0" onclick="applyAiCatSuggestion(this,\'' + s.type + '\',\'' + s.action + '\',\'' + oldEsc + '\',\'' + newEsc + '\')">应用</button>';
+        html += '<button class="btn btn-sm btn-outline-secondary py-0" onclick="this.closest(\'.ai-cat-suggestion-card\').remove()">忽略</button>';
+        html += '</div></div>';
+    });
+    html += '</div></div>';
+    container.insertAdjacentHTML('beforeend', html);
+}
+
 function renderAiAnalysis() {
     var container = $('ai-analysis-content');
     if (!container) return;
@@ -5793,32 +5871,40 @@ function renderAiAnalysis() {
         else if (near.length) budgetInfo = '接近预算：' + near.join('、');
         else budgetInfo = '各类别均在预算范围内';
     }
-    var prompt = '你是一个个人财务记账应用的数据分析助手。请根据以下数据生成一段200字以内的消费分析与建议(用中文)：\n\n';
-    prompt += '当前月份：' + monthLabel + '\n';
-    prompt += '收入总额：' + formatAmount(monthIncome, dispCurrency) + '\n';
-    prompt += '支出总额：' + formatAmount(monthExpense, dispCurrency) + '\n';
-    prompt += '结余：' + formatAmount(monthIncome - monthExpense, dispCurrency) + '\n\n';
-    prompt += '上月对比：\n';
-    prompt += '上月收入：' + formatAmount(prevIncome, dispCurrency) + ' (' + (prevIncome > 0 ? ((monthIncome - prevIncome) / prevIncome * 100).toFixed(1) : 0) + '%)\n';
-    prompt += '上月支出：' + formatAmount(prevExpense, dispCurrency) + ' (' + (prevExpense > 0 ? ((monthExpense - prevExpense) / prevExpense * 100).toFixed(1) : 0) + '%)\n\n';
-    prompt += '支出分类排行TOP5：' + topExpense + '\n';
-    prompt += '收入分类TOP3：' + topIncome + '\n\n';
-    prompt += '预算情况：' + budgetInfo + '\n\n';
-    // 获取当前所有分类名，用于让 AI 判断是否合理
     var allExpCats = (categories.expense || []).join('、');
     var allIncCats = (categories.income || []).join('、');
-    prompt += '当前支出分类列表：' + (allExpCats || '无') + '\n';
-    prompt += '当前收入分类列表：' + (allIncCats || '无') + '\n\n';
-    prompt += '请分析本月支出结构、收支变化趋势、可能的节省策略，并给出具体建议。\n';
-    prompt += '另外，请顺带检查当前的分类列表是否合理（是否有重复、过细、混淆或缺失的常见分类），如有问题请简要指出并给出优化建议；如分类已合理请直接略过此项。用自然语言，不要用模板。';
+    var prompt = '你是个人财务记账应用的分析助手。请严格以 JSON 格式返回，不要有任何多余文字、注释或 markdown 代码块。\n';
+    prompt += '返回格式：{"analysis":"消费分析（200字以内，中文）","suggestions":[{"action":"rename|delete|add","type":"expense|income","old_name":"原名(rename/delete必填)","new_name":"新名(rename/add必填)","reason":"简短理由"}]}\n';
+    prompt += 'suggestions：仅在发现分类确实有问题时填写（重复/混淆/错误分类的交易），若合理则返回 []。\n\n';
+    prompt += '月份：' + monthLabel + '\n';
+    prompt += '收入：' + formatAmount(monthIncome, dispCurrency) + '，支出：' + formatAmount(monthExpense, dispCurrency) + '，结余：' + formatAmount(monthIncome - monthExpense, dispCurrency) + '\n';
+    prompt += '上月收入：' + formatAmount(prevIncome, dispCurrency) + '，上月支出：' + formatAmount(prevExpense, dispCurrency) + '\n';
+    prompt += '支出TOP5：' + (topExpense || '无') + '\n';
+    prompt += '收入TOP3：' + (topIncome || '无') + '\n';
+    prompt += '预算：' + budgetInfo + '\n';
+    prompt += '当前支出分类：' + (allExpCats || '无') + '\n';
+    prompt += '当前收入分类：' + (allIncCats || '无') + '\n';
     var model = localStorage.getItem('ai_model') || 'gpt-4o-mini';
-    fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey }, body: JSON.stringify({ model: model, messages: [{ role: 'user', content: prompt }], max_tokens: 1000, temperature: 0.7 }) })
+    fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+        body: JSON.stringify({ model: model, messages: [{ role: 'user', content: prompt }], max_tokens: 1200, temperature: 0.5 })
+    })
     .then(function(res) { if (!res.ok) throw new Error('HTTP ' + res.status + ': ' + res.statusText); return res.json(); })
     .then(function(data) {
-        var text = '';
-        if (data && data.choices && data.choices[0] && data.choices[0].message) text = data.choices[0].message.content;
-        else text = '无法获取分析结果';
-        container.innerHTML = '<div class="card shadow-sm"><div class="card-header bg-transparent fw-bold"><i class="bi bi-robot text-info"></i> AI 消费分析 - ' + monthLabel + '</div><div class="card-body"><div style="white-space:pre-wrap;line-height:1.7;font-size:0.92rem;">' + _escHtml(text) + '</div></div><div class="card-footer bg-transparent text-muted small text-end"><i class="bi bi-info-circle"></i> 分析由 ' + model + ' 生成，详情请以实际为准</div></div>';
+        var raw = '';
+        if (data && data.choices && data.choices[0] && data.choices[0].message) raw = data.choices[0].message.content;
+        var analysisText = raw, suggestions = [];
+        try {
+            var cleaned = raw.replace(/^```json\s*/m,'').replace(/^```\s*/m,'').replace(/```\s*$/m,'').trim();
+            var parsed = JSON.parse(cleaned);
+            analysisText = parsed.analysis || raw;
+            suggestions = Array.isArray(parsed.suggestions) ? parsed.suggestions : [];
+        } catch(e) {
+            analysisText = raw; // 降级为纯文字
+        }
+        container.innerHTML = '<div class="card shadow-sm"><div class="card-header bg-transparent fw-bold"><i class="bi bi-robot text-info"></i> AI 消费分析 - ' + monthLabel + '</div><div class="card-body"><div style="white-space:pre-wrap;line-height:1.7;font-size:0.92rem;">' + _escHtml(analysisText) + '</div></div><div class="card-footer bg-transparent text-muted small text-end"><i class="bi bi-info-circle"></i> 分析由 ' + model + ' 生成，详情请以实际为准</div></div>';
+        renderAiCatSuggestions(suggestions, container);
     })
     .catch(function(err) {
         container.innerHTML = '<div class="text-center py-5"><i class="bi bi-exclamation-triangle text-warning" style="font-size:2.5rem;"></i><p class="text-danger mt-3">AI 分析失败</p><p class="text-muted small">' + _escHtml(err.message) + '</p><button class="btn btn-outline-secondary btn-sm mt-2" onclick="renderAiAnalysis()"><i class="bi bi-arrow-clockwise"></i> 重试</button></div>';
