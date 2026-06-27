@@ -1244,7 +1244,7 @@ select.compact-form-control { height: 2.1rem; }
 .cat-sort-item .btn { font-size: 0.75rem; }
 .cat-sort-item .btn.invisible { visibility: hidden; }
 .cat-sort-item .btn-outline-danger { border-color: transparent; }
-.cat-sort-item .cat-text { font-size: 0.9rem; }
+.cat-sort-item .cat-text { font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 </style>
 </head>
@@ -1830,26 +1830,23 @@ select.compact-form-control { height: 2.1rem; }
                     <span>分类管理</span>
                 </div>
                 <div class="card shadow-sm mb-3">
-                    <div class="card-header bg-transparent fw-bold">分类管理 (可上下移动排序)</div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-6">
-                                <h6 class="text-danger border-bottom pb-2">支出类别</h6>
-                                <div id="expense-cat-container" class="mb-3 p-2 rounded" style="background-color: var(--bs-tertiary-bg);"></div>
-                                <form onsubmit="addCategory(event, 'expense')" class="input-group input-group-sm">
-                                    <input type="text" class="form-control" id="new-expense-cat" placeholder="新分类名" required="">
-                                    <button class="btn btn-outline-danger" type="submit">添加</button>
-                                </form>
-                            </div>
-                            <div class="col-6">
-                                <h6 class="text-success border-bottom pb-2">收入类别</h6>
-                                <div id="income-cat-container" class="mb-3 p-2 rounded" style="background-color: var(--bs-tertiary-bg);"></div>
-                                <form onsubmit="addCategory(event, 'income')" class="input-group input-group-sm">
-                                    <input type="text" class="form-control" id="new-income-cat" placeholder="新分类名" required="">
-                                    <button class="btn btn-outline-success" type="submit">添加</button>
-                                </form>
-                            </div>
-                        </div>
+                    <div class="card-header bg-transparent fw-bold">支出类别</div>
+                    <div class="card-body pb-2">
+                        <div id="expense-cat-container" class="mb-2"></div>
+                        <form onsubmit="addCategory(event, 'expense')" class="input-group input-group-sm">
+                            <input type="text" class="form-control" id="new-expense-cat" placeholder="新分类名" required="">
+                            <button class="btn btn-outline-danger" type="submit">添加</button>
+                        </form>
+                    </div>
+                </div>
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header bg-transparent fw-bold">收入类别</div>
+                    <div class="card-body pb-2">
+                        <div id="income-cat-container" class="mb-2"></div>
+                        <form onsubmit="addCategory(event, 'income')" class="input-group input-group-sm">
+                            <input type="text" class="form-control" id="new-income-cat" placeholder="新分类名" required="">
+                            <button class="btn btn-outline-success" type="submit">添加</button>
+                        </form>
                     </div>
                 </div>
                 <div class="card shadow-sm">
