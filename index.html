@@ -5804,7 +5804,13 @@ function renderAiAnalysis() {
     prompt += '支出分类排行TOP5：' + topExpense + '\n';
     prompt += '收入分类TOP3：' + topIncome + '\n\n';
     prompt += '预算情况：' + budgetInfo + '\n\n';
-    prompt += '请分析本月支出结构、收支变化趋势、可能的节省策略，并给出具体建议。用自然语言，不要用板版。';
+    // 获取当前所有分类名，用于让 AI 判断是否合理
+    var allExpCats = (categories.expense || []).join('、');
+    var allIncCats = (categories.income || []).join('、');
+    prompt += '当前支出分类列表：' + (allExpCats || '无') + '\n';
+    prompt += '当前收入分类列表：' + (allIncCats || '无') + '\n\n';
+    prompt += '请分析本月支出结构、收支变化趋势、可能的节省策略，并给出具体建议。\n';
+    prompt += '另外，请顺带检查当前的分类列表是否合理（是否有重复、过细、混淆或缺失的常见分类），如有问题请简要指出并给出优化建议；如分类已合理请直接略过此项。用自然语言，不要用模板。';
     var model = localStorage.getItem('ai_model') || 'gpt-4o-mini';
     fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey }, body: JSON.stringify({ model: model, messages: [{ role: 'user', content: prompt }], max_tokens: 1000, temperature: 0.7 }) })
     .then(function(res) { if (!res.ok) throw new Error('HTTP ' + res.status + ': ' + res.statusText); return res.json(); })
@@ -6767,7 +6773,7 @@ async function handleAttachmentSelected(input) {
             currentIds.push(storedId);
             $('edit-trans-attachment-id').value = currentIds.join(',');
             renderAttachmentThumbs(currentIds);
-            if (verboseToast) showToast(`已上传（${fileSizeKB}KB）`, 'success', 3000);
+            showToast(`已上传（${fileSizeKB}KB）`, 'success', 3000);
         } else {
             showToast('上传失败：' + (result.error || '未知错误'), 'error');
         }
@@ -7623,7 +7629,16 @@ function closeChartDrawer() {
     $('chart-drawer').classList.remove('show');
     $('chart-drawer-backdrop').classList.remove('show');
     document.body.style.overflow = '';
+    // 注意：_fromChartDrawer 不在此处清除——若是点击流水卡片触发的关闭，
+    // 需要保留该标记以便弹窗关闭后重新弹出抽屉。只有用户主动关闭时才清除。
+    if (!_fromChartDrawer) {
+        // already false, nothing to do
+    }
+}
+
+function closeChartDrawerByUser() {
     _fromChartDrawer = false;
+    closeChartDrawer();
 }
 
 // 拆分交易钻取辅助：按类别取出对应分录的"虚拟流水"，金额只取该分录自身金额，
@@ -9793,12 +9808,12 @@ window.addEventListener('online', () => {
     <div id="backup-drawer-body" style="overflow-y:auto;flex:1;padding:16px;"></div>
 </div>
 
-<div id="chart-drawer-backdrop" onclick="closeChartDrawer()"></div>
+<div id="chart-drawer-backdrop" onclick="closeChartDrawerByUser()"></div>
 <div id="chart-drawer">
     <div id="chart-drawer-header">
         <span id="chart-drawer-title"></span>
         <span id="chart-drawer-summary"></span>
-        <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="closeChartDrawer()">
+        <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="closeChartDrawerByUser()">
             <i class="bi bi-x-lg"></i>
         </button>
     </div>
