@@ -1198,44 +1198,6 @@ select.compact-form-control { height: 2.1rem; }
     flex-shrink: 0;
 }
 
-/* Settings menu */
-.settings-menu-list { padding: 0; }
-.settings-menu-item {
-  display: flex; align-items: center; padding: 14px 16px;
-  border-bottom: 1px solid var(--bs-border-color);
-  cursor: pointer; transition: background 0.15s;
-  gap: 14px;
-}
-.settings-menu-item:hover { background: var(--bs-tertiary-bg); }
-.settings-menu-item:active { background: var(--bs-secondary-bg); }
-.settings-menu-item i:first-child { font-size: 1.3rem; width: 28px; text-align: center; }
-.settings-menu-item span { flex: 1; font-size: 0.95rem; }
-.settings-menu-item .bi-chevron-right { color: var(--bs-secondary-color); font-size: 0.85rem; }
-.settings-subpage { display: none; }
-.settings-subpage.active { display: block; }
-.subpage-header {
-  display: flex; align-items: center; gap: 12px;
-  padding: 12px 0; margin-bottom: 16px;
-  border-bottom: 1px solid var(--bs-border-color);
-  font-weight: 600; font-size: 1rem;
-}
-.subpage-header .bi-arrow-left {
-  font-size: 1.3rem; cursor: pointer; padding: 4px;
-  border-radius: 50%;
-}
-.subpage-header .bi-arrow-left:hover { background: var(--bs-tertiary-bg); }
-.settings-menu-footer {
-  margin-top: 24px; padding-top: 16px;
-  border-top: 1px solid var(--bs-border-color);
-}
-
-.cat-sort-list { display: flex; flex-direction: column; gap: 0; }
-.cat-sort-item .cat-icon-mini { font-size: 1.1rem; }
-.cat-sort-item .btn { font-size: 0.75rem; }
-.cat-sort-item .btn.invisible { visibility: hidden; }
-.cat-sort-item .btn-outline-danger { border-color: transparent; }
-.cat-sort-item .cat-text { font-size: 0.9rem; }
-
 </style>
 </head>
 <body>
@@ -1367,7 +1329,7 @@ select.compact-form-control { height: 2.1rem; }
         </div>
     </div>
     <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;pointer-events:none;">
-        <span class="text-muted" style="font-size:0.7rem;">version 2.4.0</span>
+        <span class="text-muted" style="font-size:0.7rem;">version 2.2.7</span>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
@@ -1705,9 +1667,6 @@ select.compact-form-control { height: 2.1rem; }
                 <button class="stats-sub-tab-btn" id="stats-tab-budget" onclick="switchStatsTab('budget')">
                     <i class="bi bi-piggy-bank-fill"></i> 预算
                 </button>
-                <button class="stats-sub-tab-btn" id="stats-tab-ai" onclick="switchStatsTab('ai')">
-                    <i class="bi bi-robot"></i> AI 分析
-                </button>
             </div>
 
             <!-- 概览子页 -->
@@ -1831,11 +1790,6 @@ select.compact-form-control { height: 2.1rem; }
                 </div>
                 <div id="budget-list" class="mb-4"></div>
             </div>
-
-            <!-- AI分析子页 -->
-            <div id="stats-pane-ai" class="stats-sub-pane">
-                <div id="ai-analysis-content"></div>
-            </div>
         </div>
 
         <div id="view-planned" class="view-section">
@@ -1854,323 +1808,223 @@ select.compact-form-control { height: 2.1rem; }
                 <h4 class="mb-0">系统设置</h4>
             </div>
 
-            <!-- Settings Menu -->
-            <div id="settings-menu">
-                <div class="settings-menu-list">
-                    <div class="settings-menu-item" onclick="showSettingsSubpage('exchange-rate')">
-                        <i class="bi bi-currency-exchange"></i>
-                        <span>汇率设置</span>
-                        <i class="bi bi-chevron-right"></i>
-                    </div>
-                    <div class="settings-menu-item" onclick="showSettingsSubpage('categories')">
-                        <i class="bi bi-tags"></i>
-                        <span>分类管理</span>
-                        <i class="bi bi-chevron-right"></i>
-                    </div>
-                    <div class="settings-menu-item" onclick="showSettingsSubpage('users')">
-                        <i class="bi bi-people"></i>
-                        <span>账户与用户</span>
-                        <i class="bi bi-chevron-right"></i>
-                    </div>
-                    <div class="settings-menu-item" onclick="showSettingsSubpage('data-sync')">
-                        <i class="bi bi-cloud-arrow-up"></i>
-                        <span>数据与同步</span>
-                        <i class="bi bi-chevron-right"></i>
-                    </div>
-                    <div class="settings-menu-item" onclick="showSettingsSubpage('archive')">
-                        <i class="bi bi-archive"></i>
-                        <span>数据存档</span>
-                        <i class="bi bi-chevron-right"></i>
-                    </div>
-                    <div class="settings-menu-item" onclick="showSettingsSubpage('password')">
-                        <i class="bi bi-key"></i>
-                        <span>数据密码</span>
-                        <i class="bi bi-chevron-right"></i>
-                    </div>
-                    <div class="settings-menu-item" onclick="showSettingsSubpage('ai-config')">
-                        <i class="bi bi-robot"></i>
-                        <span>AI 配置</span>
-                        <i class="bi bi-chevron-right"></i>
-                    </div>
-                    <div class="settings-menu-item" onclick="showSettingsSubpage('about')">
-                        <i class="bi bi-info-circle"></i>
-                        <span>关于</span>
-                        <i class="bi bi-chevron-right"></i>
-                    </div>
-                </div>
-                <div class="settings-menu-footer">
-                    <button class="btn btn-outline-secondary w-100 mb-2" onclick="switchUser()">
-                        <i class="bi bi-arrow-left-right"></i> 切换用户
-                    </button>
-                    <button class="btn btn-outline-danger w-100" onclick="logout()">
-                        <i class="bi bi-box-arrow-left"></i> 退出登录(<span id="mobile-current-user"></span>)
-                    </button>
-                </div>
+            <div class="d-md-none mb-4">
+                <button class="btn btn-outline-secondary w-100 mb-2" onclick="switchUser()">
+                    <i class="bi bi-arrow-left-right"></i> 切换用户
+                </button>
+                <button class="btn btn-outline-danger w-100" onclick="logout()">
+                    <i class="bi bi-box-arrow-left"></i> 退出登录 (<span id="mobile-current-user"></span>)
+                </button>
             </div>
 
-            <!-- Sub-page: 汇率设置 -->
-            <div id="settings-sub-exchange-rate" class="settings-subpage">
-                <div class="subpage-header">
-                    <i class="bi bi-arrow-left" onclick="showSettingsMenu()"></i>
-                    <span>汇率设置</span>
-                </div>
-                <div class="card shadow-sm">
-                    <div class="card-header bg-transparent fw-bold">汇率配置 (对人民币)</div>
-                    <div class="card-body">
-                        <div id="exchange-rate-inputs"></div>
-                        <p class="text-muted small mt-2">当前: <span id="current-exchange-rate"></span></p>
+            <div class="row g-4">
+ <div class="col-12 col-md-6">
+    <div class="card shadow-sm h-100">
+        <div class="card-header bg-transparent fw-bold">
+            <i class="bi bi-archive"></i> 数据存档管理
+        </div>
+        <div class="card-body">
+            <p class="text-muted small mb-2">将历史年份数据存档，减少主文件大小，提升同步速度。存档数据只读，可解档恢复。</p>
+            <div id="archive-management-ui" class="mb-2"></div>
+<div class="dropdown" id="history-year-btn-group">
+    <button class="btn btn-outline-secondary btn-sm w-100 dropdown-toggle" type="button"
+        data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="bi bi-clock-history"></i> 查看历史存档
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end" id="history-year-dropdown">
+        <li><span class="dropdown-item text-muted small">暂无存档</span></li>
+    </ul>
+</div>
+        </div>
+    </div>
+</div>
+
+                <div class="col-12 col-md-6">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-transparent fw-bold">汇率配置 (对人民币)</div>
+                        <div class="card-body">
+                            <div id="exchange-rate-inputs"></div>
+                            <p class="text-muted small mt-2">当前: <span id="current-exchange-rate"></span></p>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Sub-page: 分类管理 -->
-            <div id="settings-sub-categories" class="settings-subpage">
-                <div class="subpage-header">
-                    <i class="bi bi-arrow-left" onclick="showSettingsMenu()"></i>
-                    <span>分类管理</span>
-                </div>
-                <div class="card shadow-sm mb-3">
-                    <div class="card-header bg-transparent fw-bold">分类管理 (可上下移动排序)</div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-6">
-                                <h6 class="text-danger border-bottom pb-2">支出类别</h6>
-                                <div id="expense-cat-container" class="mb-3 p-2 rounded" style="background-color: var(--bs-tertiary-bg);"></div>
-                                <form onsubmit="addCategory(event, 'expense')" class="input-group input-group-sm">
-                                    <input type="text" class="form-control" id="new-expense-cat" placeholder="新分类名" required="">
-                                    <button class="btn btn-outline-danger" type="submit">添加</button>
-                                </form>
+                <div class="col-12 col-md-6">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-transparent fw-bold">数据导出 &amp; 同步</div>
+                        <div class="card-body">
+                            <p class="text-muted small mb-3">
+                                <i class="bi bi-info-circle"></i>
+                                数据保存在本地，导出加密文件时输入密码，导入时使用相同密码解密。
+                            </p>
+                            <div id="offline-mode-badge" class="alert alert-warning py-1 px-2 small mb-2" style="display:none;">
+                                <i class="bi bi-wifi-off"></i> 当前为<strong>离线模式</strong>，自动同步已关闭。手动点击下方按钮可主动同步。
                             </div>
-                            <div class="col-6">
-                                <h6 class="text-success border-bottom pb-2">收入类别</h6>
-                                <div id="income-cat-container" class="mb-3 p-2 rounded" style="background-color: var(--bs-tertiary-bg);"></div>
-                                <form onsubmit="addCategory(event, 'income')" class="input-group input-group-sm">
-                                    <input type="text" class="form-control" id="new-income-cat" placeholder="新分类名" required="">
-                                    <button class="btn btn-outline-success" type="submit">添加</button>
-                                </form>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-primary" onclick="syncToDrive(true)">
+                                    <i class="bi bi-cloud-upload"></i> 保存到 Google Drive
+                                </button>
+                                <button class="btn btn-warning" onclick="exportEncData()">
+                                    <i class="bi bi-shield-lock"></i> 导出本地文件
+                                </button>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="card shadow-sm">
-                    <div class="card-header bg-transparent fw-bold">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-magic"></i> 分类历史校对</span>
-                            <button class="btn btn-warning btn-sm" onclick="checkHistoryCategories()">
-                                <i class="bi bi-magic"></i> 自动校对
-                            </button>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <p class="text-muted small mb-0">根据您的历史记账行为，检测备注相近但分类不一致的交易，逐条提示修正。</p>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Sub-page: 账户与用户 -->
-            <div id="settings-sub-users" class="settings-subpage">
-                <div class="subpage-header">
-                    <i class="bi bi-arrow-left" onclick="showSettingsMenu()"></i>
-                    <span>账户与用户</span>
-                </div>
-                <div class="mb-4">
-                    <button class="btn btn-outline-secondary w-100 mb-2" onclick="switchUser()">
-                        <i class="bi bi-arrow-left-right"></i> 切换用户
-                    </button>
-                    <button class="btn btn-outline-danger w-100" onclick="logout()">
-                        <i class="bi bi-box-arrow-left"></i> 退出登录(<span id="mobile-current-user"></span>)
-                    </button>
-                </div>
-                <div class="card shadow-sm">
-                    <div class="card-header bg-transparent fw-bold">
-                        <i class="bi bi-people"></i> 用户管理
-                    </div>
-                    <div class="card-body">
-                        <div id="user-management-list" class="mb-3"></div>
-                        <form onsubmit="addUserFromSettings(event)" class="d-flex gap-2">
-                            <input type="text" class="form-control form-control-sm" id="new-user-input" placeholder="新用户名" required="">
-                            <button class="btn btn-outline-secondary btn-sm text-nowrap" type="submit">
-                                <i class="bi bi-plus-lg"></i> 添加
-                            </button>
-                        </form>
+                <div class="col-12 col-md-6">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-transparent fw-bold">
+                            <i class="bi bi-key"></i> 数据文件密码
+                        </div>
+                        <div class="card-body d-flex flex-column justify-content-between">
+                            <p class="text-muted small mb-3">
+                                <i class="bi bi-info-circle"></i>
+                                修改密码后，需要重新导出加密文件才会生效。
+                            </p>
+                            <div>
+                                <div class="text-muted small mb-3" id="pwd-status-hint"></div>
+                                <button class="btn btn-outline-warning w-100" onclick="openChangePwdModal()">
+                                    <i class="bi bi-key-fill"></i> 修改密码…
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Sub-page: 数据与同步 -->
-            <div id="settings-sub-data-sync" class="settings-subpage">
-                <div class="subpage-header">
-                    <i class="bi bi-arrow-left" onclick="showSettingsMenu()"></i>
-                    <span>数据与同步</span>
-                </div>
-                <div class="card shadow-sm mb-3">
-                    <div class="card-header bg-transparent fw-bold">数据导出 &amp; 同步</div>
-                    <div class="card-body">
-                        <p class="text-muted small mb-3">
-                            <i class="bi bi-info-circle"></i>
-                            数据保存在本地，导出加密文件时输入密码，导入时使用相同密码解密。
-                        </p>
-                        <div id="offline-mode-badge" class="alert alert-warning py-1 px-2 small mb-2" style="display:none;">
-                            <i class="bi bi-wifi-off"></i> 当前为 <strong>离线模式</strong>，自动同步已关闭。手动点击下方按钮可主动同步。
+                <div class="col-12 col-md-6">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-transparent fw-bold">
+                            <i class="bi bi-people"></i> 用户管理
                         </div>
-                        <div class="d-grid gap-2">
-                            <button class="btn btn-primary" onclick="syncToDrive(true)">
-                                <i class="bi bi-cloud-upload"></i> 保存到 Google Drive
-                            </button>
-                            <button class="btn btn-warning" onclick="exportEncData()">
-                                <i class="bi bi-shield-lock"></i> 导出本地文件
-                            </button>
+                        <div class="card-body">
+                            <div id="user-management-list" class="mb-3"></div>
+                            <form onsubmit="addUserFromSettings(event)" class="d-flex gap-2">
+                                <input type="text" class="form-control form-control-sm" id="new-user-input" placeholder="新用户名" required="">
+                                <button class="btn btn-outline-success btn-sm text-nowrap" type="submit">
+                                    <i class="bi bi-plus-lg"></i> 添加
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </div>
-                <div class="card shadow-sm mb-3">
-                    <div class="card-header bg-transparent fw-bold">
-                        <i class="bi bi-clock-history"></i> 云端备份浏览
+
+                <div class="col-12">
+                    <!-- 手机端显示提示，桌面端显示完整管理 -->
+                    <div class="card shadow-sm d-md-none">
+                        <div class="card-body py-3 text-center text-muted small">
+                            <i class="bi bi-laptop me-1"></i> 类别管理及账户排序请在电脑端操作
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <p class="text-muted small mb-2">查看 Drive 历史备份，与当前数据对比差异，或从备份恢复。</p>
-                        <button class="btn btn-outline-secondary btn-sm w-100 mb-2" onclick="loadBackupList()">
-                            <i class="bi bi-arrow-clockwise"></i> 读取备份列表
-                        </button>
-                        <div id="backup-list-container" class="mt-1" style="max-height:220px;overflow-y:auto;font-size:0.85rem;"></div>
+                    <div class="card shadow-sm d-none d-md-block">
+                        <div class="card-header bg-transparent fw-bold">类别管理 (可拖拽排序)</div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="text-danger border-bottom pb-2">支出类别</h6>
+                                    <div id="expense-cat-container" class="d-flex flex-wrap gap-2 mb-3 p-2 rounded" style="background-color: var(--bs-tertiary-bg);" ondragover="allowDrop(event)" ondrop="dropCategory(event, 'expense')"></div>
+                                    <form onsubmit="addCategory(event, 'expense')" class="input-group input-group-sm">
+                                        <input type="text" class="form-control" id="new-expense-cat" placeholder="新类别名" required="">
+                                        <button class="btn btn-outline-danger" type="submit">添加</button>
+                                    </form>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="text-success border-bottom pb-2">收入类别</h6>
+                                    <div id="income-cat-container" class="d-flex flex-wrap gap-2 mb-3 p-2 rounded" style="background-color: var(--bs-tertiary-bg);" ondragover="allowDrop(event)" ondrop="dropCategory(event, 'income')"></div>
+                                    <form onsubmit="addCategory(event, 'income')" class="input-group input-group-sm">
+                                        <input type="text" class="form-control" id="new-income-cat" placeholder="新类别名" required="">
+                                        <button class="btn btn-outline-success" type="submit">添加</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+                    </div><!-- end d-none d-md-block -->
                 </div>
-                <div class="card shadow-sm mb-3">
-                    <div class="card-header bg-transparent fw-bold">
-                        <i class="bi bi-journal-text"></i> 访问日志
+
+                <div class="col-12">
+                    <div class="card shadow-sm mb-3">
+                        <div class="card-header bg-transparent fw-bold">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span><i class="bi bi-magic"></i> 分类历史校对</span>
+                                <button class="btn btn-warning btn-sm" onclick="checkHistoryCategories()">
+                                    <i class="bi bi-magic"></i> 自动校对
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small mb-0">根据您的历史记账行为，检测备注相近但分类不一致的交易，逐条提示修正。</p>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <p class="text-muted small mb-2">查看云端 access_log.txt 的访问记录，支持分页浏览。</p>
-                        <button class="btn btn-outline-secondary btn-sm w-100" onclick="loadAccessLog()">
-                            <i class="bi bi-journal-text"></i> 打开访问日志
+
+                    <div class="mb-2">
+                        <button class="btn btn-outline-secondary btn-sm me-2" onclick="toggleAdvancedExportSection()">
+                            <i class="bi bi-gear" id="adv-export-toggle-icon"></i>
+                            <span id="adv-export-toggle-text">显示高级设置</span>
                         </button>
                     </div>
-                </div>
-                <div class="card shadow-sm mb-3">
-                    <div class="card-header bg-transparent fw-bold">
-                        <i class="bi bi-file-earmark-code"></i> 高级导出 / 导入
-                    </div>
-                    <div class="card-body">
-                        <div class="d-grid gap-2">
-                            <div class="btn-group">
-                                <button class="btn btn-success" onclick="exportJsonData()">
-                                    <i class="bi bi-download"></i> 导出 JSON
+
+                    <div id="adv-export-card" style="display: none;">
+
+                        <!-- 云端备份浏览 -->
+                        <div class="card shadow-sm mb-3">
+                            <div class="card-header bg-transparent fw-bold">
+                                <i class="bi bi-clock-history"></i> 云端备份浏览
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted small mb-2">查看 Drive 历史备份，与当前数据对比差异，或从备份恢复。</p>
+                                <button class="btn btn-outline-secondary btn-sm w-100 mb-2" onclick="loadBackupList()">
+                                    <i class="bi bi-arrow-clockwise"></i> 读取备份列表
                                 </button>
-                                <button class="btn btn-info text-white" onclick="exportTransactionCsv()">
-                                    <i class="bi bi-file-earmark-spreadsheet"></i> 导出交易CSV
-                                </button>
-                                <button class="btn btn-info text-white" onclick="exportTransferCsv()">
-                                    <i class="bi bi-file-earmark-spreadsheet"></i> 导出转账CSV
+                                <div id="backup-list-container" class="mt-1" style="max-height:220px;overflow-y:auto;font-size:0.85rem;"></div>
+                            </div>
+                        </div>
+
+                        <!-- 查看访问日志 -->
+                        <div class="card shadow-sm mb-3">
+                            <div class="card-header bg-transparent fw-bold">
+                                <i class="bi bi-journal-text"></i> 访问日志
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted small mb-2">查看云端 access_log.txt 的访问记录，支持分页浏览。</p>
+                                <button class="btn btn-outline-secondary btn-sm w-100" onclick="loadAccessLog()">
+                                    <i class="bi bi-journal-text"></i> 打开访问日志
                                 </button>
                             </div>
-                            <div class="btn-group">
-                                <button class="btn btn-primary" onclick="$('transaction-csv-input').click()">
-                                    <i class="bi bi-file-earmark-arrow-up"></i> 导入交易CSV
-                                </button>
-                                <button class="btn btn-primary" onclick="$('transfer-csv-input').click()">
-                                    <i class="bi bi-file-earmark-arrow-up"></i> 导入转账CSV
-                                </button>
+                        </div>
+
+                        <!-- 高级导出 / 导入 -->
+                        <div class="card shadow-sm mb-3">
+                            <div class="card-header bg-transparent fw-bold">
+                                <i class="bi bi-file-earmark-code"></i> 高级导出 / 导入
                             </div>
-                            <input type="file" id="transaction-csv-input" class="d-none" accept=".csv" onchange="importTransactionCsv()">
-                            <input type="file" id="transfer-csv-input" class="d-none" accept=".csv" onchange="importTransferCsv()">
+                            <div class="card-body">
+                                <div class="d-grid gap-2">
+                                    <div class="btn-group">
+                                        <button class="btn btn-success" onclick="exportJsonData()">
+                                            <i class="bi bi-download"></i> 导出 JSON
+                                        </button>
+                                        <button class="btn btn-info text-white" onclick="exportTransactionCsv()">
+                                            <i class="bi bi-file-earmark-spreadsheet"></i> 导出交易CSV
+                                        </button>
+                                        <button class="btn btn-info text-white" onclick="exportTransferCsv()">
+                                            <i class="bi bi-file-earmark-spreadsheet"></i> 导出转账CSV
+                                        </button>
+                                    </div>
+                                    <div class="btn-group">
+                                        <button class="btn btn-primary" onclick="$('transaction-csv-input').click()">
+                                            <i class="bi bi-file-earmark-arrow-up"></i> 导入交易CSV
+                                        </button>
+                                        <button class="btn btn-primary" onclick="$('transfer-csv-input').click()">
+                                            <i class="bi bi-file-earmark-arrow-up"></i> 导入转账CSV
+                                        </button>
+                                    </div>
+                                    <input type="file" id="transaction-csv-input" class="d-none" accept=".csv" onchange="importTransactionCsv()">
+                                    <input type="file" id="transfer-csv-input" class="d-none" accept=".csv" onchange="importTransferCsv()">
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Sub-page: 数据存档 -->
-            <div id="settings-sub-archive" class="settings-subpage">
-                <div class="subpage-header">
-                    <i class="bi bi-arrow-left" onclick="showSettingsMenu()"></i>
-                    <span>数据存档</span>
-                </div>
-                <div class="card shadow-sm">
-                    <div class="card-header bg-transparent fw-bold">
-                        <i class="bi bi-archive"></i> 数据存档管理
-                    </div>
-                    <div class="card-body">
-                        <p class="text-muted small mb-2">将历史年份数据存档，减少主文件大小，提升同步速度。存档数据只读，可解档恢复。</p>
-                        <div id="archive-management-ui" class="mb-2"></div>
-                        <div class="dropdown" id="history-year-btn-group">
-                            <button class="btn btn-outline-secondary btn-sm w-100 dropdown-toggle" type="button"
-                                data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-clock-history"></i> 查看历史存档
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end" id="history-year-dropdown">
-                                <li><span class="dropdown-item text-muted small">暂无存档</span></li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Sub-page: 数据密码 -->
-            <div id="settings-sub-password" class="settings-subpage">
-                <div class="subpage-header">
-                    <i class="bi bi-arrow-left" onclick="showSettingsMenu()"></i>
-                    <span>数据密码</span>
-                </div>
-                <div class="card shadow-sm">
-                    <div class="card-header bg-transparent fw-bold">
-                        <i class="bi bi-key"></i> 数据文件密码
-                    </div>
-                    <div class="card-body">
-                        <p class="text-muted small mb-3">
-                            <i class="bi bi-info-circle"></i>
-                            修改密码后，需要重新导出加密文件才会生效。
-                        </p>
-                        <div>
-                            <div class="text-muted small mb-3" id="pwd-status-hint"></div>
-                            <button class="btn btn-outline-warning w-100" onclick="openChangePwdModal()">
-                                <i class="bi bi-key-fill"></i> 修改密码...
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Sub-page: AI 配置 -->
-            <div id="settings-sub-ai-config" class="settings-subpage">
-                <div class="subpage-header">
-                    <i class="bi bi-arrow-left" onclick="showSettingsMenu()"></i>
-                    <span>AI 配置</span>
-                </div>
-                <div class="card shadow-sm">
-                    <div class="card-header bg-transparent fw-bold">
-                        <i class="bi bi-robot"></i> AI 接口配置
-                    </div>
-                    <div class="card-body">
-                        <p class="text-muted small mb-3">配置 AI 分析服务，用于统计页的 AI 数据分析功能。</p>
-                        <div class="mb-3">
-                            <label class="form-label small">API 地址</label>
-                            <input type="text" class="form-control form-control-sm" id="ai-api-url" placeholder="https://api.openai.com/v1/chat/completions">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label small">API Key</label>
-                            <input type="password" class="form-control form-control-sm" id="ai-api-key" placeholder="sk-...">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label small">模型名称</label>
-                            <input type="text" class="form-control form-control-sm" id="ai-model" placeholder="gpt-4o-mini">
-                        </div>
-                        <button class="btn btn-primary w-100" onclick="saveAiConfig()">
-                            <i class="bi bi-check-lg"></i> 保存配置
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Sub-page: 关于 -->
-            <div id="settings-sub-about" class="settings-subpage">
-                <div class="subpage-header">
-                    <i class="bi bi-arrow-left" onclick="showSettingsMenu()"></i>
-                    <span>关于</span>
-                </div>
-                <div class="card shadow-sm">
-                    <div class="card-body text-center py-4">
-                        <h5>记一笔</h5>
-                        <p class="text-muted small">版本 <span id="settings-version">v2.4.0</span></p>
-                        <p class="text-muted small mb-0">个人财务记账 PWA 应用</p>
                     </div>
                 </div>
             </div>
@@ -4836,8 +4690,6 @@ $('account-form').addEventListener('submit', (e) => {
 
 let currentDetailAccountId = null;
 let openedFromDetail = false;
-var _fromChartDrawer = false;
-var _chartDrawerData = null;
 
 function renderDetailContent(id) {
     const acc = accounts.find(a => a.id === id);
@@ -6181,98 +6033,6 @@ function deleteBudget(id) {
     renderBudgetPane();
 }
 
-// AI data analysis
-function renderAiAnalysis() {
-    var container = $('ai-analysis-content');
-    if (!container) return;
-    var apiUrl = localStorage.getItem('ai_api_url');
-    var apiKey = localStorage.getItem('ai_api_key');
-    if (!apiUrl || !apiKey) {
-        container.innerHTML = '<div class="text-center py-5"><i class="bi bi-robot" style="font-size:2.5rem;opacity:.4;"></i><p class="text-muted mt-3">尚未配置 AI 服务</p><p class="text-muted small">请前往 <a href="#" onclick="switchTab(\'settings\',document.querySelector(\'[onclick*=settings]\'));showSettingsSubpage(\'ai-config\');return false;">设置 → AI 配置</a> 填写接口信息</p></div>';
-        return;
-    }
-    container.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-info mb-3" role="status"></div><p class="text-muted">AI 分析中...</p></div>';
-    var year = statsNavYear, month = statsNavMonth;
-    var filterUser = currentStatsFilter.user || 'all';
-    var monthLabel = year + '年' + (month + 1) + '月';
-    var monthIncome = 0, monthExpense = 0;
-    var catSpend = {}, catIncome = {};
-    var source = historyMode ? historyTransactions : transactions;
-    var dispCurrency = currentStatsFilter.currency;
-    var monthTxns = source.filter(function(t) {
-        var d = t.date || '';
-        if (d.indexOf(String(year)) !== 0) return false;
-        var m = String(month + 1);
-        if (m.length < 2) m = '0' + m;
-        if (d.indexOf('-' + m) < 0) return false;
-        if (filterUser !== 'all' && t.user !== filterUser) return false;
-        return true;
-    });
-    monthTxns.forEach(function(t) {
-        var amt = convertAmt(parseFloat(t.amount) || 0, t.currency || 'RMB');
-        if (t.type === 'income') { monthIncome += amt; catIncome[t.category] = (catIncome[t.category] || 0) + amt; }
-        else { monthExpense += amt; catSpend[t.category] = (catSpend[t.category] || 0) + amt; }
-    });
-    var prevMonth = month - 1, prevYear = year;
-    if (prevMonth < 0) { prevMonth = 11; prevYear--; }
-    var prevTxns = source.filter(function(t) {
-        var d = t.date || '';
-        if (d.indexOf(String(prevYear)) !== 0) return false;
-        var m = String(prevMonth + 1);
-        if (m.length < 2) m = '0' + m;
-        if (d.indexOf('-' + m) < 0) return false;
-        if (filterUser !== 'all' && t.user !== filterUser) return false;
-        return true;
-    });
-    var prevIncome = 0, prevExpense = 0;
-    prevTxns.forEach(function(t) {
-        var amt = convertAmt(parseFloat(t.amount) || 0, t.currency || 'RMB');
-        if (t.type === 'income') prevIncome += amt; else prevExpense += amt;
-    });
-    var expenseCats = Object.keys(catSpend).sort(function(a,b) { return catSpend[b] - catSpend[a]; }).slice(0,5);
-    var incomeCats = Object.keys(catIncome).sort(function(a,b) { return catIncome[b] - catIncome[a]; }).slice(0,3);
-    var topExpense = expenseCats.map(function(c) { return c + '(' + formatAmount(catSpend[c], dispCurrency) + ')'; }).join('、');
-    var topIncome = incomeCats.map(function(c) { return c + '(' + formatAmount(catIncome[c], dispCurrency) + ')'; }).join('、');
-    var budgetInfo = '未设置预算';
-    if (budgets.length > 0) {
-        var over = [], near = [];
-        budgets.forEach(function(b) {
-            var ba = convertAmt(b.amount, b.currency || 'RMB');
-            var spent = b.category === '__total__' ? monthExpense : (catSpend[b.category] || 0);
-            var pct = ba > 0 ? Math.round(spent / ba * 100) : 0;
-            if (pct >= 100) over.push(b.category);
-            else if (pct >= 80) near.push(b.category);
-        });
-        if (over.length) budgetInfo = '超支类别：' + over.join('、');
-        else if (near.length) budgetInfo = '接近预算：' + near.join('、');
-        else budgetInfo = '各类别均在预算范围内';
-    }
-    var prompt = '你是一个个人财务记账应用的数据分析助手。请根据以下数据生成一段200字以内的消费分析与建议(用中文)：\n\n';
-    prompt += '当前月份：' + monthLabel + '\n';
-    prompt += '收入总额：' + formatAmount(monthIncome, dispCurrency) + '\n';
-    prompt += '支出总额：' + formatAmount(monthExpense, dispCurrency) + '\n';
-    prompt += '结余：' + formatAmount(monthIncome - monthExpense, dispCurrency) + '\n\n';
-    prompt += '上月对比：\n';
-    prompt += '上月收入：' + formatAmount(prevIncome, dispCurrency) + ' (' + (prevIncome > 0 ? ((monthIncome - prevIncome) / prevIncome * 100).toFixed(1) : 0) + '%)\n';
-    prompt += '上月支出：' + formatAmount(prevExpense, dispCurrency) + ' (' + (prevExpense > 0 ? ((monthExpense - prevExpense) / prevExpense * 100).toFixed(1) : 0) + '%)\n\n';
-    prompt += '支出分类排行TOP5：' + topExpense + '\n';
-    prompt += '收入分类TOP3：' + topIncome + '\n\n';
-    prompt += '预算情况：' + budgetInfo + '\n\n';
-    prompt += '请分析本月支出结构、收支变化趋势、可能的节省策略，并给出具体建议。用自然语言，不要用板版。';
-    var model = localStorage.getItem('ai_model') || 'gpt-4o-mini';
-    fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey }, body: JSON.stringify({ model: model, messages: [{ role: 'user', content: prompt }], max_tokens: 1000, temperature: 0.7 }) })
-    .then(function(res) { if (!res.ok) throw new Error('HTTP ' + res.status + ': ' + res.statusText); return res.json(); })
-    .then(function(data) {
-        var text = '';
-        if (data && data.choices && data.choices[0] && data.choices[0].message) text = data.choices[0].message.content;
-        else text = '无法获取分析结果';
-        container.innerHTML = '<div class="card shadow-sm"><div class="card-header bg-transparent fw-bold"><i class="bi bi-robot text-info"></i> AI 消费分析 - ' + monthLabel + '</div><div class="card-body"><div style="white-space:pre-wrap;line-height:1.7;font-size:0.92rem;">' + _escHtml(text) + '</div></div><div class="card-footer bg-transparent text-muted small text-end"><i class="bi bi-info-circle"></i> 分析由 ' + model + ' 生成，详情请以实际为准</div></div>';
-    })
-    .catch(function(err) {
-        container.innerHTML = '<div class="text-center py-5"><i class="bi bi-exclamation-triangle text-warning" style="font-size:2.5rem;"></i><p class="text-danger mt-3">AI 分析失败</p><p class="text-muted small">' + _escHtml(err.message) + '</p><button class="btn btn-outline-secondary btn-sm mt-2" onclick="renderAiAnalysis()"><i class="bi bi-arrow-clockwise"></i> 重试</button></div>';
-    });
-}
-
 
 // ── 类别图标网格 ─────────────────────────────────────────────
 const CATEGORY_ICON_MAP = {
@@ -6530,10 +6290,6 @@ function onSubModalHide() {
     if (singleRow) singleRow.style.display = '';
     if (metaSec) metaSec.style.display = '';
     maybeReturnToDetail();
-    if (_fromChartDrawer && _chartDrawerData) {
-        _fromChartDrawer = false;
-        setTimeout(function() { showChartDrawer(_chartDrawerData.title, _chartDrawerData.txList); }, 100);
-    }
 }
 $('editTransactionModal').addEventListener('hidden.bs.modal', onSubModalHide);
 
@@ -7477,7 +7233,6 @@ function switchStatsTab(tab) {
     $(`stats-pane-${tab}`).classList.add('active');
     if (tab === 'spending') renderSpendingAnalysis();
     if (tab === 'budget') renderBudgetPane();
-    if (tab === 'ai') renderAiAnalysis();
 }
 
 
@@ -7700,7 +7455,6 @@ function showChartDrawer(title, txList) {
     const isDesktop = window.innerWidth >= 768;
 
     titleEl.textContent = title;
-    _chartDrawerData = { title: title, txList: txList };
     body.innerHTML = '';
 
     if (!txList || txList.length === 0) {
@@ -7762,7 +7516,6 @@ function showChartDrawer(title, txList) {
                 }
 
                 tr.addEventListener('click', () => {
-                    _fromChartDrawer = true;
                     closeChartDrawer();
                     setTimeout(() => {
                         if (t.isTransfer) openEditTransfer(t.id);
@@ -7814,7 +7567,6 @@ function showChartDrawer(title, txList) {
                 }
 
                 card.addEventListener('click', () => {
-                    _fromChartDrawer = true;
                     closeChartDrawer();
                     setTimeout(() => {
                         if (t.isTransfer) openEditTransfer(t.id);
@@ -8187,7 +7939,6 @@ function closeChartDrawer() {
     $('chart-drawer').classList.remove('show');
     $('chart-drawer-backdrop').classList.remove('show');
     document.body.style.overflow = '';
-    _fromChartDrawer = false;
 }
 
 // 拆分交易钻取辅助：按类别取出对应分录的"虚拟流水"，金额只取该分录自身金额，
@@ -8541,39 +8292,7 @@ function switchTab(t, el) {
 
     if (t === 'stats') { renderStats(); maybeShowInsight(); }
     if (t === 'planned') renderPlannedTransactions();
-    if (t === 'settings') { showSettingsMenu(); renderExchangeRateSettings(); initPasswordHint(); renderUserManagement(); renderArchiveManagementUI(); }
-}
-
-function showSettingsMenu() {
-    $('settings-menu').style.display = 'block';
-    $$('.settings-subpage').forEach(function(el) { el.classList.remove('active'); });
-}
-function showSettingsSubpage(name) {
-    $('settings-menu').style.display = 'none';
-    $$('.settings-subpage').forEach(function(el) { el.classList.remove('active'); });
-    var sub = $('settings-sub-' + name);
-    if (sub) sub.classList.add('active');
-    if (name === 'exchange-rate') renderExchangeRateSettings();
-    if (name === 'categories') renderCategorySettings();
-    if (name === 'users') { renderUserManagement(); initPasswordHint(); }
-    if (name === 'archive') renderArchiveManagementUI();
-    if (name === 'password') initPasswordHint();
-    if (name === 'ai-config') loadAiConfig();
-}
-function saveAiConfig() {
-    var url = $('ai-api-url').value.trim();
-    var key = $('ai-api-key').value.trim();
-    var model = $('ai-model').value.trim();
-    if (!url || !key) { showToast('请填写 API 地址和 Key', 'warning'); return; }
-    localStorage.setItem('ai_api_url', url);
-    localStorage.setItem('ai_api_key', key);
-    localStorage.setItem('ai_model', model || 'gpt-4o-mini');
-    showToast('AI 配置已保存', 'success');
-}
-function loadAiConfig() {
-    $('ai-api-url').value = localStorage.getItem('ai_api_url') || '';
-    $('ai-api-key').value = localStorage.getItem('ai_api_key') || '';
-    $('ai-model').value = localStorage.getItem('ai_model') || 'gpt-4o-mini';
+    if (t === 'settings') { renderExchangeRateSettings(); initPasswordHint(); renderUserManagement(); renderArchiveManagementUI(); }
 }
 
 
@@ -8757,46 +8476,42 @@ function setExchangeRate(from, to, rate) {
 }
 
 function renderCategorySettings() {
-    var render = function(type, id) {
-        var div = $(id);
+    const render = (type, id) => {
+        const div = $(id);
         if (!div) return;
         div.innerHTML = '';
         if (!categories[type]) return;
-        var list = document.createElement('div');
-        list.className = 'cat-sort-list';
-        categories[type].forEach(function(cat, idx) {
-            var meta = getCatIcon(cat);
-            var row = document.createElement('div');
-            row.className = 'cat-sort-item d-flex align-items-center gap-2 p-2 mb-1 rounded border';
-            row.style.background = 'var(--bs-secondary-bg)';
-            row.innerHTML = '\
-                <div class="d-flex flex-column gap-0">\
-                    <button class="btn btn-sm py-0 px-1 ' + (idx === 0 ? 'invisible' : '') + '" onclick="moveCategory(\'' + type + '\',' + idx + ',-1)" style="line-height:1;"><i class="bi bi-chevron-up"></i></button>\
-                    <button class="btn btn-sm py-0 px-1 ' + (idx === categories[type].length - 1 ? 'invisible' : '') + '" onclick="moveCategory(\'' + type + '\',' + idx + ',1)" style="line-height:1;"><i class="bi bi-chevron-down"></i></button>\
-                </div>\
-                <span class="cat-icon-mini" style="--cat-color:' + meta.color + ';--cat-color-rgb:' + _hexToRgbStr(meta.color) + ';cursor:pointer;" onclick="openIconPicker(\'' + type + '\',\'' + cat + '\')" title="设置图标"><i class="bi ' + meta.icon + '"></i></span>\
-                <span class="cat-text flex-grow-1" style="cursor:pointer;" title="点击修改名称" onclick="editCategoryName(\'' + type + '\',\'' + cat + '\')">' + cat + '</span>\
-                <button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="removeCategory(\'' + type + '\',\'' + cat + '\')" title="删除分类"><i class="bi bi-trash"></i></button>';
-            row.dataset.idx = idx;
-            row.dataset.type = type;
-            list.appendChild(row);
+        categories[type].forEach((cat, idx) => {
+            const el = document.createElement('span');
+            const meta = getCatIcon(cat);
+            el.className = 'badge bg-white text-dark border draggable-badge p-2 me-2 mb-2 d-inline-flex align-items-center';
+            el.innerHTML = `<span class="cat-icon-mini" style="--cat-color:${meta.color};--cat-color-rgb:${_hexToRgbStr(meta.color)};" onclick="openIconPicker('${type}','${cat}')" title="设置图标"><i class="bi ${meta.icon}"></i></span>` +
+                `<span class="cat-text" style="cursor:pointer;" title="点击修改名称" onclick="editCategoryName('${type}', '${cat}')">${cat}</span> <i class="bi bi-x text-danger ms-1" style="cursor:pointer;" onclick="removeCategory('${type}','${cat}')"></i>`;
+            el.draggable = true; el.dataset.idx = idx; el.dataset.type = type;
+            el.addEventListener('dragstart', function() { window.dragCatIdx = idx; window.dragCatType = type; this.classList.add('dragging'); });
+            el.addEventListener('dragend', function() { this.classList.remove('dragging'); });
+            el.addEventListener('dragover', e => e.preventDefault());
+            el.addEventListener('drop', (e) => {
+                e.preventDefault();
+                if (window.dragCatType !== type) return;
+                const badge = e.target.closest('.draggable-badge');
+                if (!badge) return;
+                const targetIdx = parseInt(badge.dataset.idx);
+                const list = categories[type];
+                const [moved] = list.splice(window.dragCatIdx, 1);
+                list.splice(targetIdx, 0, moved);
+                saveUserData(); triggerAutoSave(); renderCategorySettings();
+            });
+            div.appendChild(el);
         });
-        div.appendChild(list);
     };
     render('expense', 'expense-cat-container');
     render('income', 'income-cat-container');
     updateSelectOptions();
 }
 
-function moveCategory(type, idx, dir) {
-    var list = categories[type];
-    var target = idx + dir;
-    if (target < 0 || target >= list.length) return;
-    var temp = list[idx];
-    list[idx] = list[target];
-    list[target] = temp;
-    saveUserData(); triggerAutoSave(); renderCategorySettings();
-}
+function allowDrop(e) { e.preventDefault(); }
+function dropCategory(e, type) { e.preventDefault(); }
 
 function addCategory(e, type) {
     e.preventDefault();
@@ -8805,7 +8520,6 @@ function addCategory(e, type) {
     if (val && !categories[type].includes(val)) {
         categories[type].push(val); input.value = '';
         saveUserData(); triggerAutoSave(); renderCategorySettings();
-        setTimeout(function() { openIconPicker(type, val); }, 100);
     }
 }
 

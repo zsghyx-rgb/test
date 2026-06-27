@@ -32,6 +32,6 @@
 - **Bug 修复** → 版本号 **+0.0.1**（如 v2.2.7 → v2.2.8）
 - 版本号出现在以下位置，更新时需同步修改：
   1. [index.html:4](test/index.html#L4) — `<title>` 标签
-  2. [index.html:1347](test/index.html#L1347) — 底部版本标注
-  3. [index.html:2041](test/index.html#L2041) — 设置页「关于」子页面
+  2. [index.html:1370](test/index.html#L1370) — 底部版本标注
+  3. [index.html:2172](test/index.html#L2172) — 设置页「关于」子页面
 - 每次修改后需在「版本历史」表中追加一行记录
