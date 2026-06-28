@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html><html lang="zh-CN" data-bs-theme="dark"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>记一笔 v2.4.0</title>
+    <title>记一笔 v2.5.0</title>
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0d6efd">
@@ -1377,7 +1377,7 @@ select.compact-form-control { height: 2.1rem; }
         </div>
     </div>
     <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;pointer-events:none;">
-        <span class="text-muted" style="font-size:0.7rem;">version 2.4.0</span>
+        <span class="text-muted" style="font-size:0.7rem;">version 2.5.0</span>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
@@ -2034,21 +2034,16 @@ select.compact-form-control { height: 2.1rem; }
                 </div>
                 <div class="card shadow-sm">
                     <div class="card-header bg-transparent fw-bold">
-                        <i class="bi bi-robot"></i> AI 接口配置
+                        <i class="bi bi-robot"></i> DeepSeek 配置
                     </div>
                     <div class="card-body">
-                        <p class="text-muted small mb-3">配置 AI 分析服务，用于统计页的 AI 数据分析功能。</p>
+                        <p class="text-muted small mb-3">配置 DeepSeek API Key 即可使用 AI 数据分析功能。</p>
                         <div class="mb-3">
-                            <label class="form-label small">API 地址</label>
-                            <input type="text" class="form-control form-control-sm" id="ai-api-url" placeholder="https://api.openai.com/v1/chat/completions">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label small">API Key</label>
+                            <label class="form-label small">DeepSeek API Key</label>
                             <input type="password" class="form-control form-control-sm" id="ai-api-key" placeholder="sk-...">
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label small">模型名称</label>
-                            <input type="text" class="form-control form-control-sm" id="ai-model" placeholder="gpt-4o-mini">
+                        <div class="small text-muted mb-3">
+                            <i class="bi bi-info-circle"></i> 使用 DeepSeek 最新模型，固定接口 https://api.deepseek.com/v1/chat/completions
                         </div>
                         <button class="btn btn-primary w-100" onclick="saveAiConfig()">
                             <i class="bi bi-check-lg"></i> 保存配置
@@ -2066,7 +2061,7 @@ select.compact-form-control { height: 2.1rem; }
                 <div class="card shadow-sm">
                     <div class="card-body text-center py-4">
                         <h5>记一笔</h5>
-                        <p class="text-muted small">版本 <span id="settings-version">v2.4.0</span></p>
+                        <p class="text-muted small">版本 <span id="settings-version">v2.5.0</span></p>
                         <p class="text-muted small mb-0">个人财务记账 PWA 应用</p>
                     </div>
                 </div>
@@ -5882,7 +5877,7 @@ function renderAiAnalysis() {
     prompt += '预算：' + budgetInfo + '\n';
     prompt += '当前支出分类：' + (allExpCats || '无') + '\n';
     prompt += '当前收入分类：' + (allIncCats || '无') + '\n';
-    var model = localStorage.getItem('ai_model') || 'gpt-4o-mini';
+    var model = localStorage.getItem('ai_model') || 'deepseek-chat';
     fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
@@ -8097,19 +8092,15 @@ function showSettingsSubpage(name) {
     if (name === 'planned') renderPlannedTransactions();
 }
 function saveAiConfig() {
-    var url = $('ai-api-url').value.trim();
     var key = $('ai-api-key').value.trim();
-    var model = $('ai-model').value.trim();
-    if (!url || !key) { showToast('请填写 API 地址和 Key', 'warning'); return; }
-    localStorage.setItem('ai_api_url', url);
+    if (!key) { showToast('请填写 DeepSeek API Key', 'warning'); return; }
+    localStorage.setItem('ai_api_url', 'https://api.deepseek.com/v1/chat/completions');
     localStorage.setItem('ai_api_key', key);
-    localStorage.setItem('ai_model', model || 'gpt-4o-mini');
-    showToast('AI 配置已保存', 'success');
+    localStorage.setItem('ai_model', 'deepseek-chat');
+    showToast('DeepSeek 配置已保存', 'success');
 }
 function loadAiConfig() {
-    $('ai-api-url').value = localStorage.getItem('ai_api_url') || '';
     $('ai-api-key').value = localStorage.getItem('ai_api_key') || '';
-    $('ai-model').value = localStorage.getItem('ai_model') || 'gpt-4o-mini';
 }
 
 
