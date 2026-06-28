@@ -5802,12 +5802,24 @@ function renderAiCatSuggestions(suggestions, container) {
 function renderAiAnalysis() {
     var container = $('ai-analysis-content');
     if (!container) return;
-    var apiUrl = localStorage.getItem('ai_api_url');
+    // abort any in-progress analysis
+    if (_aiAbortController) { _aiAbortController.abort(); _aiAbortController = null; }
     var apiKey = localStorage.getItem('ai_api_key');
-    if (!apiUrl || !apiKey) {
+    if (!apiKey) {
         container.innerHTML = '<div class="text-center py-5"><i class="bi bi-robot" style="font-size:2.5rem;opacity:.4;"></i><p class="text-muted mt-3">尚未配置 AI 服务</p><p class="text-muted small">请前往 <a href="#" onclick="switchTab(\'settings\',document.querySelector(\'[onclick*=settings]\'));showSettingsSubpage(\'ai-config\');return false;">设置 → AI 配置</a> 填写接口信息</p></div>';
         return;
     }
+    container.innerHTML = '<div class="text-center py-5"><button class="btn btn-lg btn-outline-info px-5" onclick="runAiAnalysis()"><i class="bi bi-robot"></i> 开始分析</button><p class="text-muted small mt-3">点击按钮对当前月份进行 AI 消费分析</p></div>';
+}
+
+var _aiAbortController = null;
+
+function runAiAnalysis() {
+    var container = $('ai-analysis-content');
+    if (!container) return;
+    var apiUrl = localStorage.getItem('ai_api_url');
+    var apiKey = localStorage.getItem('ai_api_key');
+    if (!apiUrl || !apiKey) { renderAiAnalysis(); return; }
     container.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-info mb-3" role="status"></div><p class="text-muted">AI 分析中...</p></div>';
     var year = statsNavYear, month = statsNavMonth;
     var filterUser = currentStatsFilter.user || 'all';
@@ -5878,10 +5890,14 @@ function renderAiAnalysis() {
     prompt += '当前支出分类：' + (allExpCats || '无') + '\n';
     prompt += '当前收入分类：' + (allIncCats || '无') + '\n';
     var model = localStorage.getItem('ai_model') || 'deepseek-chat';
+    // abort any previous analysis
+    if (_aiAbortController) _aiAbortController.abort();
+    _aiAbortController = new AbortController();
     fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
-        body: JSON.stringify({ model: model, messages: [{ role: 'user', content: prompt }], max_tokens: 1200, temperature: 0.5 })
+        body: JSON.stringify({ model: model, messages: [{ role: 'user', content: prompt }], max_tokens: 1200, temperature: 0.5 }),
+        signal: _aiAbortController.signal
     })
     .then(function(res) { if (!res.ok) throw new Error('HTTP ' + res.status + ': ' + res.statusText); return res.json(); })
     .then(function(data) {
@@ -7050,6 +7066,8 @@ function toggleStatsFilter() {
 
 // ── 统计页子Tab切换 ─────────────────────────────────────────
 function switchStatsTab(tab) {
+    // abort AI analysis when leaving the AI tab
+    if (tab !== 'ai' && _aiAbortController) { _aiAbortController.abort(); _aiAbortController = null; }
     $$('.stats-sub-tab-btn').forEach(b => b.classList.remove('active'));
     $$('.stats-sub-pane').forEach(p => p.classList.remove('active'));
     $(`stats-tab-${tab}`).classList.add('active');
