@@ -19,6 +19,7 @@
 
 | 版本 | 日期 | 类型 | 说明 |
 |------|------|------|------|
+| v2.7.0 | — | 架构升级 | 按年份独立文件 + IndexedDB + Repository 层：数据按年分区(auto-seal)，IndexedDB 替代 localStorage 缓存/草稿，Repository 层统一数据访问，yearSnapshots 替代基准交易，移除解档操作(封存数据永久只读)，修复多设备 archive/merge 一致性 |
 | v2.6.0 | — | 功能更新 | 同步冲突解决：配置块(分类/图标/预算/汇率)新增 configUpdatedAt 时间戳，同步时对比本地和云端时间戳取较新版本，不再互相覆盖；修复 mergeData 遗漏 budgets/categoryIcons 的 bug |
 | v2.5.1 | — | — | 用户自行修改 |
 | v2.5.0 | — | 功能更新 | AI配置改为仅DeepSeek(固定接口+模型,只需输入Key) |
