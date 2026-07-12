@@ -2494,6 +2494,8 @@ select.compact-form-control { height: 2.1rem; }
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="idb.js"></script>
+<script src="repository.js"></script>
 <script>
 const DEFAULT_CATEGORIES = {
     expense: ['餐饮', '交通', '住房', '购物', '娱乐', '医疗'],
@@ -2561,6 +2563,117 @@ let currentUserFilterValue = localStorage.getItem('APP_trans_user_filter') || 'a
 
 const $ = id => document.getElementById(id);
 const $$ = selector => document.querySelectorAll(selector);
+
+// ── 数据模型迁移：将旧格式（archivedYears + _isBaseline）转换为新格式（sealedYears + yearSnapshots）──
+function migrateLegacyData() {
+    if (!inMemoryLoadedData) return false;
+
+    let changed = false;
+
+    // 1. archivedYears → sealedYears
+    if (inMemoryLoadedData.archivedYears && !inMemoryLoadedData.sealedYears) {
+        inMemoryLoadedData.sealedYears = inMemoryLoadedData.archivedYears;
+        delete inMemoryLoadedData.archivedYears;
+        changed = true;
+    }
+    if (!inMemoryLoadedData.sealedYears) {
+        inMemoryLoadedData.sealedYears = [];
+    }
+
+    // 2. 收集所有 _isBaseline 交易
+    const baselineTrans = [];
+    const allUsers = Object.keys(inMemoryLoadedData.allUserData || {});
+    allUsers.forEach(u => {
+        const ud = inMemoryLoadedData.allUserData[u];
+        if (ud && ud.transactions) {
+            ud.transactions.forEach(t => {
+                if (t._isBaseline) baselineTrans.push(t);
+            });
+        }
+    });
+
+    // 3. 将 _isBaseline 转换为 yearSnapshots
+    if (baselineTrans.length > 0) {
+        if (!inMemoryLoadedData.yearSnapshots) {
+            inMemoryLoadedData.yearSnapshots = {};
+        }
+
+        const sealedYears = [...inMemoryLoadedData.sealedYears].sort((a, b) => a - b);
+
+        // 对每个账户，计算截至每个已封存年末的累计余额
+        // _isBaseline 交易的 amount = 该年所有交易之和，日期 = YYYY-12-31
+        // 所以截至某年末的累计余额 = initialBalance + Σ(该年及之前所有 baseline 的 amount)
+        allUsers.forEach(u => {
+            const ud = inMemoryLoadedData.allUserData[u];
+            if (!ud || !ud.accounts) return;
+            ud.accounts.forEach(acc => {
+                // 按年份累计
+                let cumulative = parseFloat(acc.initialBalance) || 0;
+                sealedYears.forEach(year => {
+                    // 加上该年的 baseline（如果有）
+                    const baseline = baselineTrans.find(t =>
+                        t._archiveYear == year && t.accountId == acc.id
+                    );
+                    if (baseline) {
+                        cumulative += parseFloat(baseline.amount) || 0;
+                    }
+                    // 也加上该年非 baseline 的交易（如果有未封存的旧数据混在里面）
+                    allUsers.forEach(u2 => {
+                        const ud2 = inMemoryLoadedData.allUserData[u2];
+                        if (ud2 && ud2.transactions) {
+                            ud2.transactions.forEach(t => {
+                                if (!t._isBaseline &&
+                                    t.accountId == acc.id &&
+                                    t.date >= `${year}-01-01` &&
+                                    t.date <= `${year}-12-31`) {
+                                    cumulative += parseFloat(t.amount) || 0;
+                                }
+                            });
+                        }
+                    });
+
+                    if (!inMemoryLoadedData.yearSnapshots[year]) {
+                        inMemoryLoadedData.yearSnapshots[year] = {};
+                    }
+                    inMemoryLoadedData.yearSnapshots[year][String(acc.id)] = {
+                        balance: roundMoney(cumulative),
+                        currency: acc.currency,
+                        ownerName: acc.ownerName || u
+                    };
+                });
+            });
+        });
+
+        // 4. 从 allUserData 中移除 _isBaseline 交易
+        allUsers.forEach(u => {
+            const ud = inMemoryLoadedData.allUserData[u];
+            if (ud && ud.transactions) {
+                ud.transactions = ud.transactions.filter(t => !t._isBaseline);
+            }
+        });
+        changed = true;
+    }
+
+    return changed;
+}
+
+// ── 获取已封存年份列表（兼容旧字段名 archivedYears）──
+function getSealedYears() {
+    if (!inMemoryLoadedData) return [];
+    return inMemoryLoadedData.sealedYears || inMemoryLoadedData.archivedYears || [];
+}
+
+// ── 获取可封存年份（主数据中 < 当前年 且未封存）──
+function getSealableYears() {
+    const currentYear = new Date().getFullYear();
+    const years = new Set();
+    transactions.forEach(t => {
+        const y = parseInt(t.date.substring(0, 4));
+        if (y < currentYear) years.add(y);
+    });
+    const sealed = getSealedYears();
+    return [...years].filter(y => !sealed.includes(y)).sort();
+}
 
 // 金额类输入框统一用 type="text"，这里做实时清洗：
 // 支持德语等用 "," 作小数点的系统直接输入逗号，自动转成 "."；
@@ -2835,15 +2948,9 @@ function toggleOfflineMode() {
         loadFromDrive();
     } else if (offlineMode) {
         // 切换到离线模式：清除所有网络缓存，防止下次误用旧云端数据
-        localStorage.removeItem('APP_raw_cache');
-        localStorage.removeItem('APP_drive_version');
-        // 同时清除所有本地草稿
-        const draftKeys = [];
-        for (let i = 0; i < localStorage.length; i++) {
-            const k = localStorage.key(i);
-            if (k && k.startsWith('APP_local_draft_')) draftKeys.push(k);
-        }
-        draftKeys.forEach(k => localStorage.removeItem(k));
+        Repository.clearMainCache().catch(() => {});
+        Repository.clearMainVersion().catch(() => {});
+        Repository.clearAllDrafts().catch(() => {});
         // 清空内存数据，强制手动选文件
         inMemoryLoadedData = null;
         _configUpdatedAt = Date.now();
@@ -3015,6 +3122,9 @@ function onDataLoaded() {
     // 记录本次登录时间（用于判断草稿是否过期）
     localStorage.setItem('APP_last_login_time', Date.now().toString());
 
+    // 数据模型迁移：旧格式（archivedYears + _isBaseline）→ 新格式（sealedYears + yearSnapshots）
+    migrateLegacyData();
+
     // 预算数据：全局共享（不分用户），跟随主数据文件一起加载
     budgets = inMemoryLoadedData.budgets || [];
     categoryIcons = inMemoryLoadedData.categoryIcons || {};
@@ -3094,6 +3204,9 @@ function createNewDataFile() {
         categories: DEFAULT_CATEGORIES,
         exchangeRates: {...DEFAULT_RATES},
         configUpdatedAt: Date.now(),
+        sealedYears: [],
+        yearSnapshots: {},
+        deletedLog: []
     };
 
     categories = DEFAULT_CATEGORIES;
@@ -3147,10 +3260,10 @@ function loginWithUser(name) {
     if (statusEl) statusEl.textContent = offlineMode ? '离线模式' : '在线模式';
 
     // 检查是否有本地未同步草稿，有则合并恢复
-    checkAndRestoreDraft(name);
+    checkAndRestoreDraft(name).catch(() => {});
 
-    // 检查是否需要提示存档
-    checkArchivePrompt();
+    // 检查是否需要提示封存
+    checkSealPrompt();
 
     // 离线优先：后台静默同步（有新版本时合并刷新UI）
     setTimeout(() => backgroundSyncAfterLogin(), 300);
@@ -3161,37 +3274,28 @@ function loginWithUser(name) {
  * 当前用户的草稿：合并 + 刷新 UI + toast 提示
  * 其他用户的草稿：静默合并数据 + toast 提示（不影响当前用户视图）
  */
-function checkAndRestoreDraft(userName) {
-    // 扫描 localStorage 找出所有用户的草稿 key
-    const allDraftUsers = [];
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith('APP_local_draft_') && !key.includes('_time_')) {
-            const draftUser = key.replace('APP_local_draft_', '');
-            allDraftUsers.push(draftUser);
-        }
-    }
-
+async function checkAndRestoreDraft(userName) {
+    // 从 Repository 获取所有草稿用户
+    const allDraftUsers = await Repository.getAllDraftUsers();
     if (allDraftUsers.length === 0) return;
 
     let needsUIRefresh = false;
 
-    allDraftUsers.forEach(draftUser => {
-        const draftKey = `APP_local_draft_${draftUser}`;
-        const timeKey  = `APP_local_draft_time_${draftUser}`;
-        const draftStr  = localStorage.getItem(draftKey);
-        const draftTime = localStorage.getItem(timeKey);
-        if (!draftStr || !draftTime) return;
+    for (const draftUser of allDraftUsers) {
+        const draft = await Repository.getDraft(draftUser);
+        const draftTime = await Repository.getDraftTime(draftUser);
+        if (!draft) continue;
 
         try {
-            const draft = JSON.parse(draftStr);
             // 草稿作为 local，当前内存数据作为 remote，按 updatedAt 取最新
             inMemoryLoadedData = mergeData(draft, inMemoryLoadedData);
             _configUpdatedAt = inMemoryLoadedData.configUpdatedAt || Date.now();
             hasUnsavedChanges = true;
 
-            const timeStr = new Date(parseInt(draftTime))
-                .toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            const timeStr = draftTime
+                ? new Date(draftTime)
+                    .toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                : '未知时间';
 
             if (draftUser === userName) {
                 // 当前用户：需要刷新 UI
@@ -3202,11 +3306,11 @@ function checkAndRestoreDraft(userName) {
                 showToast(`已恢复 [${draftUser}] ${timeStr} 的本地未同步记录`, 'warning', 6000);
             }
         } catch(e) {
-            // 草稿损坏，直接清除，不影响主流程
-            localStorage.removeItem(draftKey);
-            localStorage.removeItem(timeKey);
+            // 草稿损坏，直接清除
+            await IDB.del('draft_' + draftUser);
+            await IDB.del('draft_time_' + draftUser);
         }
-    });
+    }
 
     if (needsUIRefresh) {
         loadAllData();
@@ -3217,59 +3321,42 @@ function checkAndRestoreDraft(userName) {
 }
 
 
-function getArchivableYears() {
-    const currentYear = new Date().getFullYear();
-    const years = new Set();
-    transactions.forEach(t => {
-        if (!t._isBaseline) { // 已无需检查 _isArchived，transactions 中不再含存档数据
-            const y = parseInt(t.date.substring(0, 4));
-            if (y < currentYear) years.add(y);
-        }
-    });
-    const archived = getArchivedYears();
-    return [...years].filter(y => !archived.includes(y)).sort();
-}
-
-function getArchivedYears() {
-    return (inMemoryLoadedData && inMemoryLoadedData.archivedYears) || [];
-}
-
-function renderArchiveManagementUI() {
+function renderSealedYearsUI() {
     const el = $('archive-management-ui');
     if (!el) return;
-    const archivableYears = getArchivableYears();
-    const archivedYears = getArchivedYears();
+    const sealableYears = getSealableYears();
+    const sealedYears = getSealedYears();
     let html = '';
-    if (archivedYears.length > 0) {
-        html += '<div class="mb-2"><div class="small text-muted fw-bold mb-1">已存档：</div><div class="d-flex flex-wrap gap-1">';
-        archivedYears.forEach(y => {
+    if (sealedYears.length > 0) {
+        html += '<div class="mb-2"><div class="small text-muted fw-bold mb-1">已封存：</div><div class="d-flex flex-wrap gap-1">';
+        sealedYears.forEach(y => {
             html += `<span class="badge bg-secondary d-inline-flex align-items-center gap-1">${y}年
-                <button class="btn-close btn-close-white" style="font-size:0.5rem;" title="解档" onclick="confirmUnarchive(${y})"></button>
+                <button class="btn-close btn-close-white" style="font-size:0.5rem;" title="查看详情" onclick="loadSealedYear(${y})"></button>
             </span>`;
         });
         html += '</div></div>';
     }
-    if (archivableYears.length > 0) {
-        html += '<div class="mb-1"><div class="small text-muted fw-bold mb-1">可存档：</div><div class="d-flex flex-wrap gap-1">';
-        archivableYears.forEach(y => {
-            html += `<button class="btn btn-sm btn-outline-primary py-0" onclick="confirmArchive(${y})">${y}年</button>`;
+    if (sealableYears.length > 0) {
+        html += '<div class="mb-1"><div class="small text-muted fw-bold mb-1">可封存：</div><div class="d-flex flex-wrap gap-1">';
+        sealableYears.forEach(y => {
+            html += `<button class="btn btn-sm btn-outline-primary py-0" onclick="confirmSealYear(${y})">${y}年</button>`;
         });
         html += '</div></div>';
     }
-    if (archivableYears.length === 0 && archivedYears.length === 0) {
-        html = '<p class="text-muted small mb-2">暂无可存档的历史年份数据</p>';
+    if (sealableYears.length === 0 && sealedYears.length === 0) {
+        html = '<p class="text-muted small mb-2">暂无可封存的历史年份数据</p>';
     }
     el.innerHTML = html;
     
     // 同步更新「查看历史存档」下拉菜单
     const dropdown = $('history-year-dropdown');
     if (dropdown) {
-        const archivedYears = getArchivedYears();
-        if (archivedYears.length === 0) {
-            dropdown.innerHTML = '<li><span class="dropdown-item text-muted small">暂无存档</span></li>';
+        const sealedYears = getSealedYears();
+        if (sealedYears.length === 0) {
+            dropdown.innerHTML = '<li><span class="dropdown-item text-muted small">暂无封存数据</span></li>';
         } else {
-            dropdown.innerHTML = archivedYears.map(y =>
-                `<li><a class="dropdown-item" href="#" onclick="event.preventDefault(); loadHistoryYear(${y})">
+            dropdown.innerHTML = sealedYears.map(y =>
+                `<li><a class="dropdown-item" href="#" onclick="event.preventDefault(); loadSealedYear(${y})">
                     <i class="bi bi-archive me-1"></i>${y} 年
                 </a></li>`
             ).join('');
@@ -3277,114 +3364,126 @@ function renderArchiveManagementUI() {
     }
 }
 
-function checkArchivePrompt() {
+function checkSealPrompt() {
     const now = new Date();
     const currentYear = now.getFullYear();
     if (now.getMonth() + 1 < 2 || now.getMonth() + 1 > 3) return; // 只在2-3月提示
     const lastYear = currentYear - 1;
-    const archivedYears = getArchivedYears();
-    if (archivedYears.includes(lastYear)) return;
-    const hasLastYearData = transactions.some(t => t.date.startsWith(String(lastYear)) && !t._isBaseline);
+    const sealedYears = getSealedYears();
+    if (sealedYears.includes(lastYear)) return;
+    const hasLastYearData = transactions.some(t => t.date.startsWith(String(lastYear)));
     if (!hasLastYearData) return;
-    const promptKey = `APP_archive_prompt_${lastYear}`;
+    const promptKey = `APP_seal_prompt_${lastYear}`;
     if (localStorage.getItem(promptKey)) return;
     localStorage.setItem(promptKey, '1');
     setTimeout(() => {
-        const cnt = transactions.filter(t => t.date.startsWith(String(lastYear)) && !t._isBaseline).length;
-        if (confirm(`📦 建议存档 ${lastYear} 年数据\n\n共 ${cnt} 条记录，存档后可显著减少每次同步的数据量。\n\n现在存档吗？（可在设置页随时操作）`)) {
-            confirmArchive(lastYear);
+        const cnt = transactions.filter(t => t.date.startsWith(String(lastYear))).length;
+        if (confirm(`📦 建议封存 ${lastYear} 年数据\n\n共 ${cnt} 条记录，封存后可显著减少每次同步的数据量。\n\n现在封存吗？（可在设置页随时操作）`)) {
+            confirmSealYear(lastYear);
         }
     }, 2500);
 }
 
-async function confirmArchive(year) {
-    const cnt = transactions.filter(t => t.date.startsWith(String(year)) && !t._isBaseline).length;
-    if (cnt === 0) { showToast(`${year} 年没有可存档的数据`, 'warning'); return; }
-    if (!confirm(`确定存档 ${year} 年的数据？\n\n共 ${cnt} 条记录将移入只读存档。\n可通过"解档"完整恢复。`)) return;
-    await archiveYear(year);
+async function confirmSealYear(year) {
+    const cnt = transactions.filter(t => t.date.startsWith(String(year))).length;
+    if (cnt === 0) { showToast(`${year} 年没有可封存的数据`, 'warning'); return; }
+    if (!confirm(`确定封存 ${year} 年的数据？\n\n共 ${cnt} 条记录将移入只读封存。\n可通过"查看"查看完整数据。`)) return;
+    await sealYear(year);
 }
 
-async function archiveYear(year) {
-    showToast(`正在存档 ${year} 年数据…`, 'syncing', 0);
+async function sealYear(year) {
+    showToast(`正在封存 ${year} 年数据…`, 'syncing', 0);
     try {
         saveUserData();
         const yearStr = String(year);
-        const yearTrans = transactions.filter(t => t.date.startsWith(yearStr) && !t._isBaseline);
-        if (yearTrans.length === 0) { showToast('没有可存档的数据', 'error'); return; }
+        const yearTrans = transactions.filter(t => t.date.startsWith(yearStr));
+        if (yearTrans.length === 0) { showToast('没有可封存的数据', 'error'); return; }
 
-        // 构建存档包
-        const archiveData = {
-            _archiveYear: year, _archivedAt: Date.now(),
+        // 构建封存包（与 archiveYear 相同）
+        const sealData = {
+            _sealedYear: year, _sealedAt: Date.now(),
             users: dataUsers, categories, exchangeRates,
             allUserData: {}
         };
         dataUsers.forEach(u => {
-            archiveData.allUserData[u] = {
+            sealData.allUserData[u] = {
                 accounts: accounts.filter(a => a.ownerName === u).map(a => ({...a})),
                 transactions: yearTrans.filter(t => t.ownerName === u),
                 plannedTransactions: []
             };
         });
 
-        // 为每个账户生成期初余额基准交易（净额 = 该年所有交易之和）
-        const baselineDate = `${year}-12-31`;
+        // 计算各账户截至该年末的累计余额，存入 yearSnapshots
+        const sealedYears = [...getSealedYears(), year].sort((a, b) => a - b);
         accounts.forEach(acc => {
-            const yearSum = yearTrans.filter(t => t.accountId == acc.id)
-                .reduce((s, t) => s + parseFloat(t.amount), 0);
-            if (yearSum !== 0) {
-                transactions.push({
-                    id: Date.now() + Math.random(),
-                    _isBaseline: true, _archiveYear: year,
-                    accountId: acc.id, amount: yearSum,
-                    date: baselineDate,
-                    desc: `${year}年存档基准`,
-                    ownerName: acc.ownerName,
-                    type: yearSum >= 0 ? 'income' : 'expense',
-                    category: '存档基准',
-                    isTransfer: false, tags: '', updatedAt: Date.now()
-                });
+            let cumulative = parseFloat(acc.initialBalance) || 0;
+            
+            // 累计已封存年份的余额
+            sealedYears.forEach(y => {
+                if (y < year) { // 只累计更早的年份
+                    const yearTrans = transactions.filter(t => 
+                        t.date.startsWith(String(y)) && t.accountId == acc.id
+                    );
+                    cumulative += yearTrans.reduce((s, t) => s + parseFloat(t.amount), 0);
+                }
+            });
+            
+            // 再加上当前年份的交易（如果正在封存的是当前年）
+            if (year === new Date().getFullYear()) {
+                const currentYearTrans = transactions.filter(t => 
+                    t.date.startsWith(yearStr) && t.accountId == acc.id
+                );
+                cumulative += currentYearTrans.reduce((s, t) => s + parseFloat(t.amount), 0);
             }
+            
+            if (!inMemoryLoadedData.yearSnapshots[year]) {
+                inMemoryLoadedData.yearSnapshots[year] = {};
+            }
+            inMemoryLoadedData.yearSnapshots[year][String(acc.id)] = {
+                balance: roundMoney(cumulative),
+                currency: acc.currency,
+                ownerName: acc.ownerName
+            };
         });
 
         // 从主数据删除该年原始交易
         const removeIds = new Set(yearTrans.map(t => t.id));
         transactions = transactions.filter(t => !removeIds.has(t.id));
         
-        // 【新增代码】记录到删除日志，防止被 mergeData 幽灵复活
+        // 记录到删除日志
         if (!inMemoryLoadedData.deletedLog) inMemoryLoadedData.deletedLog = [];
         const nowTime = Date.now();
         removeIds.forEach(id => {
             inMemoryLoadedData.deletedLog.push({ id: String(id), deletedAt: nowTime, type: 'transaction' });
         });
 
-        // 标记存档年份
-        if (!inMemoryLoadedData.archivedYears) inMemoryLoadedData.archivedYears = [];
-        if (!inMemoryLoadedData.archivedYears.includes(year)) {
-            inMemoryLoadedData.archivedYears.push(year);
-            inMemoryLoadedData.archivedYears.sort((a, b) => a - b);
+        // 标记封存年份
+        if (!inMemoryLoadedData.sealedYears) inMemoryLoadedData.sealedYears = [];
+        if (!inMemoryLoadedData.sealedYears.includes(year)) {
+            inMemoryLoadedData.sealedYears.push(year);
+            inMemoryLoadedData.sealedYears.sort((a, b) => a - b);
         }
         saveUserData();
 
         if (!offlineMode && GAS_URL) {
-            // 存档前取消自动同步计时器，并占用 driveIsSyncing 锁
-            // 防止正在进行的 syncToDrive 的 pull-merge-push 覆盖我们的存档推送
+            // 封存前取消自动同步计时器，并占用 driveIsSyncing 锁
             clearTimeout(driveAutoSaveTimer);
             while (driveIsSyncing) {
-                await new Promise(r => setTimeout(r, 200)); // 等待当前同步完成
+                await new Promise(r => setTimeout(r, 200));
             }
             driveIsSyncing = true;
             try {
-                // Step A：推存档文件
-                const archiveFile = `archive_${year}.enc`;
-                const archiveContent = userPassword
-                    ? CryptoJS.AES.encrypt(JSON.stringify(archiveData), userPassword).toString()
-                    : JSON.stringify(archiveData);
-                const r1 = await fetch(gasRequestUrl({ file: archiveFile }), {
-                    method: 'POST', body: archiveContent, headers: { 'Content-Type': 'text/plain' }
+                // Step A：推封存文件（文件名保持向后兼容）
+                const sealFile = `archive_${year}.enc`;
+                const sealContent = userPassword
+                    ? CryptoJS.AES.encrypt(JSON.stringify(sealData), userPassword).toString()
+                    : JSON.stringify(sealData);
+                const r1 = await fetch(gasRequestUrl({ file: sealFile }), {
+                    method: 'POST', body: sealContent, headers: { 'Content-Type': 'text/plain' }
                 });
-                if ((await r1.text()).trim() !== 'OK') throw new Error('存档文件推送失败');
+                if ((await r1.text()).trim() !== 'OK') throw new Error('封存文件推送失败');
 
-                // Step B：推 data.enc（含基准交易，不含已存档年份原始交易）
+                // Step B：推主文件（不含已封存年份原始交易，但包含 yearSnapshots）
                 const mainContent = userPassword
                     ? CryptoJS.AES.encrypt(JSON.stringify(inMemoryLoadedData), userPassword).toString()
                     : JSON.stringify(inMemoryLoadedData);
@@ -3400,78 +3499,14 @@ async function archiveYear(year) {
             hasUnsavedChanges = true;
         }
 
-        filterUserData(); loadAllData(); renderAccounts(); renderAllTransactions(); renderArchiveManagementUI();
-        if (verboseToast) showToast(`${year} 年数据存档成功`, 'success');
+        filterUserData(); loadAllData(); renderAccounts(); renderAllTransactions(); renderSealedYearsUI();
+        if (verboseToast) showToast(`${year} 年数据封存成功`, 'success');
     } catch (err) {
-        showToast(`存档失败：${err.message}`, 'error');
+        showToast(`封存失败：${err.message}`, 'error');
     }
 }
 
-async function confirmUnarchive(year) {
-    if (!confirm(`确定解档 ${year} 年的数据？\n该年份原始数据将恢复到主文件中。`)) return;
-    await unarchiveYear(year);
-}
-
-async function unarchiveYear(year) {
-    showToast(`正在解档 ${year} 年数据…`, 'syncing', 0);
-    try {
-        if (offlineMode || !GAS_URL) throw new Error('解档需要网络，请切换到在线模式');
-        const archiveFile = `archive_${year}.enc`;
-        const resp = await fetch(gasRequestUrl({ file: archiveFile }));
-        const raw = (await resp.text()).trim();
-        if (!raw || raw === 'UNAUTHORIZED') throw new Error('无法读取存档文件');
-        let archiveData;
-        try { archiveData = JSON.parse(raw); }
-        catch (_) {
-            if (!userPassword) throw new Error('无法解密存档文件');
-            const bytes = CryptoJS.AES.decrypt(raw, userPassword);
-            archiveData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
-        }
-
-        // 【新增代码】先找出要删除的基准交易 ID
-        const baselineIdsToRemove = transactions
-            .filter(t => t._isBaseline && t._archiveYear == year)
-            .map(t => String(t.id));
-        
-        // 删除该年的基准交易
-        transactions = transactions.filter(t => !(t._isBaseline && t._archiveYear == year));
-        
-        // 【新增代码】记录到删除日志
-        if (!inMemoryLoadedData.deletedLog) inMemoryLoadedData.deletedLog = [];
-        const nowTime = Date.now();
-        baselineIdsToRemove.forEach(id => {
-            inMemoryLoadedData.deletedLog.push({ id: id, deletedAt: nowTime, type: 'transaction' });
-        });
-
-        // 将存档交易合并回主数据
-        dataUsers.forEach(u => {
-            const ud = archiveData.allUserData[u];
-            if (ud && ud.transactions) {
-                ud.transactions.forEach(t => {
-                    if (!transactions.find(x => x.id === t.id)) transactions.push({...t, ownerName: u});
-                });
-            }
-        });
-
-        inMemoryLoadedData.archivedYears = getArchivedYears().filter(y => y != year);
-        saveUserData();
-        await syncToDrive(true, true); // forcePush：解档后直接推送，不拉取合并
-
-        // 静默删除 Drive 上的 archive_YYYY.enc（Backup 文件夹的 .bak 保留）
-        try {
-            const delResp = await fetch(gasRequestUrl({ action: 'deleteFile', file: archiveFile }));
-            const delResult = (await delResp.text()).trim();
-            if (delResult !== 'OK') console.warn('[unarchiveYear] deleteFile:', delResult);
-        } catch(e) { console.warn('[unarchiveYear] 删除归档文件失败（非致命）:', e); }
-
-        filterUserData(); loadAllData(); renderAccounts(); renderAllTransactions(); renderArchiveManagementUI();
-        if (verboseToast) showToast(`${year} 年数据解档成功`, 'success');
-    } catch (err) {
-        showToast(`解档失败：${err.message}`, 'error');
-    }
-}
-
-async function loadHistoryYear(year) {
+async function loadSealedYear(year) {
     showToast(`正在加载 ${year} 年存档…`, 'syncing', 0);
     try {
         if (offlineMode || !GAS_URL) throw new Error('历史模式需要网络，请切换到在线模式');
@@ -3522,9 +3557,9 @@ async function loadHistoryYear(year) {
         if (ssd) { ssd.value = yStart; ssd.min = yStart; ssd.max = yEnd; currentStatsFilter.startDate = yStart; }
         if (sed) { sed.value = yEnd;   sed.min = yStart; sed.max = yEnd; currentStatsFilter.endDate   = yEnd; }
         applyTransactionFilter();
-        // 显示历史模式横幅
+        // 显示封存模式横幅
         const banner = $('history-mode-banner');
-        if (banner) { banner.classList.remove('d-none'); $('history-year-label').textContent = year; }
+        if (banner) { banner.classList.remove('d-none'); $('history-year-label').textContent = `${year} 年封存数据`; }
         // 隐藏快速日期筛选按钮组
         ['quick-date-filter-group', 'trans-custom-toggle', 'trans-filter-btn',
          'quick-stats-filter-group-1', 'stats-month-nav', 'stats-custom-toggle', 'stats-filter-btn']
@@ -3542,7 +3577,7 @@ async function loadHistoryYear(year) {
         if (fab) fab.classList.add('d-none');
 
         renderAllTransactions(); renderStats();
-        if (verboseToast) showToast(`已加载 ${year} 年存档（只读）`, 'success');
+        if (verboseToast) showToast(`已加载 ${year} 年封存数据（只读）`, 'success');
     } catch (err) {
         historyMode = false; historyYear = null;
         showToast(`加载失败：${err.message}`, 'error');
@@ -3596,7 +3631,7 @@ function exitHistoryMode() {
     renderAllTransactions();
     renderAccounts();
     renderStats();
-    if (verboseToast) showToast('已退出历史模式', 'info');
+    if (verboseToast) showToast('已退出封存模式', 'info');
 }
 
 /**
@@ -3774,11 +3809,9 @@ function triggerAutoSave() {
     if (historyMode) return; // 历史模式下不触发任何保存
     hasUnsavedChanges = true;
     if (currentUserName) {
-        try {
-            saveUserData();
-            localStorage.setItem(`APP_local_draft_${currentUserName}`, JSON.stringify(inMemoryLoadedData));
-            localStorage.setItem(`APP_local_draft_time_${currentUserName}`, Date.now().toString());
-        } catch(e) { /* localStorage 容量不足时静默失败 */ }
+        saveUserData();
+        // 异步写入 IndexedDB 草稿（失败时降级静默）
+        Repository.saveDraft(currentUserName, inMemoryLoadedData).catch(() => {});
     }
     showUnsavedToast();
 }
@@ -3823,15 +3856,8 @@ function clearUnsavedFlag() {
     const el = $('app-toast');
     if (el) { el.classList.remove('minimized'); el.onclick = null; }
     
-    // 清空 localStorage 中所有用户的本地草稿
-    const keysToRemove = [];
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith('APP_local_draft_')) {
-            keysToRemove.push(key);
-        }
-    }
-    keysToRemove.forEach(key => localStorage.removeItem(key));
+    // 清空 IndexedDB 中所有用户的本地草稿
+    Repository.clearAllDrafts().catch(() => {});
 }
 
 /**
@@ -3936,6 +3962,30 @@ function mergeData(local, remote) {
         };
     });
 
+    // 合并 sealedYears 和 yearSnapshots
+    const localSealed = local.sealedYears || local.archivedYears || [];
+    const remoteSealed = remote.sealedYears || remote.archivedYears || [];
+    merged.sealedYears = Array.from(new Set([...localSealed, ...remoteSealed])).sort((a, b) => a - b);
+    
+    // yearSnapshots：取较新的版本
+    const localSnapshots = local.yearSnapshots || {};
+    const remoteSnapshots = remote.yearSnapshots || {};
+    merged.yearSnapshots = {};
+    const allYears = new Set([...Object.keys(localSnapshots), ...Object.keys(remoteSnapshots)]);
+    allYears.forEach(year => {
+        const localYearSnap = localSnapshots[year];
+        const remoteYearSnap = remoteSnapshots[year];
+        if (!localYearSnap) {
+            merged.yearSnapshots[year] = remoteYearSnap;
+        } else if (!remoteYearSnap) {
+            merged.yearSnapshots[year] = localYearSnap;
+        } else {
+            // 两个版本都有，取 updatedAt 较新的
+            merged.yearSnapshots[year] = localYearSnap.updatedAt >= remoteYearSnap.updatedAt 
+                ? localYearSnap : remoteYearSnap;
+        }
+    });
+
     return merged;
 }
 
@@ -3986,7 +4036,7 @@ async function syncToDrive(manual = false, forcePush = false) {
 
         if (!forcePush) {
             // ── 步骤 1：核对版本号 ──
-            const localVersion = localStorage.getItem('APP_drive_version') || '0';
+            const localVersion = await Repository.getMainVersion();
             let remoteVersion = '0';
             try {
                 const vResp = await fetch(gasRequestUrl({ action: 'version' }));
@@ -4065,11 +4115,11 @@ async function syncToDrive(manual = false, forcePush = false) {
                 const vResp = await fetch(gasRequestUrl({ action: 'version' }));
                 if (vResp.ok) {
                     const v = (await vResp.text()).trim();
-                    if (v !== '0') localStorage.setItem('APP_drive_version', v);
+                    if (v !== '0') await Repository.setMainVersion(v);
                 }
             } catch(_) {}
             window._driveRawContent = content;
-            try { localStorage.setItem('APP_raw_cache', content); } catch(_) {}
+            await Repository.setMainCache(content);
             // 同步成功：有新数据时提示条数；无新数据时详细模式提示「已同步」，否则静默关闭
             if (pulledNewCount > 0) {
                 showToast(`已同步 ${pulledNewCount} 条新数据`, 'success');
@@ -4094,13 +4144,16 @@ async function loadFromDrive() {
         alert('请先在登录界面填写并保存 GAS URL。'); return;
     }
 
-    const localRawCache = localStorage.getItem('APP_raw_cache');
+    // 从 localStorage 迁移旧数据到 IndexedDB（一次性）
+    await Repository.migrateFromLocalStorage();
+
+    const localRawCache = await Repository.getMainCache();
 
     // ── 离线优先：有本地缓存就立即展示，不等网络 ──
     if (localRawCache) {
         window._driveRawContent = localRawCache;
         try {
-            const parsed = JSON.parse(localRawCache);
+            const parsed = typeof localRawCache === 'string' ? JSON.parse(localRawCache) : localRawCache;
             // 明文缓存：直接进入用户选择
             userPassword = '';
             inMemoryLoadedData = parsed;
@@ -4129,7 +4182,7 @@ async function loadFromDrive() {
     showToast('正在从 Drive 加载数据…', 'syncing', 0);
 
     try {
-        const localVersion = localStorage.getItem('APP_drive_version') || '0';
+        const localVersion = await Repository.getMainVersion();
         let remoteVersion = '0';
         try {
             const vResp = await fetch(gasRequestUrl({ action: 'version' }));
@@ -4150,9 +4203,9 @@ async function loadFromDrive() {
             return;
         }
 
-        if (remoteVersion !== '0') localStorage.setItem('APP_drive_version', remoteVersion);
+        if (remoteVersion !== '0') await Repository.setMainVersion(remoteVersion);
         window._driveRawContent = raw;
-        try { localStorage.setItem('APP_raw_cache', raw); } catch(_) {}
+        await Repository.setMainCache(raw);
 
         try {
             const parsed = JSON.parse(raw);
@@ -4189,7 +4242,7 @@ async function backgroundSyncAfterLogin() {
 
     try {
         // ── 步骤1：核对版本 ──
-        const localVersion = localStorage.getItem('APP_drive_version') || '0';
+        const localVersion = await Repository.getMainVersion();
         let remoteVersion = '0';
         try {
             const vResp = await fetch(gasRequestUrl({ action: 'version' }));
@@ -4223,13 +4276,7 @@ async function backgroundSyncAfterLogin() {
         }
 
         // ── 步骤3：判断是否有本地草稿 ──
-        const hasDraft = (() => {
-            for (let i = 0; i < localStorage.length; i++) {
-                const k = localStorage.key(i);
-                if (k && k.startsWith('APP_local_draft_') && !k.includes('_time_')) return true;
-            }
-            return false;
-        })();
+        const hasDraft = await Repository.hasAnyDraft();
 
         // ── 步骤4：判断是否超过10天未登录 ──
         const lastLoginTime = parseInt(localStorage.getItem('APP_last_login_time') || '0');
@@ -4237,8 +4284,8 @@ async function backgroundSyncAfterLogin() {
         const stale = (lastLoginTime === 0) || (Date.now() - lastLoginTime > tenDaysMs);
 
         // 更新版本号和缓存
-        if (remoteVersion !== '0') localStorage.setItem('APP_drive_version', remoteVersion);
-        try { localStorage.setItem('APP_raw_cache', raw); } catch(_) {}
+        if (remoteVersion !== '0') await Repository.setMainVersion(remoteVersion);
+        await Repository.setMainCache(raw);
         localStorage.setItem('APP_last_login_time', Date.now().toString());
 
         // ── 步骤5：决策合并策略 ──
@@ -4249,12 +4296,7 @@ async function backgroundSyncAfterLogin() {
             // 无草稿 或 超过10天：远端直接覆盖本地
             finalData = remoteData;
             // 清除所有草稿（超期草稿作废）
-            const draftKeys = [];
-            for (let i = 0; i < localStorage.length; i++) {
-                const k = localStorage.key(i);
-                if (k && k.startsWith('APP_local_draft_')) draftKeys.push(k);
-            }
-            draftKeys.forEach(k => localStorage.removeItem(k));
+            await Repository.clearAllDrafts();
             strategyLabel = stale && hasDraft ? '草稿已过期，已使用最新云端数据' : '';
         } else {
             // 有草稿且未过期：按 updatedAt 合并
@@ -4709,7 +4751,25 @@ function roundMoney(n) {
 function calculateBalance(accId) {
     const acc = accounts.find(a => a.id == accId);
     let bal = parseFloat(acc.initialBalance);
-    transactions.filter(t => t.accountId == accId).forEach(t => bal += parseFloat(t.amount));
+    
+    // 先加上当前年及之后年份的交易
+    const currentYear = new Date().getFullYear();
+    transactions.filter(t => t.accountId == accId).forEach(t => {
+        const txYear = parseInt(t.date.substring(0, 4));
+        if (txYear >= currentYear) {
+            bal += parseFloat(t.amount);
+        }
+    });
+    
+    // 再加上已封存年份的累计余额（yearSnapshots）
+    const sealedYears = getSealedYears();
+    sealedYears.forEach(year => {
+        const snapshot = inMemoryLoadedData.yearSnapshots[year];
+        if (snapshot && snapshot[String(accId)]) {
+            bal += parseFloat(snapshot[String(accId)].balance) - parseFloat(acc.initialBalance);
+        }
+    });
+    
     return roundMoney(bal);
 }
 
@@ -4845,7 +4905,7 @@ function renderDetailContent(id) {
     $('ad-balance').textContent = `余额 ${balStr}`;
     $('ad-action-btns').style.display = isOwner ? 'flex' : 'none';
 
-    const acctTrans = transactions.filter(t => t.accountId == id && !t._isBaseline)
+    const acctTrans = transactions.filter(t => t.accountId == id)
         .sort((a, b) => b.date.localeCompare(a.date));
 
     const mobileContainer = $('account-detail-view-list');
@@ -5711,7 +5771,7 @@ function computeMonthlySpendByCategory(year, month, filterUser) {
     const spend = {};
     let total = 0;
     source.forEach(t => {
-        if (t._isBaseline || t.isTransfer || t.amount >= 0) return;
+        if (t.isTransfer || t.amount >= 0) return;
         if (t.date < mStart || t.date > mEnd) return;
         if (filterUser !== 'all' && t.ownerName !== filterUser) return;
         const acc = accounts.find(a => a.id == t.accountId);
@@ -6004,7 +6064,7 @@ function _doRunAiAnalysis() {
     var mEnd   = year + '-' + mStr + '-31';
     // 正确计算：通过 accountId 查账户货币，排除 baseline/转账
     source.forEach(function(t) {
-        if (t._isBaseline || t.isTransfer) return;
+        if (t.isTransfer) return;
         if (t.date < mStart || t.date > mEnd) return;
         if (filterUser !== 'all' && t.ownerName !== filterUser) return;
         var acc = accounts.find(function(a) { return a.id == t.accountId; });
@@ -6026,7 +6086,7 @@ function _doRunAiAnalysis() {
     var pmEnd   = prevYear + '-' + pmStr + '-31';
     var prevIncome = 0, prevExpense = 0;
     source.forEach(function(t) {
-        if (t._isBaseline || t.isTransfer) return;
+        if (t.isTransfer) return;
         if (t.date < pmStart || t.date > pmEnd) return;
         if (filterUser !== 'all' && t.ownerName !== filterUser) return;
         var acc = accounts.find(function(a) { return a.id == t.accountId; });
@@ -6656,8 +6716,7 @@ function getFilteredTransactions() {
         // 历史模式年份保护
         if (historyMode && !t.date.startsWith(String(historyYear))) return false;
         
-        if (t._isBaseline) return false;
-        if (transactionDisplayMode === 'transactions' && t.isTransfer) return false;
+        if (t.isTransfer && transactionDisplayMode === 'transactions') return false;
         if (transactionDisplayMode === 'transfers' && !t.isTransfer) return false;
         
         if (startDate && t.date < startDate) return false;
@@ -7129,7 +7188,7 @@ async function checkHistoryCategories() {
     // ── 第一步：孤立分类（优先级最高，排在最前）──
     const allValidCats = new Set([...categories.expense, ...categories.income]);
 const orphanTrans = transactions.filter(t =>
-    !t.isTransfer && t.ownerName === currentUserName && !t._isArchived && !t._isBaseline && t.category &&
+    !t.isTransfer && t.ownerName === currentUserName && !t._isArchived && t.category &&
     !allValidCats.has(t.category)
 );
     // 去重：同一个孤立分类只提示一次，让用户选择新分类
@@ -7144,7 +7203,7 @@ const orphanTrans = transactions.filter(t =>
 
     // ── 第二步：相似备注但分类不一致 ──
 const myTrans = transactions.filter(t =>
-    !t.isTransfer && !t._isBaseline && t.ownerName === currentUserName && t.desc && !(t.items && t.items.length > 1)
+    !t.isTransfer && t.ownerName === currentUserName && t.desc && !(t.items && t.items.length > 1)
 );
     myTrans.forEach(t => {
         const type = t.amount > 0 ? 'income' : 'expense';
@@ -7427,7 +7486,6 @@ function renderStats() {
         exp = _statsCache.exp;
     } else {
         filtered = sourceTrans.filter(t => {
-            if (t._isBaseline) return false;
             if (start && t.date < start) return false;
             if (end && t.date > end) return false;
             if (filterUser !== 'all' && t.ownerName !== filterUser) return false;
@@ -7797,7 +7855,7 @@ function summarizeData(data) {
     const byUser = {};
     if (!data || !data.allUserData) return { txCount, accCount, byUser };
     Object.entries(data.allUserData).forEach(([u, ud]) => {
-        const txs  = (ud.transactions || []).filter(t => !t._isBaseline);
+        const txs  = (ud.transactions || []);
         const accs = ud.accounts || [];
         txCount  += txs.length;
         accCount += accs.length;
@@ -7841,8 +7899,8 @@ function diffBackupVsCurrent(backupData, currentData) {
         });
 
         // ── 交易对比 ──
-        const bakTxs = (bakUD.transactions || []).filter(t => !t._isBaseline);
-        const curTxs = (curUD.transactions || []).filter(t => !t._isBaseline);
+        const bakTxs = (bakUD.transactions || []);
+        const curTxs = (curUD.transactions || []);
         const bakTxMap = new Map(bakTxs.map(t => [String(t.id), t]));
         const curTxMap = new Map(curTxs.map(t => [String(t.id), t]));
 
@@ -8096,16 +8154,38 @@ function renderAssetHistoryChart() {
     const filteredTrans = transactions;
     const dates = [...new Set(filteredTrans.map(t => t.date))].sort();
     let labels = [], data = [];
+    
     const calcNetWorth = (d) => {
         let total = 0;
         filteredAccounts.forEach(acc => {
             let bal = parseFloat(acc.initialBalance);
-            filteredTrans.filter(t => t.accountId == acc.id && t.date <= d).forEach(t => bal += parseFloat(t.amount));
+            
+            // 先加上当前年及之前、日期 <= d 的交易
+            const currentYear = new Date().getFullYear();
+            filteredTrans.filter(t => t.accountId == acc.id && t.date <= d).forEach(t => {
+                const txYear = parseInt(t.date.substring(0, 4));
+                if (txYear >= currentYear || d >= `${currentYear}-01-01`) {
+                    bal += parseFloat(t.amount);
+                }
+            });
+            
+            // 再加上已封存年份的累计余额（截至 d 之前）
+            const sealedYears = getSealedYears();
+            sealedYears.forEach(year => {
+                if (d >= `${year}-12-31`) { // 只计算截至该年末
+                    const snapshot = inMemoryLoadedData.yearSnapshots[year];
+                    if (snapshot && snapshot[String(acc.id)]) {
+                        bal += parseFloat(snapshot[String(acc.id)].balance) - parseFloat(acc.initialBalance);
+                    }
+                }
+            });
+            
             bal = toRmb(bal, acc.currency);
             total += bal;
         });
         return total;
     };
+    
     if (currentAssetAggregation === 'day') {
         labels = dates; data = dates.map(d => calcNetWorth(d));
     } else if (currentAssetAggregation === 'week') {
@@ -8127,13 +8207,13 @@ function renderAssetHistoryChart() {
         options: { maintainAspectRatio: false, elements: { point: { radius: 0 } }, plugins: { legend: { display: true } }, animation: { duration: 500 } }
     });
 
-    // 如有已存档年份，显示提示
-    const archivedYrs = getArchivedYears();
+    // 如有已封存年份，显示提示
+    const sealedYrs = getSealedYears();
     const noticeEl = $('history-chart-archive-notice');
     const noticeText = $('history-chart-archive-text');
     if (noticeEl && noticeText) {
-        if (archivedYrs.length > 0) {
-            noticeText.textContent = `${archivedYrs.join('、')} 年数据已归档，趋势图中仅显示基准交易节点，如需查看完整曲线请进入历史模式。`;
+        if (sealedYrs.length > 0) {
+            noticeText.textContent = `${sealedYrs.join('、')} 年数据已封存，趋势图中包含该年末净资产快照。如需查看详细历史数据请进入历史模式。`;
             noticeEl.classList.remove('d-none');
         } else {
             noticeEl.classList.add('d-none');
@@ -8271,7 +8351,7 @@ function switchTab(t, el) {
     if (fab) fab.classList.toggle('d-none', t !== 'transactions' || historyMode || window.innerWidth > 768);
 
     if (t === 'stats') { renderStats(); maybeShowInsight(); }
-    if (t === 'settings') { showSettingsMenu(); renderExchangeRateSettings(); initPasswordHint(); renderUserManagement(); renderArchiveManagementUI(); }
+    if (t === 'settings') { showSettingsMenu(); renderExchangeRateSettings(); initPasswordHint(); renderUserManagement(); renderSealedYearsUI(); }
 }
 
 function showSettingsMenu() {
@@ -8286,7 +8366,7 @@ function showSettingsSubpage(name) {
     if (name === 'exchange-rate') renderExchangeRateSettings();
     if (name === 'categories') renderCategorySettings();
     if (name === 'users') { renderUserManagement(); initPasswordHint(); }
-    if (name === 'archive') renderArchiveManagementUI();
+    if (name === 'archive') renderSealedYearsUI();
     if (name === 'password') initPasswordHint();
     if (name === 'ai-config') loadAiConfig();
     if (name === 'planned') renderPlannedTransactions();
@@ -9175,13 +9255,13 @@ function _txMonth(tx)  { return tx.date ? tx.date.substring(0,7) : ''; }
 
 function _monthExpenses(yyyyMM) {
     return transactions.filter(tx =>
-        tx.type === 'expense' && _txMonth(tx) === yyyyMM && !tx.isTransfer && !tx._isBaseline
+        tx.type === 'expense' && _txMonth(tx) === yyyyMM && !tx.isTransfer
     );
 }
 
 function _monthIncome(yyyyMM) {
     return transactions.filter(tx =>
-        tx.type === 'income' && _txMonth(tx) === yyyyMM && !tx.isTransfer && !tx._isBaseline
+        tx.type === 'income' && _txMonth(tx) === yyyyMM && !tx.isTransfer
     );
 }
 

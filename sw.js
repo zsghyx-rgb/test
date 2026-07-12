@@ -19,6 +19,8 @@ const PRECACHE_URLS = [
     'manifest.json',
     'icon-192.png',
     'icon-512.png',
+    'idb.js',
+    'repository.js',
 ];
 
 // ==================== Install：预缓存第三方库 ====================
