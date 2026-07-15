@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html><html lang="zh-CN" data-bs-theme="dark"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>记一笔 v2.7.0</title>
+    <title id="app-title">记一笔 v2.5.7</title>
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0d6efd">
@@ -169,6 +169,11 @@ body {
 .active-view { display: block; }
 #view-transactions.active-view,
 #view-account-detail.active-view { display: flex; flex-direction: column; overflow-y: hidden; }
+
+/* 桌面端交易页恢复滚动（手机端由 #mobile-transaction-list 内部滚动） */
+@media (min-width: 769px) {
+    #view-transactions.active-view { overflow-y: auto; }
+}
 
 /* 账户详情视图 */
 #view-account-detail .excel-table-container { flex: 1; min-height: 0; }
@@ -990,10 +995,116 @@ select.compact-form-control { height: 2.1rem; }
 .trans-modal-v2.view-only .chip-acc-trigger,
 .trans-modal-v2.view-only .chip-date,
 .trans-modal-v2.view-only .chip-split-btn,
-.trans-modal-v2.view-only .transfer-acc-trigger {
+.trans-modal-v2.view-only .transfer-acc-trigger,
+.trans-modal-v2.view-only .tm-acc-trigger,
+.trans-modal-v2.view-only .tm-date-trigger,
+.trans-modal-v2.view-only .tm-camera-btn,
+.trans-modal-v2.view-only .tm-tag-add-btn {
     pointer-events: none;
     opacity: 0.65;
 }
+
+/* ════════════════════════════════════════════════════════════
+   收支/转账弹窗 v3：卡片式布局
+   ════════════════════════════════════════════════════════════ */
+.tm-card {
+    background: var(--bs-tertiary-bg);
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+}
+.tm-card-header {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--bs-secondary-color);
+    margin-bottom: 8px;
+}
+/* 金额卡片 */
+.tm-amount-card { padding: 14px 16px 12px; }
+.tm-amount-label { font-size: 0.78rem; color: var(--bs-secondary-color); margin-bottom: 2px; }
+.tm-amount-card .amount-input-row-v3 { display: flex; align-items: center; gap: 6px; }
+.tm-amount-card .amount-currency { font-size: 1.6rem; font-weight: 700; color: var(--bs-primary); }
+.tm-amount-card .amount-input-v2 {
+    text-align: left;
+    max-width: none;
+    font-size: 2rem;
+    padding: 0;
+    color: var(--bs-primary);
+}
+.tm-amount-card.amt-expense .amount-input-v2 { color: #dc3545; }
+.tm-amount-card.amt-income .amount-input-v2 { color: #198754; }
+.tm-transfer-amount-card .transfer-amount-row { margin-bottom: 0; }
+
+/* 行式卡片（账户/日期/备注） */
+.tm-row-card { padding: 0 14px; }
+.tm-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 0;
+    cursor: pointer;
+    position: relative;
+}
+.tm-row + .tm-row { border-top: 1px solid var(--bs-border-color); }
+.tm-row-icon {
+    width: 34px; height: 34px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; flex-shrink: 0;
+}
+.tm-icon-blue  { background: rgba(13,110,253,0.15); color: #0d6efd; }
+.tm-icon-green { background: rgba(25,135,84,0.15); color: #198754; }
+.tm-row-text { flex: 1; min-width: 0; }
+.tm-row-label { font-size: 0.72rem; color: var(--bs-secondary-color); margin-bottom: 1px; }
+.tm-row-value {
+    font-size: 0.95rem; font-weight: 600; color: var(--bs-body-color);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.tm-row-chevron { color: var(--bs-secondary-color); font-size: 0.9rem; flex-shrink: 0; }
+.tm-date-input-hidden {
+    position: absolute; inset: 0; opacity: 0; border: none; padding: 0; margin: 0; width: 100%; cursor: pointer;
+}
+.tm-row-card .transfer-flow-row {
+    padding-top: 12px; padding-bottom: 12px; margin-bottom: 0;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+/* 分类卡片 */
+.tm-cat-card .cat-grid { max-height: none; overflow: visible; padding: 4px 0 0; }
+.tm-split-btn { width: 28px; height: 28px; border-radius: 8px; font-size: 0.85rem; }
+
+/* 备注行 */
+.tm-desc-row { cursor: text; }
+.tm-row-label-static { font-size: 0.85rem; color: var(--bs-body-color); flex-shrink: 0; }
+.tm-desc-input {
+    flex: 1; border: none; background: transparent; outline: none;
+    text-align: right; font-size: 0.85rem; color: var(--bs-body-color); min-width: 0;
+}
+.tm-desc-input::placeholder { color: var(--bs-secondary-color); }
+
+/* 标签卡片 */
+.tm-tags-pills { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.tm-tag-add-btn {
+    display: inline-flex; align-items: center; gap: 3px;
+    border: 1px solid var(--bs-primary); color: var(--bs-primary);
+    background: transparent; border-radius: 999px; padding: 4px 12px;
+    font-size: 0.78rem; font-weight: 500;
+}
+.tm-tag-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    border: 1px solid var(--bs-border-color); color: var(--bs-secondary-color);
+    border-radius: 999px; padding: 4px 10px; font-size: 0.78rem;
+}
+.tm-tag-pill .tm-tag-remove { cursor: pointer; opacity: 0.6; font-size: 0.7rem; }
+.tm-tag-pill .tm-tag-remove:hover { opacity: 1; color: #dc3545; }
+
+/* 图片卡片 */
+.tm-image-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.tm-camera-btn {
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 1px solid var(--bs-border-color); background: var(--bs-body-bg);
+    color: var(--bs-secondary-color); display: flex; align-items: center; justify-content: center;
+}
+
+/* 底部固定栏：仅保留操作按钮（金额已移至顶部卡片） */
+.trans-amount-bar.tm-footer-bar { padding-top: 8px; }
 
 
 
@@ -1377,7 +1488,7 @@ select.compact-form-control { height: 2.1rem; }
         </div>
     </div>
     <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;pointer-events:none;">
-        <span class="text-muted" style="font-size:0.7rem;">version 2.7.0</span>
+        <span class="text-muted" style="font-size:0.7rem;" id="sidebar-version">version 2.5.7</span>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
@@ -1760,19 +1871,14 @@ select.compact-form-control { height: 2.1rem; }
                         <span>账户与用户</span>
                         <i class="bi bi-chevron-right"></i>
                     </div>
-                    <div class="settings-menu-item" onclick="showSettingsSubpage('data-sync')">
-                        <i class="bi bi-cloud-arrow-up"></i>
-                        <span>数据与同步</span>
-                        <i class="bi bi-chevron-right"></i>
-                    </div>
                     <div class="settings-menu-item" onclick="showSettingsSubpage('archive')">
                         <i class="bi bi-archive"></i>
                         <span>数据存档</span>
                         <i class="bi bi-chevron-right"></i>
                     </div>
-                    <div class="settings-menu-item" onclick="showSettingsSubpage('password')">
-                        <i class="bi bi-key"></i>
-                        <span>数据密码</span>
+                    <div class="settings-menu-item" onclick="showSettingsSubpage('advanced')">
+                        <i class="bi bi-gear-wide-connected"></i>
+                        <span>高级功能</span>
                         <i class="bi bi-chevron-right"></i>
                     </div>
                     <div class="settings-menu-item" onclick="showSettingsSubpage('ai-config')">
@@ -1894,10 +2000,40 @@ select.compact-form-control { height: 2.1rem; }
                 </div>
             </div>
 
+            <!-- Sub-page: 高级功能（二级菜单）-->
+            <div id="settings-sub-advanced" class="settings-subpage">
+                <div class="subpage-header">
+                    <i class="bi bi-arrow-left" onclick="showSettingsMenu()"></i>
+                    <span>高级功能</span>
+                </div>
+                <div class="settings-menu-list">
+                    <div class="settings-menu-item" onclick="showSettingsSubpage('data-sync')">
+                        <i class="bi bi-cloud-arrow-up"></i>
+                        <span>数据与同步</span>
+                        <i class="bi bi-chevron-right"></i>
+                    </div>
+                    <div class="settings-menu-item" onclick="showSettingsSubpage('orphan-attachments')">
+                        <i class="bi bi-paperclip"></i>
+                        <span>清理孤立附件</span>
+                        <i class="bi bi-chevron-right"></i>
+                    </div>
+                    <div class="settings-menu-item" onclick="showSettingsSubpage('deleted-log')">
+                        <i class="bi bi-clock-history"></i>
+                        <span>删除日志</span>
+                        <i class="bi bi-chevron-right"></i>
+                    </div>
+                    <div class="settings-menu-item" onclick="showSettingsSubpage('password')">
+                        <i class="bi bi-key"></i>
+                        <span>数据密码</span>
+                        <i class="bi bi-chevron-right"></i>
+                    </div>
+                </div>
+            </div>
+
             <!-- Sub-page: 数据与同步 -->
             <div id="settings-sub-data-sync" class="settings-subpage">
                 <div class="subpage-header">
-                    <i class="bi bi-arrow-left" onclick="showSettingsMenu()"></i>
+                    <i class="bi bi-arrow-left" onclick="showSettingsSubpage('advanced')"></i>
                     <span>数据与同步</span>
                 </div>
                 <div class="card shadow-sm mb-3">
@@ -1975,6 +2111,23 @@ select.compact-form-control { height: 2.1rem; }
                 </div>
             </div>
 
+            <!-- Sub-page: 清理孤立附件 -->
+            <div id="settings-sub-orphan-attachments" class="settings-subpage">
+                <div class="subpage-header">
+                    <i class="bi bi-arrow-left" onclick="showSettingsSubpage('advanced')"></i>
+                    <span>清理孤立附件</span>
+                </div>
+                <div class="card shadow-sm mb-3">
+                    <div class="card-body">
+                        <p class="text-muted small mb-3">扫描 Google Drive 中没有对应交易记录的附件文件，可批量删除以释放空间。</p>
+                        <button class="btn btn-outline-primary w-100 mb-3" onclick="scanOrphanAttachments(this)">
+                            <i class="bi bi-search me-1"></i>开始扫描
+                        </button>
+                        <div id="orphan-attachments-result"></div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Sub-page: 数据存档 -->
             <div id="settings-sub-archive" class="settings-subpage">
                 <div class="subpage-header">
@@ -1986,17 +2139,28 @@ select.compact-form-control { height: 2.1rem; }
                         <i class="bi bi-archive"></i> 数据存档管理
                     </div>
                     <div class="card-body">
-                        <p class="text-muted small mb-2">将历史年份数据存档，减少主文件大小，提升同步速度。存档数据只读，可解档恢复。</p>
+                        <p class="text-muted small mb-2">将历史年份数据存档，减少主文件大小，提升同步速度。存档数据不可恢复，只读，不能修改。</p>
                         <div id="archive-management-ui" class="mb-2"></div>
-                        <div class="dropdown" id="history-year-btn-group">
-                            <button class="btn btn-outline-secondary btn-sm w-100 dropdown-toggle" type="button"
-                                data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-clock-history"></i> 查看历史存档
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end" id="history-year-dropdown">
-                                <li><span class="dropdown-item text-muted small">暂无存档</span></li>
-                            </ul>
-                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sub-page: 删除日志 -->
+            <div id="settings-sub-deleted-log" class="settings-subpage">
+                <div class="subpage-header">
+                    <i class="bi bi-arrow-left" onclick="showSettingsSubpage('advanced')"></i>
+                    <span>删除日志</span>
+                </div>
+                <div class="card shadow-sm">
+                    <div class="card-header bg-transparent fw-bold d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-clock-history"></i> 删除日志</span>
+                        <button class="btn btn-outline-danger btn-sm py-0" onclick="clearAllDeletedLog()">
+                            <i class="bi bi-trash3"></i> 清除全部
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-2">记录已删除的交易/账户ID，用于多设备同步时防止已删数据被重新合并回来。条目会在 7 天后自动失效。</p>
+                        <div id="deleted-log-list"></div>
                     </div>
                 </div>
             </div>
@@ -2004,7 +2168,7 @@ select.compact-form-control { height: 2.1rem; }
             <!-- Sub-page: 数据密码 -->
             <div id="settings-sub-password" class="settings-subpage">
                 <div class="subpage-header">
-                    <i class="bi bi-arrow-left" onclick="showSettingsMenu()"></i>
+                    <i class="bi bi-arrow-left" onclick="showSettingsSubpage('advanced')"></i>
                     <span>数据密码</span>
                 </div>
                 <div class="card shadow-sm">
@@ -2061,7 +2225,7 @@ select.compact-form-control { height: 2.1rem; }
                 <div class="card shadow-sm">
                     <div class="card-body text-center py-4">
                         <h5>记一笔</h5>
-                        <p class="text-muted small">版本 <span id="settings-version">v2.7.0</span></p>
+                        <p class="text-muted small">版本 <span id="settings-version">v2.5.7</span></p>
                         <p class="text-muted small mb-0">个人财务记账 PWA 应用</p>
                     </div>
                 </div>
@@ -2282,27 +2446,50 @@ select.compact-form-control { height: 2.1rem; }
                     <input type="hidden" id="edit-trans-type" value="expense">
 
                     <div class="trans-scroll-area">
-                        <!-- 日期 / 账户 / 拆分 chip 行 -->
-                        <div class="trans-chip-row">
-                            <div class="chip-date" onclick="this.querySelector('input').showPicker && this.querySelector('input').showPicker()">
-                                <i class="bi bi-calendar3"></i>
-                                <input type="date" class="chip-date-input" id="edit-trans-date" required="">
+
+                        <!-- 金额卡片 -->
+                        <div class="tm-card tm-amount-card" id="trans-amount-card">
+                            <div class="tm-amount-label">金额</div>
+                            <div class="amount-input-row-v3">
+                                <span class="amount-currency" id="amount-currency-symbol">¥</span>
+                                <input type="text" inputmode="decimal" placeholder="0.00" class="amount-input-v2 decimal-input" id="edit-trans-amount" required="">
                             </div>
-                            <div class="acc-select-wrapper chip-acc" id="wrap-edit-trans-account">
+                        </div>
+
+                        <!-- 账户 / 日期 卡片 -->
+                        <div class="tm-card tm-row-card">
+                            <div class="acc-select-wrapper" id="wrap-edit-trans-account">
                                 <select class="form-select" id="edit-trans-account" required="" style="display:none;"></select>
-                                <div class="acc-select-trigger chip-acc-trigger" id="trigger-edit-trans-account">
-                                    <i class="bi bi-wallet2"></i><span class="acc-trigger-text"></span>
+                                <div class="tm-row tm-acc-trigger" id="trigger-edit-trans-account">
+                                    <div class="tm-row-icon tm-icon-blue"><i class="bi bi-credit-card-fill"></i></div>
+                                    <div class="tm-row-text">
+                                        <div class="tm-row-label">账户</div>
+                                        <div class="tm-row-value acc-trigger-text"></div>
+                                    </div>
+                                    <i class="bi bi-chevron-right tm-row-chevron"></i>
                                 </div>
                                 <div class="acc-select-dropdown" id="dropdown-edit-trans-account"></div>
                             </div>
-                            <button type="button" id="split-toggle-btn" class="chip-split-btn" title="拆分账单" onclick="handleSplitBtn()">
-                                <i class="bi bi-scissors"></i>
-                            </button>
+                            <div class="tm-row tm-date-trigger" onclick="this.querySelector('input').showPicker && this.querySelector('input').showPicker()">
+                                <div class="tm-row-icon tm-icon-green"><i class="bi bi-calendar3"></i></div>
+                                <div class="tm-row-text">
+                                    <div class="tm-row-label">日期</div>
+                                    <div class="tm-row-value" id="edit-trans-date-label">今天</div>
+                                </div>
+                                <i class="bi bi-chevron-right tm-row-chevron"></i>
+                                <input type="date" class="tm-date-input-hidden" id="edit-trans-date" required="" onchange="syncDateLabels()">
+                            </div>
                         </div>
 
                         <!-- 单笔：类别图标网格 -->
                         <div id="single-item-row">
-                            <div class="cat-grid-section" id="cat-grid-section">
+                            <div class="tm-card tm-cat-card" id="cat-grid-section">
+                                <div class="tm-card-header d-flex justify-content-between align-items-center">
+                                    <span>所有分类</span>
+                                    <button type="button" id="split-toggle-btn" class="chip-split-btn tm-split-btn" title="拆分账单" onclick="handleSplitBtn()">
+                                        <i class="bi bi-scissors"></i>
+                                    </button>
+                                </div>
                                 <select class="form-select" id="edit-trans-category" required="" style="display:none;"></select>
                                 <div class="cat-grid" id="cat-grid-edit-trans-category"></div>
                             </div>
@@ -2324,47 +2511,48 @@ select.compact-form-control { height: 2.1rem; }
                         <!-- 单笔时的标签/备注（拆分时隐藏） -->
                         <div id="single-meta-section">
 
-                            <!-- 标签：折叠式 -->
-                            <div class="mb-2" id="tags-collapse-wrap">
-                                <button type="button" class="btn-expand-field" id="tags-expand-btn" onclick="expandMetaField('tags')">
-                                    <i class="bi bi-plus-sm"></i> 添加标签
-                                </button>
-                                <div id="tags-expanded" style="display:none;">
-                                    <label class="compact-form-label">标签</label>
+                            <!-- 备注 -->
+                            <div class="tm-card tm-row-card" id="desc-collapse-wrap">
+                                <div class="tm-row tm-desc-row" onclick="$('edit-trans-desc').focus()">
+                                    <span class="tm-row-label-static">备注</span>
+                                    <input type="text" class="tm-desc-input" id="edit-trans-desc"
+                                           oninput="updateDescHint('edit-trans-desc','edit-trans-desc-hint','edit-trans-type','edit-trans-category','edit-trans-account')"
+                                           placeholder="添加备注...">
+                                    <i class="bi bi-chevron-right tm-row-chevron"></i>
+                                </div>
+                                <div id="edit-trans-desc-hint" style="display:none;align-items:center;gap:6px;margin-top:3px;padding:3px 8px;border-radius:5px;background:rgba(var(--bs-primary-rgb),0.08);border:1px solid rgba(var(--bs-primary-rgb),0.2);font-size:0.78rem;"></div>
+                            </div>
+
+                            <!-- 标签 -->
+                            <div class="tm-card tm-tags-card" id="tags-collapse-wrap">
+                                <div class="tm-card-header">标签</div>
+                                <div class="tm-tags-pills" id="tag-pills-display">
+                                    <button type="button" class="tm-tag-add-btn" id="tags-expand-btn" onclick="toggleTagsInput()">
+                                        <i class="bi bi-plus-lg"></i> 标签
+                                    </button>
+                                </div>
+                                <div id="tags-expanded" style="display:none;margin-top:8px;">
                                     <div class="tag-suggest-wrap">
                                         <input type="text" class="form-control compact-form-control" id="edit-trans-tags"
-                                               placeholder="添加标签…" autocomplete="off"
+                                               placeholder="添加标签，多个用空格分隔…" autocomplete="off"
                                                onfocus="openTagSuggest(this,'ts-single')"
                                                onblur="scheduleCloseTagSuggest('ts-single')">
                                         <ul class="tag-suggest-list" id="ts-single"></ul>
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- 备注：默认展开 -->
-                            <div class="mb-2" id="desc-collapse-wrap">
-                                <button type="button" class="btn-expand-field" id="desc-expand-btn" onclick="expandMetaField('desc')" style="display:none;">
-                                    <i class="bi bi-plus-sm"></i> 添加备注
-                                </button>
-                                <div id="desc-expanded">
-                                    <label class="compact-form-label">备注</label>
-                                    <div class="input-group" id="desc-input-group">
-                                        <input type="text" class="form-control compact-form-control" id="edit-trans-desc"
-                                               oninput="updateDescHint('edit-trans-desc','edit-trans-desc-hint','edit-trans-type','edit-trans-category','edit-trans-account')"
-                                               placeholder="添加备注...">
-                                        <button type="button" class="btn btn-outline-secondary btn-sm" id="attachment-btn" style="width: 45px;" onclick="document.getElementById('attachment-file-input').click()">
-                                            <i class="bi bi-image"></i>
-                                        </button>
-                                    </div>
-                                    <div id="edit-trans-desc-hint" style="display:none;align-items:center;gap:6px;margin-top:3px;padding:3px 8px;border-radius:5px;background:rgba(var(--bs-primary-rgb),0.08);border:1px solid rgba(var(--bs-primary-rgb),0.2);font-size:0.78rem;"></div>
-                                </div>
-                            </div>
                         </div>
 
                         <!-- 附件（单笔和拆分都保留） -->
-                        <div class="mb-2" id="attachment-section" style="display:none;">
+                        <div class="tm-card" id="attachment-section" style="display:none;">
+                            <div class="tm-image-row">
+                                <span class="tm-card-header mb-0">图片</span>
+                                <button type="button" class="tm-camera-btn" onclick="document.getElementById('attachment-file-input').click()">
+                                    <i class="bi bi-camera"></i>
+                                </button>
+                            </div>
                             <input type="file" id="attachment-file-input" accept="image/*,image/heic,image/heif,application/pdf" class="d-none" onchange="handleAttachmentSelected(this)">
-                            <div id="attachment-preview-container" class="d-flex flex-wrap gap-2 mt-2" style="display:none !important;"></div>
+                            <div id="attachment-preview-container" class="d-flex flex-wrap gap-2" style="display:none !important;"></div>
                             <div id="attachment-upload-status" class="small text-muted mt-1" style="display:none;">
                                 <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
                                 <span class="ms-1">正在上传图片...</span>
@@ -2373,17 +2561,13 @@ select.compact-form-control { height: 2.1rem; }
                         </div>
                     </div>
 
-                    <!-- 沉浸式金额（吸底，系统键盘输入） -->
-                    <div class="trans-amount-bar" id="trans-amount-bar">
-                        <div class="amount-input-row">
-                            <span class="amount-currency" id="amount-currency-symbol">¥</span>
-                            <input type="text" inputmode="decimal" placeholder="0.00" class="amount-input-v2 decimal-input" id="edit-trans-amount" required="">
-                        </div>
+                    <!-- 底部保存栏（金额已移至顶部卡片） -->
+                    <div class="trans-amount-bar tm-footer-bar" id="trans-amount-bar">
                         <div class="trans-action-row">
                             <button type="button" class="btn-delete-immersive" id="edit-trans-delete-btn" onclick="deleteCurrentTransaction()" style="display:none!important;">
                                 <i class="bi bi-trash"></i> 删除
                             </button>
-                            <button type="submit" class="btn-save-immersive" id="edit-trans-submit-btn">保存</button>
+                            <button type="submit" class="btn-save-immersive" id="edit-trans-submit-btn"><i class="bi bi-check-lg"></i> 保存</button>
                         </div>
                     </div>
                 </form>
@@ -2394,63 +2578,71 @@ select.compact-form-control { height: 2.1rem; }
                     <input type="hidden" id="edit-transfer-mode" value="edit">
 
                     <div class="trans-scroll-area">
-                        <div class="trans-chip-row">
-                            <div class="chip-date" onclick="this.querySelector('input').showPicker && this.querySelector('input').showPicker()">
-                                <i class="bi bi-calendar3"></i>
-                                <input type="date" class="chip-date-input" id="edit-transfer-date" required="">
+
+                        <!-- 转账金额卡片 -->
+                        <div class="tm-card tm-amount-card tm-transfer-amount-card">
+                            <div class="transfer-amount-row">
+                                <div class="transfer-amount-field">
+                                    <label class="amt-label">转出金额</label>
+                                    <input type="text" inputmode="decimal" placeholder="0.00" class="amount-input-v2 transfer-amount-input decimal-input" id="edit-transfer-amount-out" oninput="handleEditTransferAmountChange('out')" required="">
+                                </div>
+                                <div class="transfer-amount-field">
+                                    <label class="amt-label">转入金额</label>
+                                    <input type="text" inputmode="decimal" placeholder="0.00" class="amount-input-v2 transfer-amount-input decimal-input" id="edit-transfer-amount-in" oninput="handleEditTransferAmountChange('in')" required="">
+                                </div>
                             </div>
                         </div>
 
-                        <div class="transfer-flow-row">
-                            <div class="acc-select-wrapper transfer-acc-card" id="wrap-edit-transfer-from">
-                                <select class="form-select" id="edit-transfer-from" onchange="handleEditTransferAmountChange()" required="" style="display:none;"></select>
-                                <div class="acc-select-trigger transfer-acc-trigger" id="trigger-edit-transfer-from">
-                                    <span class="transfer-acc-label">转出</span>
-                                    <i class="bi bi-credit-card-2-front-fill"></i>
-                                    <span class="acc-trigger-text"></span>
+                        <!-- 转出/转入账户 + 日期 卡片 -->
+                        <div class="tm-card tm-row-card">
+                            <div class="transfer-flow-row">
+                                <div class="acc-select-wrapper transfer-acc-card" id="wrap-edit-transfer-from">
+                                    <select class="form-select" id="edit-transfer-from" onchange="handleEditTransferAmountChange()" required="" style="display:none;"></select>
+                                    <div class="acc-select-trigger transfer-acc-trigger" id="trigger-edit-transfer-from">
+                                        <span class="transfer-acc-label">转出</span>
+                                        <i class="bi bi-credit-card-2-front-fill"></i>
+                                        <span class="acc-trigger-text"></span>
+                                    </div>
+                                    <div class="acc-select-dropdown" id="dropdown-edit-transfer-from"></div>
                                 </div>
-                                <div class="acc-select-dropdown" id="dropdown-edit-transfer-from"></div>
+                                <div class="transfer-flow-arrow"><i class="bi bi-arrow-right-circle-fill"></i></div>
+                                <div class="acc-select-wrapper transfer-acc-card" id="wrap-edit-transfer-to">
+                                    <select class="form-select" id="edit-transfer-to" onchange="handleEditTransferAmountChange()" required="" style="display:none;"></select>
+                                    <div class="acc-select-trigger transfer-acc-trigger" id="trigger-edit-transfer-to">
+                                        <span class="transfer-acc-label">转入</span>
+                                        <i class="bi bi-credit-card-2-back-fill"></i>
+                                        <span class="acc-trigger-text"></span>
+                                    </div>
+                                    <div class="acc-select-dropdown" id="dropdown-edit-transfer-to"></div>
+                                </div>
                             </div>
-                            <div class="transfer-flow-arrow"><i class="bi bi-arrow-right-circle-fill"></i></div>
-                            <div class="acc-select-wrapper transfer-acc-card" id="wrap-edit-transfer-to">
-                                <select class="form-select" id="edit-transfer-to" onchange="handleEditTransferAmountChange()" required="" style="display:none;"></select>
-                                <div class="acc-select-trigger transfer-acc-trigger" id="trigger-edit-transfer-to">
-                                    <span class="transfer-acc-label">转入</span>
-                                    <i class="bi bi-credit-card-2-back-fill"></i>
-                                    <span class="acc-trigger-text"></span>
+                            <div class="tm-row tm-date-trigger" onclick="this.querySelector('input').showPicker && this.querySelector('input').showPicker()">
+                                <div class="tm-row-icon tm-icon-green"><i class="bi bi-calendar3"></i></div>
+                                <div class="tm-row-text">
+                                    <div class="tm-row-label">日期</div>
+                                    <div class="tm-row-value" id="edit-transfer-date-label">今天</div>
                                 </div>
-                                <div class="acc-select-dropdown" id="dropdown-edit-transfer-to"></div>
+                                <i class="bi bi-chevron-right tm-row-chevron"></i>
+                                <input type="date" class="tm-date-input-hidden" id="edit-transfer-date" required="" onchange="syncDateLabels()">
                             </div>
                         </div>
 
-                        <!-- 转账备注：默认展开 -->
-                        <div class="mb-2" id="transfer-desc-collapse-wrap">
-                            <button type="button" class="btn-expand-field" id="transfer-desc-expand-btn" onclick="expandTransferDesc()" style="display:none;">
-                                <i class="bi bi-plus-sm"></i> 添加备注
-                            </button>
-                            <div id="transfer-desc-expanded">
-                                <label class="compact-form-label">备注</label>
-                                <input type="text" class="form-control compact-form-control" id="edit-transfer-desc" placeholder="添加备注...">
+                        <!-- 转账备注 -->
+                        <div class="tm-card tm-row-card" id="transfer-desc-collapse-wrap">
+                            <div class="tm-row tm-desc-row" onclick="$('edit-transfer-desc').focus()">
+                                <span class="tm-row-label-static">备注</span>
+                                <input type="text" class="tm-desc-input" id="edit-transfer-desc" placeholder="添加备注...">
+                                <i class="bi bi-chevron-right tm-row-chevron"></i>
                             </div>
                         </div>
                     </div>
 
-                    <div class="trans-amount-bar" id="transfer-amount-bar">
-                        <div class="transfer-amount-row">
-                            <div class="transfer-amount-field">
-                                <label class="amt-label">转出金额</label>
-                                <input type="text" inputmode="decimal" placeholder="0.00" class="amount-input-v2 transfer-amount-input decimal-input" id="edit-transfer-amount-out" oninput="handleEditTransferAmountChange('out')" required="">
-                            </div>
-                            <div class="transfer-amount-field">
-                                <label class="amt-label">转入金额</label>
-                                <input type="text" inputmode="decimal" placeholder="0.00" class="amount-input-v2 transfer-amount-input decimal-input" id="edit-transfer-amount-in" oninput="handleEditTransferAmountChange('in')" required="">
-                            </div>
-                        </div>
+                    <div class="trans-amount-bar tm-footer-bar" id="transfer-amount-bar">
                         <div class="trans-action-row">
                             <button type="button" class="btn-delete-immersive" id="edit-transfer-delete-btn" onclick="deleteCurrentTransfer()" style="display:none!important;">
                                 <i class="bi bi-trash"></i> 删除
                             </button>
-                            <button type="submit" class="btn-save-immersive" id="edit-transfer-submit-btn">保存</button>
+                            <button type="submit" class="btn-save-immersive" id="edit-transfer-submit-btn"><i class="bi bi-check-lg"></i> 保存</button>
                         </div>
                     </div>
                 </form>
@@ -2494,8 +2686,6 @@ select.compact-form-control { height: 2.1rem; }
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="idb.js"></script>
-<script src="repository.js"></script>
 <script>
 const DEFAULT_CATEGORIES = {
     expense: ['餐饮', '交通', '住房', '购物', '娱乐', '医疗'],
@@ -2561,119 +2751,15 @@ let currentAssetAggregation = 'month';
 let transactionDisplayMode = localStorage.getItem('APP_trans_display_mode') || 'all';
 let currentUserFilterValue = localStorage.getItem('APP_trans_user_filter') || 'all';
 
+const APP_VERSION = '2.5.7';
+
+// ── 数据同步相关日期常量 ──────────────────────────────────────
+// 约束：STALE_CACHE_DAYS（loadFromDrive 中）必须 ≤ DELETED_LOG_RETENTION_DAYS，
+// 建议 ≤ 一半，留安全边际。否则会出现"删除记录已失效但设备缓存还没刷新"的
+// 空窗期，导致已删除的数据在同步时被误判为新数据而复活。
+const DELETED_LOG_RETENTION_DAYS = 14; // deletedLog 条目保留天数（防止已删数据被合并复活）
 const $ = id => document.getElementById(id);
 const $$ = selector => document.querySelectorAll(selector);
-
-// ── 数据模型迁移：将旧格式（archivedYears + _isBaseline）转换为新格式（sealedYears + yearSnapshots）──
-function migrateLegacyData() {
-    if (!inMemoryLoadedData) return false;
-
-    let changed = false;
-
-    // 1. archivedYears → sealedYears
-    if (inMemoryLoadedData.archivedYears && !inMemoryLoadedData.sealedYears) {
-        inMemoryLoadedData.sealedYears = inMemoryLoadedData.archivedYears;
-        delete inMemoryLoadedData.archivedYears;
-        changed = true;
-    }
-    if (!inMemoryLoadedData.sealedYears) {
-        inMemoryLoadedData.sealedYears = [];
-    }
-
-    // 2. 收集所有 _isBaseline 交易
-    const baselineTrans = [];
-    const allUsers = Object.keys(inMemoryLoadedData.allUserData || {});
-    allUsers.forEach(u => {
-        const ud = inMemoryLoadedData.allUserData[u];
-        if (ud && ud.transactions) {
-            ud.transactions.forEach(t => {
-                if (t._isBaseline) baselineTrans.push(t);
-            });
-        }
-    });
-
-    // 3. 将 _isBaseline 转换为 yearSnapshots
-    if (baselineTrans.length > 0) {
-        if (!inMemoryLoadedData.yearSnapshots) {
-            inMemoryLoadedData.yearSnapshots = {};
-        }
-
-        const sealedYears = [...inMemoryLoadedData.sealedYears].sort((a, b) => a - b);
-
-        // 对每个账户，计算截至每个已封存年末的累计余额
-        // _isBaseline 交易的 amount = 该年所有交易之和，日期 = YYYY-12-31
-        // 所以截至某年末的累计余额 = initialBalance + Σ(该年及之前所有 baseline 的 amount)
-        allUsers.forEach(u => {
-            const ud = inMemoryLoadedData.allUserData[u];
-            if (!ud || !ud.accounts) return;
-            ud.accounts.forEach(acc => {
-                // 按年份累计
-                let cumulative = parseFloat(acc.initialBalance) || 0;
-                sealedYears.forEach(year => {
-                    // 加上该年的 baseline（如果有）
-                    const baseline = baselineTrans.find(t =>
-                        t._archiveYear == year && t.accountId == acc.id
-                    );
-                    if (baseline) {
-                        cumulative += parseFloat(baseline.amount) || 0;
-                    }
-                    // 也加上该年非 baseline 的交易（如果有未封存的旧数据混在里面）
-                    allUsers.forEach(u2 => {
-                        const ud2 = inMemoryLoadedData.allUserData[u2];
-                        if (ud2 && ud2.transactions) {
-                            ud2.transactions.forEach(t => {
-                                if (!t._isBaseline &&
-                                    t.accountId == acc.id &&
-                                    t.date >= `${year}-01-01` &&
-                                    t.date <= `${year}-12-31`) {
-                                    cumulative += parseFloat(t.amount) || 0;
-                                }
-                            });
-                        }
-                    });
-
-                    if (!inMemoryLoadedData.yearSnapshots[year]) {
-                        inMemoryLoadedData.yearSnapshots[year] = {};
-                    }
-                    inMemoryLoadedData.yearSnapshots[year][String(acc.id)] = {
-                        balance: roundMoney(cumulative),
-                        currency: acc.currency,
-                        ownerName: acc.ownerName || u
-                    };
-                });
-            });
-        });
-
-        // 4. 从 allUserData 中移除 _isBaseline 交易
-        allUsers.forEach(u => {
-            const ud = inMemoryLoadedData.allUserData[u];
-            if (ud && ud.transactions) {
-                ud.transactions = ud.transactions.filter(t => !t._isBaseline);
-            }
-        });
-        changed = true;
-    }
-
-    return changed;
-}
-
-// ── 获取已封存年份列表（兼容旧字段名 archivedYears）──
-function getSealedYears() {
-    if (!inMemoryLoadedData) return [];
-    return inMemoryLoadedData.sealedYears || inMemoryLoadedData.archivedYears || [];
-}
-
-// ── 获取可封存年份（主数据中 < 当前年 且未封存）──
-function getSealableYears() {
-    const currentYear = new Date().getFullYear();
-    const years = new Set();
-    transactions.forEach(t => {
-        const y = parseInt(t.date.substring(0, 4));
-        if (y < currentYear) years.add(y);
-    });
-    const sealed = getSealedYears();
-    return [...years].filter(y => !sealed.includes(y)).sort();
-}
 
 // 金额类输入框统一用 type="text"，这里做实时清洗：
 // 支持德语等用 "," 作小数点的系统直接输入逗号，自动转成 "."；
@@ -2948,9 +3034,15 @@ function toggleOfflineMode() {
         loadFromDrive();
     } else if (offlineMode) {
         // 切换到离线模式：清除所有网络缓存，防止下次误用旧云端数据
-        Repository.clearMainCache().catch(() => {});
-        Repository.clearMainVersion().catch(() => {});
-        Repository.clearAllDrafts().catch(() => {});
+        localStorage.removeItem('APP_raw_cache');
+        localStorage.removeItem('APP_drive_version');
+        // 同时清除所有本地草稿
+        const draftKeys = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k && k.startsWith('APP_local_draft_')) draftKeys.push(k);
+        }
+        draftKeys.forEach(k => localStorage.removeItem(k));
         // 清空内存数据，强制手动选文件
         inMemoryLoadedData = null;
         _configUpdatedAt = Date.now();
@@ -2983,8 +3075,22 @@ function switchUser() {
     }
 }
 
+function _applyAppVersion() {
+    const titleEl = $('app-title');
+    if (titleEl) titleEl.textContent = `记一笔 v${APP_VERSION}`;
+    const sidebarEl = $('sidebar-version');
+    if (sidebarEl) sidebarEl.textContent = `version ${APP_VERSION}`;
+    const settingsEl = $('settings-version');
+    if (settingsEl) settingsEl.textContent = `v${APP_VERSION}`;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    _applyAppVersion();
     initOfflineModeUI();
+
+    // 标签输入实时预览为胶囊
+    const tagsInput = $('edit-trans-tags');
+    if (tagsInput) tagsInput.addEventListener('input', renderTagPills);
 
     // 在线模式且有已保存的 URL 则自动从 Drive 同步
     if (!offlineMode && GAS_URL) {
@@ -3122,9 +3228,6 @@ function onDataLoaded() {
     // 记录本次登录时间（用于判断草稿是否过期）
     localStorage.setItem('APP_last_login_time', Date.now().toString());
 
-    // 数据模型迁移：旧格式（archivedYears + _isBaseline）→ 新格式（sealedYears + yearSnapshots）
-    migrateLegacyData();
-
     // 预算数据：全局共享（不分用户），跟随主数据文件一起加载
     budgets = inMemoryLoadedData.budgets || [];
     categoryIcons = inMemoryLoadedData.categoryIcons || {};
@@ -3204,9 +3307,6 @@ function createNewDataFile() {
         categories: DEFAULT_CATEGORIES,
         exchangeRates: {...DEFAULT_RATES},
         configUpdatedAt: Date.now(),
-        sealedYears: [],
-        yearSnapshots: {},
-        deletedLog: []
     };
 
     categories = DEFAULT_CATEGORIES;
@@ -3260,10 +3360,10 @@ function loginWithUser(name) {
     if (statusEl) statusEl.textContent = offlineMode ? '离线模式' : '在线模式';
 
     // 检查是否有本地未同步草稿，有则合并恢复
-    checkAndRestoreDraft(name).catch(() => {});
+    checkAndRestoreDraft(name);
 
-    // 检查是否需要提示封存
-    checkSealPrompt();
+    // 检查是否需要提示存档
+    checkArchivePrompt();
 
     // 离线优先：后台静默同步（有新版本时合并刷新UI）
     setTimeout(() => backgroundSyncAfterLogin(), 300);
@@ -3274,28 +3374,37 @@ function loginWithUser(name) {
  * 当前用户的草稿：合并 + 刷新 UI + toast 提示
  * 其他用户的草稿：静默合并数据 + toast 提示（不影响当前用户视图）
  */
-async function checkAndRestoreDraft(userName) {
-    // 从 Repository 获取所有草稿用户
-    const allDraftUsers = await Repository.getAllDraftUsers();
+function checkAndRestoreDraft(userName) {
+    // 扫描 localStorage 找出所有用户的草稿 key
+    const allDraftUsers = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('APP_local_draft_') && !key.includes('_time_')) {
+            const draftUser = key.replace('APP_local_draft_', '');
+            allDraftUsers.push(draftUser);
+        }
+    }
+
     if (allDraftUsers.length === 0) return;
 
     let needsUIRefresh = false;
 
-    for (const draftUser of allDraftUsers) {
-        const draft = await Repository.getDraft(draftUser);
-        const draftTime = await Repository.getDraftTime(draftUser);
-        if (!draft) continue;
+    allDraftUsers.forEach(draftUser => {
+        const draftKey = `APP_local_draft_${draftUser}`;
+        const timeKey  = `APP_local_draft_time_${draftUser}`;
+        const draftStr  = localStorage.getItem(draftKey);
+        const draftTime = localStorage.getItem(timeKey);
+        if (!draftStr || !draftTime) return;
 
         try {
+            const draft = JSON.parse(draftStr);
             // 草稿作为 local，当前内存数据作为 remote，按 updatedAt 取最新
             inMemoryLoadedData = mergeData(draft, inMemoryLoadedData);
             _configUpdatedAt = inMemoryLoadedData.configUpdatedAt || Date.now();
             hasUnsavedChanges = true;
 
-            const timeStr = draftTime
-                ? new Date(draftTime)
-                    .toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-                : '未知时间';
+            const timeStr = new Date(parseInt(draftTime))
+                .toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
             if (draftUser === userName) {
                 // 当前用户：需要刷新 UI
@@ -3306,11 +3415,11 @@ async function checkAndRestoreDraft(userName) {
                 showToast(`已恢复 [${draftUser}] ${timeStr} 的本地未同步记录`, 'warning', 6000);
             }
         } catch(e) {
-            // 草稿损坏，直接清除
-            await IDB.del('draft_' + draftUser);
-            await IDB.del('draft_time_' + draftUser);
+            // 草稿损坏，直接清除，不影响主流程
+            localStorage.removeItem(draftKey);
+            localStorage.removeItem(timeKey);
         }
-    }
+    });
 
     if (needsUIRefresh) {
         loadAllData();
@@ -3321,42 +3430,57 @@ async function checkAndRestoreDraft(userName) {
 }
 
 
-function renderSealedYearsUI() {
+function getArchivableYears() {
+    const currentYear = new Date().getFullYear();
+    const years = new Set();
+    transactions.forEach(t => {
+        if (!t._isBaseline) { // 已无需检查 _isArchived，transactions 中不再含存档数据
+            const y = parseInt(t.date.substring(0, 4));
+            if (y < currentYear) years.add(y);
+        }
+    });
+    const archived = getArchivedYears();
+    return [...years].filter(y => !archived.includes(y)).sort();
+}
+
+function getArchivedYears() {
+    return (inMemoryLoadedData && inMemoryLoadedData.archivedYears) || [];
+}
+
+function renderArchiveManagementUI() {
     const el = $('archive-management-ui');
     if (!el) return;
-    const sealableYears = getSealableYears();
-    const sealedYears = getSealedYears();
+    const archivableYears = getArchivableYears();
+    const archivedYears = getArchivedYears();
     let html = '';
-    if (sealedYears.length > 0) {
-        html += '<div class="mb-2"><div class="small text-muted fw-bold mb-1">已封存：</div><div class="d-flex flex-wrap gap-1">';
-        sealedYears.forEach(y => {
-            html += `<span class="badge bg-secondary d-inline-flex align-items-center gap-1">${y}年
-                <button class="btn-close btn-close-white" style="font-size:0.5rem;" title="查看详情" onclick="loadSealedYear(${y})"></button>
-            </span>`;
+    if (archivedYears.length > 0) {
+        html += '<div class="mb-2"><div class="small text-muted fw-bold mb-1">已存档（只读）：</div><div class="d-flex flex-wrap gap-1">';
+        archivedYears.forEach(y => {
+            html += `<button class="btn btn-sm btn-outline-secondary py-0" onclick="loadHistoryYear(${y})"><i class="bi bi-clock-history me-1"></i>${y}年</button>`;
         });
         html += '</div></div>';
     }
-    if (sealableYears.length > 0) {
-        html += '<div class="mb-1"><div class="small text-muted fw-bold mb-1">可封存：</div><div class="d-flex flex-wrap gap-1">';
-        sealableYears.forEach(y => {
-            html += `<button class="btn btn-sm btn-outline-primary py-0" onclick="confirmSealYear(${y})">${y}年</button>`;
+    if (archivableYears.length > 0) {
+        html += '<div class="mb-1"><div class="small text-muted fw-bold mb-1">可存档：</div><div class="d-flex flex-wrap gap-1">';
+        archivableYears.forEach(y => {
+            html += `<button class="btn btn-sm btn-outline-primary py-0" onclick="confirmArchive(${y})">${y}年</button>`;
         });
         html += '</div></div>';
     }
-    if (sealableYears.length === 0 && sealedYears.length === 0) {
-        html = '<p class="text-muted small mb-2">暂无可封存的历史年份数据</p>';
+    if (archivableYears.length === 0 && archivedYears.length === 0) {
+        html = '<p class="text-muted small mb-2">暂无可存档的历史年份数据</p>';
     }
     el.innerHTML = html;
     
     // 同步更新「查看历史存档」下拉菜单
     const dropdown = $('history-year-dropdown');
     if (dropdown) {
-        const sealedYears = getSealedYears();
-        if (sealedYears.length === 0) {
-            dropdown.innerHTML = '<li><span class="dropdown-item text-muted small">暂无封存数据</span></li>';
+        const archivedYears = getArchivedYears();
+        if (archivedYears.length === 0) {
+            dropdown.innerHTML = '<li><span class="dropdown-item text-muted small">暂无存档</span></li>';
         } else {
-            dropdown.innerHTML = sealedYears.map(y =>
-                `<li><a class="dropdown-item" href="#" onclick="event.preventDefault(); loadSealedYear(${y})">
+            dropdown.innerHTML = archivedYears.map(y =>
+                `<li><a class="dropdown-item" href="#" onclick="event.preventDefault(); loadHistoryYear(${y})">
                     <i class="bi bi-archive me-1"></i>${y} 年
                 </a></li>`
             ).join('');
@@ -3364,149 +3488,193 @@ function renderSealedYearsUI() {
     }
 }
 
-function checkSealPrompt() {
+function checkArchivePrompt() {
     const now = new Date();
     const currentYear = now.getFullYear();
     if (now.getMonth() + 1 < 2 || now.getMonth() + 1 > 3) return; // 只在2-3月提示
     const lastYear = currentYear - 1;
-    const sealedYears = getSealedYears();
-    if (sealedYears.includes(lastYear)) return;
-    const hasLastYearData = transactions.some(t => t.date.startsWith(String(lastYear)));
+    const archivedYears = getArchivedYears();
+    if (archivedYears.includes(lastYear)) return;
+    const hasLastYearData = transactions.some(t => t.date.startsWith(String(lastYear)) && !t._isBaseline);
     if (!hasLastYearData) return;
-    const promptKey = `APP_seal_prompt_${lastYear}`;
+    const promptKey = `APP_archive_prompt_${lastYear}`;
     if (localStorage.getItem(promptKey)) return;
     localStorage.setItem(promptKey, '1');
     setTimeout(() => {
-        const cnt = transactions.filter(t => t.date.startsWith(String(lastYear))).length;
-        if (confirm(`📦 建议封存 ${lastYear} 年数据\n\n共 ${cnt} 条记录，封存后可显著减少每次同步的数据量。\n\n现在封存吗？（可在设置页随时操作）`)) {
-            confirmSealYear(lastYear);
+        const cnt = transactions.filter(t => t.date.startsWith(String(lastYear)) && !t._isBaseline).length;
+        if (confirm(`📦 建议存档 ${lastYear} 年数据\n\n共 ${cnt} 条记录，存档后可显著减少每次同步的数据量。\n\n现在存档吗？（可在设置页随时操作）`)) {
+            confirmArchive(lastYear);
         }
     }, 2500);
 }
 
-async function confirmSealYear(year) {
-    const cnt = transactions.filter(t => t.date.startsWith(String(year))).length;
-    if (cnt === 0) { showToast(`${year} 年没有可封存的数据`, 'warning'); return; }
-    if (!confirm(`确定封存 ${year} 年的数据？\n\n共 ${cnt} 条记录将移入只读封存。\n可通过"查看"查看完整数据。`)) return;
-    await sealYear(year);
+async function confirmArchive(year) {
+    const cnt = transactions.filter(t => t.date.startsWith(String(year)) && !t._isBaseline).length;
+    if (cnt === 0) { showToast(`${year} 年没有可存档的数据`, 'warning'); return; }
+    if (!confirm(`确定存档 ${year} 年的数据？\n\n共 ${cnt} 条记录将移入只读存档。\n存档数据不可恢复，只读，不能修改。`)) return;
+    await archiveYear(year);
 }
 
-async function sealYear(year) {
-    showToast(`正在封存 ${year} 年数据…`, 'syncing', 0);
-    try {
-        saveUserData();
-        const yearStr = String(year);
-        const yearTrans = transactions.filter(t => t.date.startsWith(yearStr));
-        if (yearTrans.length === 0) { showToast('没有可封存的数据', 'error'); return; }
+async function archiveYear(year) {
+    showToast(`正在存档 ${year} 年…`, 'syncing', 0);
 
-        // 构建封存包（与 archiveYear 相同）
-        const sealData = {
-            _sealedYear: year, _sealedAt: Date.now(),
+    // ── 占锁，防止并发同步 ──
+    clearTimeout(driveAutoSaveTimer);
+    while (driveIsSyncing) { await new Promise(r => setTimeout(r, 200)); }
+    driveIsSyncing = true;
+
+    // ── 快照：用于推送失败时回滚 ──
+    const snapTransactions       = transactions.map(t => ({...t}));
+    const snapInMemory           = JSON.parse(JSON.stringify(inMemoryLoadedData));
+
+    const rollback = () => {
+        transactions      = snapTransactions;
+        inMemoryLoadedData = snapInMemory;
+        // 重建 accounts/plannedTransactions 引用（它们由 inMemoryLoadedData 衍生）
+        accounts = []; plannedTransactions = [];
+        Object.entries(inMemoryLoadedData.allUserData || {}).forEach(([u, ud]) => {
+            (ud.accounts || []).forEach(a => accounts.push({...a, ownerName: u}));
+            (ud.plannedTransactions || []).forEach(p => plannedTransactions.push({...p, ownerName: u}));
+        });
+        filterUserData(); loadAllData(); renderAccounts(); renderAllTransactions();
+    };
+
+    try {
+        // ── Step 0：先拉取最新云端，合并后再存档，防止覆盖其他设备的新数据 ──
+        if (!offlineMode && GAS_URL) {
+            try {
+                const localVersion = localStorage.getItem('APP_drive_version') || '0';
+                const vResp = await fetch(gasRequestUrl({ action: 'version' }));
+                const remoteVersion = vResp.ok ? (await vResp.text()).trim() : '0';
+                if (remoteVersion !== '0' && remoteVersion !== localVersion) {
+                    const pullResp = await fetch(gasRequestUrl());
+                    if (pullResp.ok) {
+                        const raw = (await pullResp.text()).trim();
+                        if (raw && raw !== 'UNAUTHORIZED') {
+                            let remoteData;
+                            try { remoteData = JSON.parse(raw); }
+                            catch (_) {
+                                if (userPassword) {
+                                    const bytes = CryptoJS.AES.decrypt(raw, userPassword);
+                                    remoteData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+                                }
+                            }
+                            if (remoteData) {
+                                const merged = mergeData(inMemoryLoadedData, remoteData);
+                                inMemoryLoadedData = merged;
+                                accounts = []; transactions = []; plannedTransactions = [];
+                                Object.entries(merged.allUserData || {}).forEach(([u, ud]) => {
+                                    (ud.accounts || []).forEach(a => accounts.push({...a, ownerName: u}));
+                                    (ud.transactions || []).forEach(t => transactions.push({...t, ownerName: u}));
+                                    (ud.plannedTransactions || []).forEach(p => plannedTransactions.push({...p, ownerName: u}));
+                                });
+                            }
+                        }
+                    }
+                }
+            } catch(e) { console.warn('[archiveYear] 拉取合并失败，继续用本地数据存档:', e); }
+        }
+
+        const yearStr = String(year);
+        const yearTrans = transactions.filter(t => t.date.startsWith(yearStr) && !t._isBaseline);
+        if (yearTrans.length === 0) { showToast('没有可存档的数据', 'warning'); driveIsSyncing = false; return; }
+
+        // ── Step 1：构建存档包（纯计算，不改内存）──
+        const archiveData = {
+            _archiveYear: year, _archivedAt: Date.now(),
             users: dataUsers, categories, exchangeRates,
             allUserData: {}
         };
         dataUsers.forEach(u => {
-            sealData.allUserData[u] = {
+            archiveData.allUserData[u] = {
                 accounts: accounts.filter(a => a.ownerName === u).map(a => ({...a})),
                 transactions: yearTrans.filter(t => t.ownerName === u),
                 plannedTransactions: []
             };
         });
+        const archiveFile = `archive_${year}.enc`;
+        const archiveContent = userPassword
+            ? CryptoJS.AES.encrypt(JSON.stringify(archiveData), userPassword).toString()
+            : JSON.stringify(archiveData);
 
-        // 计算各账户截至该年末的累计余额，存入 yearSnapshots
-        const sealedYears = [...getSealedYears(), year].sort((a, b) => a - b);
-        accounts.forEach(acc => {
-            let cumulative = parseFloat(acc.initialBalance) || 0;
-            
-            // 累计已封存年份的余额
-            sealedYears.forEach(y => {
-                if (y < year) { // 只累计更早的年份
-                    const yearTrans = transactions.filter(t => 
-                        t.date.startsWith(String(y)) && t.accountId == acc.id
-                    );
-                    cumulative += yearTrans.reduce((s, t) => s + parseFloat(t.amount), 0);
-                }
+        // ── Step 2：推存档文件（此时主数据未动）──
+        if (!offlineMode && GAS_URL) {
+            const r1 = await fetch(gasRequestUrl({ file: archiveFile }), {
+                method: 'POST', body: archiveContent, headers: { 'Content-Type': 'text/plain' }
             });
-            
-            // 再加上当前年份的交易（如果正在封存的是当前年）
-            if (year === new Date().getFullYear()) {
-                const currentYearTrans = transactions.filter(t => 
-                    t.date.startsWith(yearStr) && t.accountId == acc.id
-                );
-                cumulative += currentYearTrans.reduce((s, t) => s + parseFloat(t.amount), 0);
-            }
-            
-            if (!inMemoryLoadedData.yearSnapshots[year]) {
-                inMemoryLoadedData.yearSnapshots[year] = {};
-            }
-            inMemoryLoadedData.yearSnapshots[year][String(acc.id)] = {
-                balance: roundMoney(cumulative),
-                currency: acc.currency,
-                ownerName: acc.ownerName
-            };
-        });
+            if ((await r1.text()).trim() !== 'OK') throw new Error('存档文件推送失败，操作已取消，数据未改动');
+        }
 
-        // 从主数据删除该年原始交易
+        // ── Step 3：存档文件确认写入后，才修改主数据内存 ──
+        const baselineDate = `${year}-12-31`;
         const removeIds = new Set(yearTrans.map(t => t.id));
+        accounts.forEach(acc => {
+            const yearSum = yearTrans.filter(t => t.accountId == acc.id)
+                .reduce((s, t) => s + parseFloat(t.amount), 0);
+            if (yearSum !== 0) {
+                transactions.push({
+                    id: Date.now() + Math.random(),
+                    _isBaseline: true, _archiveYear: year,
+                    accountId: acc.id, amount: yearSum,
+                    date: baselineDate, desc: `${year}年存档基准`,
+                    ownerName: acc.ownerName,
+                    type: yearSum >= 0 ? 'income' : 'expense',
+                    category: '存档基准', isTransfer: false, tags: '',
+                    updatedAt: Date.now()
+                });
+            }
+        });
         transactions = transactions.filter(t => !removeIds.has(t.id));
-        
-        // 记录到删除日志
         if (!inMemoryLoadedData.deletedLog) inMemoryLoadedData.deletedLog = [];
         const nowTime = Date.now();
         removeIds.forEach(id => {
             inMemoryLoadedData.deletedLog.push({ id: String(id), deletedAt: nowTime, type: 'transaction' });
         });
-
-        // 标记封存年份
-        if (!inMemoryLoadedData.sealedYears) inMemoryLoadedData.sealedYears = [];
-        if (!inMemoryLoadedData.sealedYears.includes(year)) {
-            inMemoryLoadedData.sealedYears.push(year);
-            inMemoryLoadedData.sealedYears.sort((a, b) => a - b);
+        if (!inMemoryLoadedData.archivedYears) inMemoryLoadedData.archivedYears = [];
+        if (!inMemoryLoadedData.archivedYears.includes(year)) {
+            inMemoryLoadedData.archivedYears.push(year);
+            inMemoryLoadedData.archivedYears.sort((a, b) => a - b);
         }
         saveUserData();
 
+        // ── Step 4：推主文件，失败则回滚内存并提示重试 ──
         if (!offlineMode && GAS_URL) {
-            // 封存前取消自动同步计时器，并占用 driveIsSyncing 锁
-            clearTimeout(driveAutoSaveTimer);
-            while (driveIsSyncing) {
-                await new Promise(r => setTimeout(r, 200));
+            const mainContent = userPassword
+                ? CryptoJS.AES.encrypt(JSON.stringify(inMemoryLoadedData), userPassword).toString()
+                : JSON.stringify(inMemoryLoadedData);
+            let mainOk = false;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    const r2 = await fetch(gasRequestUrl(), {
+                        method: 'POST', body: mainContent, headers: { 'Content-Type': 'text/plain' }
+                    });
+                    if ((await r2.text()).trim() === 'OK') { mainOk = true; break; }
+                } catch(_) {}
+                if (attempt < 3) await new Promise(r => setTimeout(r, 1000 * attempt));
             }
-            driveIsSyncing = true;
-            try {
-                // Step A：推封存文件（文件名保持向后兼容）
-                const sealFile = `archive_${year}.enc`;
-                const sealContent = userPassword
-                    ? CryptoJS.AES.encrypt(JSON.stringify(sealData), userPassword).toString()
-                    : JSON.stringify(sealData);
-                const r1 = await fetch(gasRequestUrl({ file: sealFile }), {
-                    method: 'POST', body: sealContent, headers: { 'Content-Type': 'text/plain' }
-                });
-                if ((await r1.text()).trim() !== 'OK') throw new Error('封存文件推送失败');
-
-                // Step B：推主文件（不含已封存年份原始交易，但包含 yearSnapshots）
-                const mainContent = userPassword
-                    ? CryptoJS.AES.encrypt(JSON.stringify(inMemoryLoadedData), userPassword).toString()
-                    : JSON.stringify(inMemoryLoadedData);
-                const r2 = await fetch(gasRequestUrl(), {
-                    method: 'POST', body: mainContent, headers: { 'Content-Type': 'text/plain' }
-                });
-                if ((await r2.text()).trim() !== 'OK') throw new Error('主文件推送失败');
-                clearUnsavedFlag();
-            } finally {
-                driveIsSyncing = false;
+            if (!mainOk) {
+                // 主文件推送失败：回滚内存，存档文件已在云端但主文件未改
+                // 下次同步会重新触发存档流程（因为本地仍有该年数据且archivedYears未标记）
+                rollback();
+                throw new Error('主文件推送失败（已自动回滚）。存档文件已上传，请稍后重试');
             }
+            clearUnsavedFlag();
         } else {
             hasUnsavedChanges = true;
         }
 
-        filterUserData(); loadAllData(); renderAccounts(); renderAllTransactions(); renderSealedYearsUI();
-        if (verboseToast) showToast(`${year} 年数据封存成功`, 'success');
+        filterUserData(); loadAllData(); renderAccounts(); renderAllTransactions(); renderArchiveManagementUI();
+        showToast(`${year} 年数据存档成功`, 'success');
     } catch (err) {
-        showToast(`封存失败：${err.message}`, 'error');
+        showToast(`存档失败：${err.message}`, 'error');
+    } finally {
+        driveIsSyncing = false;
     }
 }
 
-async function loadSealedYear(year) {
+// 解档功能已移除：历史数据只读，通过历史模式查看
+
+async function loadHistoryYear(year) {
     showToast(`正在加载 ${year} 年存档…`, 'syncing', 0);
     try {
         if (offlineMode || !GAS_URL) throw new Error('历史模式需要网络，请切换到在线模式');
@@ -3557,9 +3725,9 @@ async function loadSealedYear(year) {
         if (ssd) { ssd.value = yStart; ssd.min = yStart; ssd.max = yEnd; currentStatsFilter.startDate = yStart; }
         if (sed) { sed.value = yEnd;   sed.min = yStart; sed.max = yEnd; currentStatsFilter.endDate   = yEnd; }
         applyTransactionFilter();
-        // 显示封存模式横幅
+        // 显示历史模式横幅
         const banner = $('history-mode-banner');
-        if (banner) { banner.classList.remove('d-none'); $('history-year-label').textContent = `${year} 年封存数据`; }
+        if (banner) { banner.classList.remove('d-none'); $('history-year-label').textContent = year; }
         // 隐藏快速日期筛选按钮组
         ['quick-date-filter-group', 'trans-custom-toggle', 'trans-filter-btn',
          'quick-stats-filter-group-1', 'stats-month-nav', 'stats-custom-toggle', 'stats-filter-btn']
@@ -3577,7 +3745,7 @@ async function loadSealedYear(year) {
         if (fab) fab.classList.add('d-none');
 
         renderAllTransactions(); renderStats();
-        if (verboseToast) showToast(`已加载 ${year} 年封存数据（只读）`, 'success');
+        showToast(`已加载 ${year} 年存档（只读）`, 'success');
     } catch (err) {
         historyMode = false; historyYear = null;
         showToast(`加载失败：${err.message}`, 'error');
@@ -3631,7 +3799,7 @@ function exitHistoryMode() {
     renderAllTransactions();
     renderAccounts();
     renderStats();
-    if (verboseToast) showToast('已退出封存模式', 'info');
+    if (verboseToast) showToast('已退出历史模式', 'info');
 }
 
 /**
@@ -3809,9 +3977,11 @@ function triggerAutoSave() {
     if (historyMode) return; // 历史模式下不触发任何保存
     hasUnsavedChanges = true;
     if (currentUserName) {
-        saveUserData();
-        // 异步写入 IndexedDB 草稿（失败时降级静默）
-        Repository.saveDraft(currentUserName, inMemoryLoadedData).catch(() => {});
+        try {
+            saveUserData();
+            localStorage.setItem(`APP_local_draft_${currentUserName}`, JSON.stringify(inMemoryLoadedData));
+            localStorage.setItem(`APP_local_draft_time_${currentUserName}`, Date.now().toString());
+        } catch(e) { /* localStorage 容量不足时静默失败 */ }
     }
     showUnsavedToast();
 }
@@ -3855,9 +4025,17 @@ function clearUnsavedFlag() {
     clearTimeout(_toastMinimizeTimer);
     const el = $('app-toast');
     if (el) { el.classList.remove('minimized'); el.onclick = null; }
+    try { localStorage.setItem('APP_last_sync_time', String(Date.now())); } catch(_) {}
     
-    // 清空 IndexedDB 中所有用户的本地草稿
-    Repository.clearAllDrafts().catch(() => {});
+    // 清空 localStorage 中所有用户的本地草稿
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('APP_local_draft_')) {
+            keysToRemove.push(key);
+        }
+    }
+    keysToRemove.forEach(key => localStorage.removeItem(key));
 }
 
 /**
@@ -3897,9 +4075,9 @@ function mergeData(local, remote) {
         return Array.from(map.values());
     };
 
-    // ── 合并删除日志（60天保留期）──
+    // ── 合并删除日志（保留窗口见 DELETED_LOG_RETENTION_DAYS：删除记录只在窗口内生效，避免陈旧记录在未来误删"复活"的数据）──
     const now = Date.now();
-    const cutoff = now - 60 * 24 * 60 * 60 * 1000;
+    const cutoff = now - DELETED_LOG_RETENTION_DAYS * 24 * 60 * 60 * 1000;
     const localLog = (local.deletedLog || []);
     const remoteLog = (remote.deletedLog || []);
     const logMap = new Map();
@@ -3946,11 +4124,13 @@ function mergeData(local, remote) {
         ...Object.keys(local.allUserData || {}),
         ...Object.keys((remote && remote.allUserData) || {})
     ]);
+    let _mergedTxnTotal = 0;
     allUsers.forEach(u => {
         const localU = (local.allUserData || {})[u] || { accounts: [], transactions: [], plannedTransactions: [] };
         const remoteU = ((remote && remote.allUserData) || {})[u] || { accounts: [], transactions: [], plannedTransactions: [] };
         const mergedTransactions = mergeArray(localU.transactions, remoteU.transactions)
             .filter(t => !deletedIdSet.has(String(t.id))); // 过滤已删除的交易
+        _mergedTxnTotal += mergedTransactions.length;
         // accountOrder：优先保留 local 的，local 没有则用 remote 的
         const mergedOrder = localU.accountOrder || remoteU.accountOrder || undefined;
         merged.allUserData[u] = {
@@ -3962,29 +4142,14 @@ function mergeData(local, remote) {
         };
     });
 
-    // 合并 sealedYears 和 yearSnapshots
-    const localSealed = local.sealedYears || local.archivedYears || [];
-    const remoteSealed = remote.sealedYears || remote.archivedYears || [];
-    merged.sealedYears = Array.from(new Set([...localSealed, ...remoteSealed])).sort((a, b) => a - b);
-    
-    // yearSnapshots：取较新的版本
-    const localSnapshots = local.yearSnapshots || {};
-    const remoteSnapshots = remote.yearSnapshots || {};
-    merged.yearSnapshots = {};
-    const allYears = new Set([...Object.keys(localSnapshots), ...Object.keys(remoteSnapshots)]);
-    allYears.forEach(year => {
-        const localYearSnap = localSnapshots[year];
-        const remoteYearSnap = remoteSnapshots[year];
-        if (!localYearSnap) {
-            merged.yearSnapshots[year] = remoteYearSnap;
-        } else if (!remoteYearSnap) {
-            merged.yearSnapshots[year] = localYearSnap;
-        } else {
-            // 两个版本都有，取 updatedAt 较新的
-            merged.yearSnapshots[year] = localYearSnap.updatedAt >= remoteYearSnap.updatedAt 
-                ? localYearSnap : remoteYearSnap;
-        }
-    });
+    // ── 数据完整性统计：供调用方检测"合并后交易数量异常骤降"的情况 ──
+    const localTxnTotal  = Object.values(local.allUserData || {}).reduce((s, u) => s + (u.transactions || []).length, 0);
+    const remoteTxnTotal = Object.values((remote && remote.allUserData) || {}).reduce((s, u) => s + (u.transactions || []).length, 0);
+    merged._mergeStats = {
+        localTxnTotal, remoteTxnTotal,
+        mergedTxnTotal: _mergedTxnTotal,
+        filteredByDeletedLog: mergedDeletedLog.length,
+    };
 
     return merged;
 }
@@ -4036,7 +4201,7 @@ async function syncToDrive(manual = false, forcePush = false) {
 
         if (!forcePush) {
             // ── 步骤 1：核对版本号 ──
-            const localVersion = await Repository.getMainVersion();
+            const localVersion = localStorage.getItem('APP_drive_version') || '0';
             let remoteVersion = '0';
             try {
                 const vResp = await fetch(gasRequestUrl({ action: 'version' }));
@@ -4070,7 +4235,27 @@ async function syncToDrive(manual = false, forcePush = false) {
                 // ── 步骤 2b：合并 ──
                 if (remoteData) {
                     pulledNewCount = countNewItemsFromRemote(inMemoryLoadedData, remoteData);
-                    finalData = mergeData(inMemoryLoadedData, remoteData);
+                    const mergedResult = mergeData(inMemoryLoadedData, remoteData);
+
+                    // ── 数据完整性熔断：合并后交易数比本地/远端任一方骤降超过 20%，暂停并警告 ──
+                    const stats = mergedResult._mergeStats;
+                    if (stats) {
+                        const maxBefore = Math.max(stats.localTxnTotal, stats.remoteTxnTotal);
+                        const dropRatio = maxBefore > 0 ? (maxBefore - stats.mergedTxnTotal) / maxBefore : 0;
+                        if (maxBefore >= 10 && dropRatio >= 0.2) {
+                            driveIsSyncing = false;
+                            const msg = `检测到数据异常：合并后交易数从 ${maxBefore} 条降至 ${stats.mergedTxnTotal} 条（减少${Math.round(dropRatio*100)}%）。\n\n` +
+                                `为防止数据丢失，本次同步已自动中止，云端数据未被覆盖。\n` +
+                                `本地数据也未被修改，可以继续正常使用。\n\n` +
+                                `建议：请联系技术支持核实，或检查是否有历史存档/分片操作导致此现象。`;
+                            console.error('[syncToDrive] 数据完整性熔断触发', stats);
+                            alert(msg);
+                            showToast('同步已中止：检测到数据异常减少', 'error', 0);
+                            return;
+                        }
+                    }
+
+                    finalData = mergedResult;
                     inMemoryLoadedData = finalData;
                     _configUpdatedAt = finalData.configUpdatedAt || Date.now();
                     // 同步配置类变量（分类/图标/汇率/预算），防止需要重新登录才生效
@@ -4115,11 +4300,11 @@ async function syncToDrive(manual = false, forcePush = false) {
                 const vResp = await fetch(gasRequestUrl({ action: 'version' }));
                 if (vResp.ok) {
                     const v = (await vResp.text()).trim();
-                    if (v !== '0') await Repository.setMainVersion(v);
+                    if (v !== '0') localStorage.setItem('APP_drive_version', v);
                 }
             } catch(_) {}
             window._driveRawContent = content;
-            await Repository.setMainCache(content);
+            try { localStorage.setItem('APP_raw_cache', content); } catch(_) {}
             // 同步成功：有新数据时提示条数；无新数据时详细模式提示「已同步」，否则静默关闭
             if (pulledNewCount > 0) {
                 showToast(`已同步 ${pulledNewCount} 条新数据`, 'success');
@@ -4144,16 +4329,18 @@ async function loadFromDrive() {
         alert('请先在登录界面填写并保存 GAS URL。'); return;
     }
 
-    // 从 localStorage 迁移旧数据到 IndexedDB（一次性）
-    await Repository.migrateFromLocalStorage();
+    // 缓存过期天数：必须 ≤ DELETED_LOG_RETENTION_DAYS，否则会出现"删除记录已失效但缓存还没刷新"的空窗期，导致已删数据复活
+    const STALE_CACHE_DAYS = 7;
+    const localRawCache = localStorage.getItem('APP_raw_cache');
+    const lastSyncTime = parseInt(localStorage.getItem('APP_last_sync_time') || '0', 10);
+    const daysSinceSync = lastSyncTime ? (Date.now() - lastSyncTime) / (24 * 60 * 60 * 1000) : Infinity;
+    const cacheIsStale = daysSinceSync > STALE_CACHE_DAYS;
 
-    const localRawCache = await Repository.getMainCache();
-
-    // ── 离线优先：有本地缓存就立即展示，不等网络 ──
-    if (localRawCache) {
+    // ── 离线优先：有本地缓存且未过期就立即展示，不等网络 ──
+    if (localRawCache && !cacheIsStale) {
         window._driveRawContent = localRawCache;
         try {
-            const parsed = typeof localRawCache === 'string' ? JSON.parse(localRawCache) : localRawCache;
+            const parsed = JSON.parse(localRawCache);
             // 明文缓存：直接进入用户选择
             userPassword = '';
             inMemoryLoadedData = parsed;
@@ -4178,11 +4365,16 @@ async function loadFromDrive() {
         return;
     }
 
-    // ── 无缓存：走原有网络加载流程 ──
-    showToast('正在从 Drive 加载数据…', 'syncing', 0);
+    // ── 无缓存 或 缓存已过期（超过 STALE_CACHE_DAYS 天未同步）：强制从云端加载 ──
+    if (cacheIsStale && localRawCache) {
+        console.log(`[loadFromDrive] 本地缓存已 ${daysSinceSync.toFixed(1)} 天未同步，强制从云端拉取最新数据`);
+        showToast(`已 ${Math.floor(daysSinceSync)} 天未同步，正在从云端拉取最新数据…`, 'syncing', 0);
+    } else {
+        showToast('正在从 Drive 加载数据…', 'syncing', 0);
+    }
 
     try {
-        const localVersion = await Repository.getMainVersion();
+        const localVersion = localStorage.getItem('APP_drive_version') || '0';
         let remoteVersion = '0';
         try {
             const vResp = await fetch(gasRequestUrl({ action: 'version' }));
@@ -4203,9 +4395,9 @@ async function loadFromDrive() {
             return;
         }
 
-        if (remoteVersion !== '0') await Repository.setMainVersion(remoteVersion);
+        if (remoteVersion !== '0') localStorage.setItem('APP_drive_version', remoteVersion);
         window._driveRawContent = raw;
-        await Repository.setMainCache(raw);
+        try { localStorage.setItem('APP_raw_cache', raw); } catch(_) {}
 
         try {
             const parsed = JSON.parse(raw);
@@ -4242,7 +4434,7 @@ async function backgroundSyncAfterLogin() {
 
     try {
         // ── 步骤1：核对版本 ──
-        const localVersion = await Repository.getMainVersion();
+        const localVersion = localStorage.getItem('APP_drive_version') || '0';
         let remoteVersion = '0';
         try {
             const vResp = await fetch(gasRequestUrl({ action: 'version' }));
@@ -4276,7 +4468,13 @@ async function backgroundSyncAfterLogin() {
         }
 
         // ── 步骤3：判断是否有本地草稿 ──
-        const hasDraft = await Repository.hasAnyDraft();
+        const hasDraft = (() => {
+            for (let i = 0; i < localStorage.length; i++) {
+                const k = localStorage.key(i);
+                if (k && k.startsWith('APP_local_draft_') && !k.includes('_time_')) return true;
+            }
+            return false;
+        })();
 
         // ── 步骤4：判断是否超过10天未登录 ──
         const lastLoginTime = parseInt(localStorage.getItem('APP_last_login_time') || '0');
@@ -4284,8 +4482,8 @@ async function backgroundSyncAfterLogin() {
         const stale = (lastLoginTime === 0) || (Date.now() - lastLoginTime > tenDaysMs);
 
         // 更新版本号和缓存
-        if (remoteVersion !== '0') await Repository.setMainVersion(remoteVersion);
-        await Repository.setMainCache(raw);
+        if (remoteVersion !== '0') localStorage.setItem('APP_drive_version', remoteVersion);
+        try { localStorage.setItem('APP_raw_cache', raw); } catch(_) {}
         localStorage.setItem('APP_last_login_time', Date.now().toString());
 
         // ── 步骤5：决策合并策略 ──
@@ -4296,7 +4494,12 @@ async function backgroundSyncAfterLogin() {
             // 无草稿 或 超过10天：远端直接覆盖本地
             finalData = remoteData;
             // 清除所有草稿（超期草稿作废）
-            await Repository.clearAllDrafts();
+            const draftKeys = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const k = localStorage.key(i);
+                if (k && k.startsWith('APP_local_draft_')) draftKeys.push(k);
+            }
+            draftKeys.forEach(k => localStorage.removeItem(k));
             strategyLabel = stale && hasDraft ? '草稿已过期，已使用最新云端数据' : '';
         } else {
             // 有草稿且未过期：按 updatedAt 合并
@@ -4751,25 +4954,7 @@ function roundMoney(n) {
 function calculateBalance(accId) {
     const acc = accounts.find(a => a.id == accId);
     let bal = parseFloat(acc.initialBalance);
-    
-    // 先加上当前年及之后年份的交易
-    const currentYear = new Date().getFullYear();
-    transactions.filter(t => t.accountId == accId).forEach(t => {
-        const txYear = parseInt(t.date.substring(0, 4));
-        if (txYear >= currentYear) {
-            bal += parseFloat(t.amount);
-        }
-    });
-    
-    // 再加上已封存年份的累计余额（yearSnapshots）
-    const sealedYears = getSealedYears();
-    sealedYears.forEach(year => {
-        const snapshot = inMemoryLoadedData.yearSnapshots[year];
-        if (snapshot && snapshot[String(accId)]) {
-            bal += parseFloat(snapshot[String(accId)].balance) - parseFloat(acc.initialBalance);
-        }
-    });
-    
+    transactions.filter(t => t.accountId == accId).forEach(t => bal += parseFloat(t.amount));
     return roundMoney(bal);
 }
 
@@ -4905,7 +5090,7 @@ function renderDetailContent(id) {
     $('ad-balance').textContent = `余额 ${balStr}`;
     $('ad-action-btns').style.display = isOwner ? 'flex' : 'none';
 
-    const acctTrans = transactions.filter(t => t.accountId == id)
+    const acctTrans = transactions.filter(t => t.accountId == id && !t._isBaseline)
         .sort((a, b) => b.date.localeCompare(a.date));
 
     const mobileContainer = $('account-detail-view-list');
@@ -5150,6 +5335,62 @@ function switchTransTab(tab, skipReset) {
         if (_inSplitMode) exitSplitMode();
         else _splitData = [];
     }
+    syncDateLabels();
+}
+
+// 日期友好显示："今天"/"昨天"/"明天"/"M月D日"
+function formatTransDateLabel(dateStr) {
+    if (!dateStr) return '选择日期';
+    const d = new Date(dateStr + 'T00:00:00');
+    if (isNaN(d.getTime())) return '选择日期';
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const diffDays = Math.round((d - today) / 86400000);
+    if (diffDays === 0) return '今天';
+    if (diffDays === -1) return '昨天';
+    if (diffDays === 1) return '明天';
+    return `${d.getMonth() + 1}月${d.getDate()}日`;
+}
+function syncDateLabels() {
+    const tEl = $('edit-trans-date-label');
+    if (tEl) tEl.textContent = formatTransDateLabel($('edit-trans-date').value);
+    const fEl = $('edit-transfer-date-label');
+    if (fEl) fEl.textContent = formatTransDateLabel($('edit-transfer-date').value);
+}
+
+// 标签：以胶囊（pill）形式预览，"+ 标签" 按钮常驻，点击展开输入框
+function toggleTagsInput() {
+    const el = $('tags-expanded');
+    if (!el) return;
+    const hidden = getComputedStyle(el).display === 'none';
+    if (hidden) {
+        el.style.display = '';
+        const inp = $('edit-trans-tags');
+        if (inp) setTimeout(() => inp.focus(), 50);
+    } else {
+        el.style.display = 'none';
+        renderTagPills();
+    }
+}
+function renderTagPills() {
+    const input = $('edit-trans-tags');
+    const container = $('tag-pills-display');
+    if (!input || !container) return;
+    container.querySelectorAll('.tm-tag-pill').forEach(p => p.remove());
+    const words = (input.value || '').split(/\s+/).filter(Boolean);
+    words.forEach(w => {
+        const pill = document.createElement('span');
+        pill.className = 'tm-tag-pill';
+        const safeW = _escHtml(w);
+        pill.innerHTML = `# ${safeW} <i class="bi bi-x tm-tag-remove" onclick="removeTagWord('${safeW.replace(/'/g, "\\'")}')"></i>`;
+        container.appendChild(pill);
+    });
+}
+function removeTagWord(word) {
+    const input = $('edit-trans-tags');
+    if (!input) return;
+    const words = (input.value || '').split(/\s+/).filter(Boolean).filter(w => w !== word);
+    input.value = words.join(' ');
+    renderTagPills();
 }
 
 // 弹窗标题加用户名
@@ -5180,6 +5421,7 @@ function _initNewTransModal(mode, title) {
     resetInlineItems();
     resetAttachmentUI();
     resetMetaFieldsCollapse();
+    renderTagPills();
     $('trans-tab-bar').style.display = '';
 }
 
@@ -5346,8 +5588,8 @@ function deleteTransaction(id) {
                 inMemoryLoadedData.deletedLog.push({ id: did, deletedAt: now });
             }
         });
-        // 只保留60天内的日志
-        const cutoff = now - 60 * 24 * 60 * 60 * 1000;
+        // 只保留 DELETED_LOG_RETENTION_DAYS 天内的日志（需与 loadFromDrive 的 STALE_CACHE_DAYS 保持 ≥2倍安全边际）
+        const cutoff = now - DELETED_LOG_RETENTION_DAYS * 24 * 60 * 60 * 1000;
         inMemoryLoadedData.deletedLog = inMemoryLoadedData.deletedLog.filter(e => e.deletedAt > cutoff);
 
         saveUserData(); triggerAutoSave(); filterUserData();
@@ -5391,12 +5633,11 @@ function openEditTransaction(id) {
     }
     $('edit-trans-account').value = t.accountId; accSelectSync('edit-trans-account');
     $('edit-trans-tags').value = t.tags || '';
+    renderTagPills();
     $('edit-trans-desc').value = t.desc || '';
     // 编辑时隐藏 tab bar（固定类型）
     $('trans-tab-bar').style.display = 'none';
-    // 根据已有数据展开折叠字段
     resetMetaFieldsCollapse();
-    expandMetaFieldsForExistingData(t.tags, t.desc);
     switchTransTab(t.type, true);
     // 加载分录
     if (t.items && t.items.length > 1) {
@@ -5771,7 +6012,7 @@ function computeMonthlySpendByCategory(year, month, filterUser) {
     const spend = {};
     let total = 0;
     source.forEach(t => {
-        if (t.isTransfer || t.amount >= 0) return;
+        if (t._isBaseline || t.isTransfer || t.amount >= 0) return;
         if (t.date < mStart || t.date > mEnd) return;
         if (filterUser !== 'all' && t.ownerName !== filterUser) return;
         const acc = accounts.find(a => a.id == t.accountId);
@@ -6064,7 +6305,7 @@ function _doRunAiAnalysis() {
     var mEnd   = year + '-' + mStr + '-31';
     // 正确计算：通过 accountId 查账户货币，排除 baseline/转账
     source.forEach(function(t) {
-        if (t.isTransfer) return;
+        if (t._isBaseline || t.isTransfer) return;
         if (t.date < mStart || t.date > mEnd) return;
         if (filterUser !== 'all' && t.ownerName !== filterUser) return;
         var acc = accounts.find(function(a) { return a.id == t.accountId; });
@@ -6086,7 +6327,7 @@ function _doRunAiAnalysis() {
     var pmEnd   = prevYear + '-' + pmStr + '-31';
     var prevIncome = 0, prevExpense = 0;
     source.forEach(function(t) {
-        if (t.isTransfer) return;
+        if (t._isBaseline || t.isTransfer) return;
         if (t.date < pmStart || t.date > pmEnd) return;
         if (filterUser !== 'all' && t.ownerName !== filterUser) return;
         var acc = accounts.find(function(a) { return a.id == t.accountId; });
@@ -6361,11 +6602,12 @@ function catGridSync(selectId, gridId) {
 
 // 金额输入框颜色随支出/收入变化
 function updateAmountTypeClass(type) {
-    const bar = $('trans-amount-bar');
-    if (!bar) return;
-    bar.classList.remove('amt-expense', 'amt-income');
-    if (type === 'expense') bar.classList.add('amt-expense');
-    else if (type === 'income') bar.classList.add('amt-income');
+    [$('trans-amount-bar'), $('trans-amount-card')].forEach(el => {
+        if (!el) return;
+        el.classList.remove('amt-expense', 'amt-income');
+        if (type === 'expense') el.classList.add('amt-expense');
+        else if (type === 'income') el.classList.add('amt-income');
+    });
 }
 
 // 金额前的货币符号随所选账户的币种变化
@@ -6476,6 +6718,7 @@ $('edit-transaction-form').addEventListener('submit', (e) => {
         if (currentDetailAccountId) refreshDetailContent(currentDetailAccountId);
         resetInlineItems();
         $('edit-trans-tags').value = '';
+        renderTagPills();
         $('edit-trans-desc').value = '';
         const hintEl = $('edit-trans-desc-hint');
         if (hintEl) hintEl.style.display = 'none';
@@ -6716,7 +6959,8 @@ function getFilteredTransactions() {
         // 历史模式年份保护
         if (historyMode && !t.date.startsWith(String(historyYear))) return false;
         
-        if (t.isTransfer && transactionDisplayMode === 'transactions') return false;
+        if (t._isBaseline) return false;
+        if (transactionDisplayMode === 'transactions' && t.isTransfer) return false;
         if (transactionDisplayMode === 'transfers' && !t.isTransfer) return false;
         
         if (startDate && t.date < startDate) return false;
@@ -6745,6 +6989,7 @@ function initMobileSwipeGestures(card, transactionId) {
 }
 
 function getTxnBadge(t) {
+    if (historyMode) return ''; // 历史模式不显示新/更新标签
     try {
         const raw = sessionStorage.getItem('knownTxnMap_' + currentUserName);
         if (!raw) return '';
@@ -6985,7 +7230,7 @@ function resetAttachmentUI() {
     if (idField) idField.value = '';
 }
 
-async function compressImage(file, maxKB = 200) {
+async function compressImage(file, maxKB = 500) {
     return new Promise((resolve) => {
         const reader = new FileReader();
         reader.onload = e => {
@@ -7083,7 +7328,7 @@ async function handleAttachmentSelected(input) {
             fileSizeKB = Math.round(file.size / 1024);
         } else {
             showToast('压缩中…', 'syncing', 0);
-            const compressedFile = await compressImage(file, 200);
+            const compressedFile = await compressImage(file, 500);
             showToast('上传中…', 'syncing', 0);
             base64Data = await new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -7188,7 +7433,7 @@ async function checkHistoryCategories() {
     // ── 第一步：孤立分类（优先级最高，排在最前）──
     const allValidCats = new Set([...categories.expense, ...categories.income]);
 const orphanTrans = transactions.filter(t =>
-    !t.isTransfer && t.ownerName === currentUserName && !t._isArchived && t.category &&
+    !t.isTransfer && t.ownerName === currentUserName && !t._isArchived && !t._isBaseline && t.category &&
     !allValidCats.has(t.category)
 );
     // 去重：同一个孤立分类只提示一次，让用户选择新分类
@@ -7203,7 +7448,7 @@ const orphanTrans = transactions.filter(t =>
 
     // ── 第二步：相似备注但分类不一致 ──
 const myTrans = transactions.filter(t =>
-    !t.isTransfer && t.ownerName === currentUserName && t.desc && !(t.items && t.items.length > 1)
+    !t.isTransfer && !t._isBaseline && t.ownerName === currentUserName && t.desc && !(t.items && t.items.length > 1)
 );
     myTrans.forEach(t => {
         const type = t.amount > 0 ? 'income' : 'expense';
@@ -7486,6 +7731,7 @@ function renderStats() {
         exp = _statsCache.exp;
     } else {
         filtered = sourceTrans.filter(t => {
+            if (t._isBaseline) return false;
             if (start && t.date < start) return false;
             if (end && t.date > end) return false;
             if (filterUser !== 'all' && t.ownerName !== filterUser) return false;
@@ -7855,7 +8101,7 @@ function summarizeData(data) {
     const byUser = {};
     if (!data || !data.allUserData) return { txCount, accCount, byUser };
     Object.entries(data.allUserData).forEach(([u, ud]) => {
-        const txs  = (ud.transactions || []);
+        const txs  = (ud.transactions || []).filter(t => !t._isBaseline);
         const accs = ud.accounts || [];
         txCount  += txs.length;
         accCount += accs.length;
@@ -7899,8 +8145,8 @@ function diffBackupVsCurrent(backupData, currentData) {
         });
 
         // ── 交易对比 ──
-        const bakTxs = (bakUD.transactions || []);
-        const curTxs = (curUD.transactions || []);
+        const bakTxs = (bakUD.transactions || []).filter(t => !t._isBaseline);
+        const curTxs = (curUD.transactions || []).filter(t => !t._isBaseline);
         const bakTxMap = new Map(bakTxs.map(t => [String(t.id), t]));
         const curTxMap = new Map(curTxs.map(t => [String(t.id), t]));
 
@@ -8154,38 +8400,16 @@ function renderAssetHistoryChart() {
     const filteredTrans = transactions;
     const dates = [...new Set(filteredTrans.map(t => t.date))].sort();
     let labels = [], data = [];
-    
     const calcNetWorth = (d) => {
         let total = 0;
         filteredAccounts.forEach(acc => {
             let bal = parseFloat(acc.initialBalance);
-            
-            // 先加上当前年及之前、日期 <= d 的交易
-            const currentYear = new Date().getFullYear();
-            filteredTrans.filter(t => t.accountId == acc.id && t.date <= d).forEach(t => {
-                const txYear = parseInt(t.date.substring(0, 4));
-                if (txYear >= currentYear || d >= `${currentYear}-01-01`) {
-                    bal += parseFloat(t.amount);
-                }
-            });
-            
-            // 再加上已封存年份的累计余额（截至 d 之前）
-            const sealedYears = getSealedYears();
-            sealedYears.forEach(year => {
-                if (d >= `${year}-12-31`) { // 只计算截至该年末
-                    const snapshot = inMemoryLoadedData.yearSnapshots[year];
-                    if (snapshot && snapshot[String(acc.id)]) {
-                        bal += parseFloat(snapshot[String(acc.id)].balance) - parseFloat(acc.initialBalance);
-                    }
-                }
-            });
-            
+            filteredTrans.filter(t => t.accountId == acc.id && t.date <= d).forEach(t => bal += parseFloat(t.amount));
             bal = toRmb(bal, acc.currency);
             total += bal;
         });
         return total;
     };
-    
     if (currentAssetAggregation === 'day') {
         labels = dates; data = dates.map(d => calcNetWorth(d));
     } else if (currentAssetAggregation === 'week') {
@@ -8207,13 +8431,13 @@ function renderAssetHistoryChart() {
         options: { maintainAspectRatio: false, elements: { point: { radius: 0 } }, plugins: { legend: { display: true } }, animation: { duration: 500 } }
     });
 
-    // 如有已封存年份，显示提示
-    const sealedYrs = getSealedYears();
+    // 如有已存档年份，显示提示
+    const archivedYrs = getArchivedYears();
     const noticeEl = $('history-chart-archive-notice');
     const noticeText = $('history-chart-archive-text');
     if (noticeEl && noticeText) {
-        if (sealedYrs.length > 0) {
-            noticeText.textContent = `${sealedYrs.join('、')} 年数据已封存，趋势图中包含该年末净资产快照。如需查看详细历史数据请进入历史模式。`;
+        if (archivedYrs.length > 0) {
+            noticeText.textContent = `${archivedYrs.join('、')} 年数据已归档，趋势图中仅显示基准交易节点，如需查看完整曲线请进入历史模式。`;
             noticeEl.classList.remove('d-none');
         } else {
             noticeEl.classList.add('d-none');
@@ -8351,7 +8575,7 @@ function switchTab(t, el) {
     if (fab) fab.classList.toggle('d-none', t !== 'transactions' || historyMode || window.innerWidth > 768);
 
     if (t === 'stats') { renderStats(); maybeShowInsight(); }
-    if (t === 'settings') { showSettingsMenu(); renderExchangeRateSettings(); initPasswordHint(); renderUserManagement(); renderSealedYearsUI(); }
+    if (t === 'settings') { showSettingsMenu(); renderExchangeRateSettings(); initPasswordHint(); renderUserManagement(); renderArchiveManagementUI(); }
 }
 
 function showSettingsMenu() {
@@ -8366,11 +8590,215 @@ function showSettingsSubpage(name) {
     if (name === 'exchange-rate') renderExchangeRateSettings();
     if (name === 'categories') renderCategorySettings();
     if (name === 'users') { renderUserManagement(); initPasswordHint(); }
-    if (name === 'archive') renderSealedYearsUI();
+    if (name === 'archive') renderArchiveManagementUI();
     if (name === 'password') initPasswordHint();
     if (name === 'ai-config') loadAiConfig();
     if (name === 'planned') renderPlannedTransactions();
+    if (name === 'orphan-attachments') { $('orphan-attachments-result').innerHTML = ''; }
+    if (name === 'deleted-log') renderDeletedLogUI();
 }
+
+// ── 删除日志管理 ─────────────────────────────────────────────
+function renderDeletedLogUI() {
+    const container = $('deleted-log-list');
+    if (!container) return;
+    const log = (inMemoryLoadedData && inMemoryLoadedData.deletedLog) || [];
+    if (log.length === 0) {
+        container.innerHTML = '<p class="text-muted small mb-0 text-center py-3">暂无删除记录</p>';
+        return;
+    }
+    const sorted = [...log].sort((a, b) => (b.deletedAt || 0) - (a.deletedAt || 0));
+    const now = Date.now();
+    const cutoff = now - DELETED_LOG_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+    let html = `<div class="small text-muted mb-2">共 ${sorted.length} 条记录</div>`;
+    sorted.forEach((entry, idx) => {
+        const isExpired = (entry.deletedAt || 0) < cutoff;
+        const dateStr = entry.deletedAt ? new Date(entry.deletedAt).toLocaleString('zh-CN', { hour12: false }) : '未知时间';
+        const typeLabel = entry.type === 'transaction' ? '交易' : (entry.type === 'account' ? '账户' : (entry.type || '未知'));
+        html += `<div class="d-flex align-items-center gap-2 py-1 border-bottom" data-log-idx="${idx}">
+            <span class="badge ${isExpired ? 'bg-secondary' : 'bg-warning text-dark'}" style="font-size:0.65rem;">${isExpired ? '已失效' : '生效中'}</span>
+            <span class="small flex-grow-1 text-truncate">${typeLabel} · ID: ${_escHtml(String(entry.id))}</span>
+            <span class="small text-muted flex-shrink-0">${dateStr}</span>
+            <button class="btn btn-sm btn-outline-danger py-0 px-2 flex-shrink-0" onclick="deleteSingleLogEntry(${idx})">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>`;
+    });
+    container.innerHTML = html;
+    // 把排序后的顺序缓存起来，供单条删除时定位
+    container._sortedLog = sorted;
+}
+
+function deleteSingleLogEntry(idx) {
+    const container = $('deleted-log-list');
+    if (!container || !container._sortedLog) return;
+    const entry = container._sortedLog[idx];
+    if (!entry) return;
+    if (!inMemoryLoadedData.deletedLog) return;
+    inMemoryLoadedData.deletedLog = inMemoryLoadedData.deletedLog.filter(e =>
+        !(String(e.id) === String(entry.id) && e.deletedAt === entry.deletedAt && e.type === entry.type)
+    );
+    saveUserData(); triggerAutoSave();
+    renderDeletedLogUI();
+    showToast('已删除该条记录', 'success');
+}
+
+function clearAllDeletedLog() {
+    const log = (inMemoryLoadedData && inMemoryLoadedData.deletedLog) || [];
+    if (log.length === 0) { showToast('删除日志已经是空的', 'warning'); return; }
+    if (!confirm(`确定清除全部 ${log.length} 条删除记录？\n\n注意：清除后，如果其他设备还带着已删除的旧数据未同步，这些数据可能会在下次同步时被重新合并回来。`)) return;
+    inMemoryLoadedData.deletedLog = [];
+    saveUserData(); triggerAutoSave();
+    renderDeletedLogUI();
+    showToast('已清除全部删除日志', 'success');
+}
+// ── 清理孤立附件 ────────────────────────────────────────────
+async function scanOrphanAttachments(btn) {
+    if (!GAS_URL) { showToast('请先配置 GAS URL', 'warning'); return; }
+    const result = $('orphan-attachments-result');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>扫描中…';
+    result.innerHTML = '';
+    try {
+        // 收集所有交易里用到的附件 ID
+        const usedIds = new Set();
+        transactions.forEach(t => {
+            if (t.attachmentId) {
+                t.attachmentId.split(',').forEach(id => {
+                    const raw = id.trim().replace(/^pdf:/, '');
+                    if (raw) usedIds.add(raw);
+                });
+            }
+        });
+        // 也扫描所有历史存档里的附件 ID
+        const archivedYears = getArchivedYears();
+        for (const year of archivedYears) {
+            try {
+                const archiveFile = `archive_${year}.enc`;
+                const resp = await fetch(gasRequestUrl({ file: archiveFile }));
+                if (!resp.ok) continue;
+                const raw = (await resp.text()).trim();
+                if (!raw || raw === 'UNAUTHORIZED') continue;
+                let archiveData;
+                try { archiveData = JSON.parse(raw); }
+                catch (_) {
+                    if (!userPassword) continue;
+                    const bytes = CryptoJS.AES.decrypt(raw, userPassword);
+                    archiveData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+                }
+                Object.values(archiveData.allUserData || {}).forEach(ud => {
+                    (ud.transactions || []).forEach(t => {
+                        if (t.attachmentId) {
+                            t.attachmentId.split(',').forEach(id => {
+                                const r = id.trim().replace(/^pdf:/, '');
+                                if (r) usedIds.add(r);
+                            });
+                        }
+                    });
+                });
+            } catch(_) {}
+        }
+
+        // 拉取 Drive 上的附件列表
+        const listResp = await fetch(gasRequestUrl({ action: 'listAttachments' }));
+        if (!listResp.ok) throw new Error('无法获取附件列表，请确认 GAS 已更新并重新部署');
+        const allFiles = await listResp.json();
+        if (!Array.isArray(allFiles)) throw new Error('GAS 返回格式错误，请确认 GAS 已更新');
+
+        const orphans = allFiles.filter(f => !usedIds.has(f.id));
+
+        if (orphans.length === 0) {
+            result.innerHTML = '<div class="alert alert-success py-2 small mb-0"><i class="bi bi-check-circle me-1"></i>没有发现孤立附件，Drive 很干净！</div>';
+            return;
+        }
+
+        // 渲染孤立附件列表
+        let html = `<div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="small text-muted">发现 <b>${orphans.length}</b> 个孤立附件</span>
+            <button class="btn btn-sm btn-danger" onclick="deleteAllOrphans(this)">
+                <i class="bi bi-trash me-1"></i>全部删除
+            </button>
+        </div>`;
+        html += '<div id="orphan-list">';
+        orphans.forEach(f => {
+            const sizeKB = Math.round(f.size / 1024);
+            const isImage = /\.(jpe?g|png|gif|webp|bmp)$/i.test(f.name || '') || /^image\//.test(f.mimeType || '');
+            const nameHtml = isImage
+                ? `<span class="flex-grow-1 small text-truncate text-primary" style="cursor:pointer;text-decoration:underline;" title="点击查看图片：${_escHtml(f.name)}" onclick="viewOrphanAttachmentImage('${_escHtml(f.id)}')">${_escHtml(f.name)}</span>`
+                : `<span class="flex-grow-1 small text-truncate" title="${_escHtml(f.name)}">${_escHtml(f.name)}</span>`;
+            html += `<div class="d-flex align-items-center gap-2 py-1 border-bottom" data-file-id="${_escHtml(f.id)}">
+                <i class="bi ${isImage ? 'bi-file-earmark-image' : 'bi-file-earmark'} text-muted"></i>
+                ${nameHtml}
+                <span class="small text-muted flex-shrink-0">${sizeKB}KB</span>
+                <button class="btn btn-sm btn-outline-danger py-0 px-2 flex-shrink-0"
+                    onclick="deleteSingleOrphan(this, '${_escHtml(f.id)}')">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>`;
+        });
+        html += '</div>';
+        result.innerHTML = html;
+    } catch(err) {
+        result.innerHTML = `<div class="alert alert-danger py-2 small mb-0"><i class="bi bi-exclamation-triangle me-1"></i>${_escHtml(err.message)}</div>`;
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-search me-1"></i>重新扫描';
+    }
+}
+
+function viewOrphanAttachmentImage(fileId) {
+    const url = getDriveAttachmentUrl(fileId);
+    window.open(url, '_blank');
+}
+
+async function deleteSingleOrphan(btn, fileId) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+    try {
+        const resp = await fetch(gasRequestUrl({ action: 'deleteAttachment', fileId }));
+        const text = (await resp.text()).trim();
+        if (text !== 'OK') throw new Error(text);
+        const row = btn.closest('[data-file-id]');
+        if (row) row.remove();
+        // 更新计数
+        const remaining = $$('#orphan-list [data-file-id]').length;
+        const countEl = $('orphan-attachments-result').querySelector('b');
+        if (countEl) countEl.textContent = remaining;
+        if (remaining === 0) {
+            $('orphan-attachments-result').innerHTML = '<div class="alert alert-success py-2 small mb-0"><i class="bi bi-check-circle me-1"></i>所有孤立附件已删除！</div>';
+        }
+    } catch(err) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-trash"></i>';
+        showToast('删除失败：' + err.message, 'error');
+    }
+}
+
+async function deleteAllOrphans(btn) {
+    const rows = $$('#orphan-list [data-file-id]');
+    if (rows.length === 0) return;
+    if (!confirm(`确定删除全部 ${rows.length} 个孤立附件？此操作不可撤销。`)) return;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>删除中…';
+    let failed = 0;
+    for (const row of rows) {
+        const fileId = row.dataset.fileId;
+        try {
+            const resp = await fetch(gasRequestUrl({ action: 'deleteAttachment', fileId }));
+            const text = (await resp.text()).trim();
+            if (text !== 'OK') throw new Error(text);
+            row.remove();
+        } catch(_) { failed++; }
+    }
+    if (failed === 0) {
+        $('orphan-attachments-result').innerHTML = '<div class="alert alert-success py-2 small mb-0"><i class="bi bi-check-circle me-1"></i>所有孤立附件已删除！</div>';
+    } else {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="bi bi-trash me-1"></i>全部删除`;
+        showToast(`${failed} 个文件删除失败，请重试`, 'warning');
+    }
+}
+
 function saveAiConfig() {
     var key = $('ai-api-key').value.trim();
     if (!key) { showToast('请填写 DeepSeek API Key', 'warning'); return; }
@@ -9255,13 +9683,13 @@ function _txMonth(tx)  { return tx.date ? tx.date.substring(0,7) : ''; }
 
 function _monthExpenses(yyyyMM) {
     return transactions.filter(tx =>
-        tx.type === 'expense' && _txMonth(tx) === yyyyMM && !tx.isTransfer
+        tx.type === 'expense' && _txMonth(tx) === yyyyMM && !tx.isTransfer && !tx._isBaseline
     );
 }
 
 function _monthIncome(yyyyMM) {
     return transactions.filter(tx =>
-        tx.type === 'income' && _txMonth(tx) === yyyyMM && !tx.isTransfer
+        tx.type === 'income' && _txMonth(tx) === yyyyMM && !tx.isTransfer && !tx._isBaseline
     );
 }
 
