@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html><html lang="zh-CN" data-bs-theme="dark"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title id="app-title">记一笔 v2.6.0</title>
+    <title id="app-title">记一笔 v2.6.1</title>
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0d6efd">
@@ -606,6 +606,7 @@ select.compact-form-control { height: 2.1rem; }
     height: 100dvh;
     max-height: 100dvh;
     margin: auto;
+    touch-action: pan-y;
 }
 #editTransactionModal .modal-content {
     height: 100dvh;
@@ -613,19 +614,24 @@ select.compact-form-control { height: 2.1rem; }
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    touch-action: pan-y;
 }
 #editTransactionModal .modal-body {
     display: flex !important;
     flex-direction: column !important;
     overflow-y: auto !important;
+    overflow-x: hidden !important;
     flex: 1 !important;
     min-height: 0;
+    touch-action: pan-y;
+    overscroll-behavior-x: none;
 }
 #edit-transaction-form {
     display: flex;
     flex-direction: column;
     flex: 1;
     min-height: 0;
+    touch-action: pan-y;
 }
 /* 手机端：宽度全屏、贴顶、无圆角、铺满全屏高度 */
 @media (max-width: 768px) {
@@ -1128,9 +1134,9 @@ select.compact-form-control { height: 2.1rem; }
 /* 备注 + 标签：并排两个小方框（各占一半宽度） */
 .tm-meta-pair { display: flex; gap: 8px; margin-bottom: 8px; }
 .tm-meta-box {
-    flex: 1; min-width: 0;
+    flex: 1; min-width: 0; box-sizing: border-box;
     display: flex; align-items: center; gap: 6px;
-    padding: 10px 12px; cursor: pointer;
+    height: 42px; padding: 0 12px; cursor: pointer;
 }
 .tm-meta-input {
     flex: 1; min-width: 0; border: none; background: transparent; outline: none;
@@ -1144,13 +1150,15 @@ select.compact-form-control { height: 2.1rem; }
 }
 .tm-meta-tag-text.has-value { color: var(--bs-body-color); font-weight: 600; }
 
-/* 标签小按钮：紧贴备注框右侧，宽度仅贴合内容，高度与备注框保持一致 */
+/* 标签小按钮：紧贴备注框右侧，宽度仅贴合内容；用固定高度而非padding/line-height推算，
+   避免不同浏览器对<button>和<input>的默认渲染差异导致高度对不齐 */
 .tm-tag-mini-btn {
-    flex: 0 0 auto; align-self: stretch; box-sizing: border-box;
+    flex: 0 0 auto; box-sizing: border-box;
     display: flex; align-items: center; gap: 4px;
+    height: 42px; padding: 0 12px;
     background: var(--bs-tertiary-bg); border: none; margin: 0;
-    border-radius: 14px; padding: 10px 12px;
-    font: inherit; font-size: 0.82rem; line-height: 1.2; color: var(--bs-secondary-color);
+    border-radius: 14px;
+    font-size: 0.82rem; color: var(--bs-secondary-color);
     cursor: pointer; white-space: nowrap;
     appearance: none; -webkit-appearance: none;
 }
@@ -1551,7 +1559,7 @@ select.compact-form-control { height: 2.1rem; }
         </div>
     </div>
     <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;pointer-events:none;">
-        <span class="text-muted" style="font-size:0.7rem;" id="sidebar-version">version 2.6.0</span>
+        <span class="text-muted" style="font-size:0.7rem;" id="sidebar-version">version 2.6.1</span>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
@@ -2288,7 +2296,7 @@ select.compact-form-control { height: 2.1rem; }
                 <div class="card shadow-sm">
                     <div class="card-body text-center py-4">
                         <h5>记一笔</h5>
-                        <p class="text-muted small">版本 <span id="settings-version">v2.6.0</span></p>
+                        <p class="text-muted small">版本 <span id="settings-version">v2.6.1</span></p>
                         <p class="text-muted small mb-0">个人财务记账 PWA 应用</p>
                     </div>
                 </div>
@@ -2808,7 +2816,7 @@ let currentAssetAggregation = 'month';
 let transactionDisplayMode = localStorage.getItem('APP_trans_display_mode') || 'all';
 let currentUserFilterValue = localStorage.getItem('APP_trans_user_filter') || 'all';
 
-const APP_VERSION = '2.6.0';
+const APP_VERSION = '2.6.1';
 
 // ── 数据同步相关日期常量 ──────────────────────────────────────
 // 约束：STALE_CACHE_DAYS（loadFromDrive 中）必须 ≤ DELETED_LOG_RETENTION_DAYS，
