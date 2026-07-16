@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html><html lang="zh-CN" data-bs-theme="dark"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title id="app-title">记一笔 v2.6.1</title>
+    <title id="app-title">记一笔 v2.6.3</title>
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0d6efd">
@@ -1559,7 +1559,7 @@ select.compact-form-control { height: 2.1rem; }
         </div>
     </div>
     <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;pointer-events:none;">
-        <span class="text-muted" style="font-size:0.7rem;" id="sidebar-version">version 2.6.1</span>
+        <span class="text-muted" style="font-size:0.7rem;" id="sidebar-version">version 2.6.3</span>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
@@ -2230,7 +2230,7 @@ select.compact-form-control { height: 2.1rem; }
                         </button>
                     </div>
                     <div class="card-body">
-                        <p class="text-muted small mb-2">记录已删除的交易/账户ID，用于多设备同步时防止已删数据被重新合并回来。条目会在 7 天后自动失效。</p>
+                        <p class="text-muted small mb-2">记录已删除的交易/账户ID，用于多设备同步时防止已删数据被重新合并回来。条目会在 <span id="deleted-log-retention-days-text">30</span> 天后自动失效。</p>
                         <div id="deleted-log-list"></div>
                     </div>
                 </div>
@@ -2296,7 +2296,7 @@ select.compact-form-control { height: 2.1rem; }
                 <div class="card shadow-sm">
                     <div class="card-body text-center py-4">
                         <h5>记一笔</h5>
-                        <p class="text-muted small">版本 <span id="settings-version">v2.6.1</span></p>
+                        <p class="text-muted small">版本 <span id="settings-version">v2.6.3</span></p>
                         <p class="text-muted small mb-0">个人财务记账 PWA 应用</p>
                     </div>
                 </div>
@@ -2816,13 +2816,17 @@ let currentAssetAggregation = 'month';
 let transactionDisplayMode = localStorage.getItem('APP_trans_display_mode') || 'all';
 let currentUserFilterValue = localStorage.getItem('APP_trans_user_filter') || 'all';
 
-const APP_VERSION = '2.6.1';
+const APP_VERSION = '2.6.3';
 
 // ── 数据同步相关日期常量 ──────────────────────────────────────
-// 约束：STALE_CACHE_DAYS（loadFromDrive 中）必须 ≤ DELETED_LOG_RETENTION_DAYS，
+// 约束：STALE_CACHE_DAYS（本地缓存过期天数）必须 ≤ DELETED_LOG_RETENTION_DAYS（删除日志保留天数），
 // 建议 ≤ 一半，留安全边际。否则会出现"删除记录已失效但设备缓存还没刷新"的
 // 空窗期，导致已删除的数据在同步时被误判为新数据而复活。
-const DELETED_LOG_RETENTION_DAYS = 14; // deletedLog 条目保留天数（防止已删数据被合并复活）
+const DELETED_LOG_RETENTION_DAYS = 30; // deletedLog 条目保留天数（防止已删数据被合并复活）
+const STALE_CACHE_DAYS = 10; // 本地缓存过期天数：超过此天数未同步则强制从云端拉取最新数据
+
+// 标签建议下拉：只显示最近 N 天内发生过的交易所带的标签（按交易日期 t.date 判断，而非编辑时间）
+const RECENT_TAGS_WINDOW_DAYS = 180; // 约半年
 const $ = id => document.getElementById(id);
 const $$ = selector => document.querySelectorAll(selector);
 
@@ -3149,8 +3153,16 @@ function _applyAppVersion() {
     if (settingsEl) settingsEl.textContent = `v${APP_VERSION}`;
 }
 
+// 把 DELETED_LOG_RETENTION_DAYS / STALE_CACHE_DAYS 同步到界面文案里，
+// 避免常量改了但说明文字忘了改，导致文案和实际行为不一致
+function _applySyncConstants() {
+    const retentionEl = $('deleted-log-retention-days-text');
+    if (retentionEl) retentionEl.textContent = DELETED_LOG_RETENTION_DAYS;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     _applyAppVersion();
+    _applySyncConstants();
     initOfflineModeUI();
 
     // 标签输入实时预览为胶囊
@@ -4394,8 +4406,7 @@ async function loadFromDrive() {
         alert('请先在登录界面填写并保存 GAS URL。'); return;
     }
 
-    // 缓存过期天数：必须 ≤ DELETED_LOG_RETENTION_DAYS，否则会出现"删除记录已失效但缓存还没刷新"的空窗期，导致已删数据复活
-    const STALE_CACHE_DAYS = 7;
+    // 缓存过期天数：见文件顶部 STALE_CACHE_DAYS（必须 ≤ DELETED_LOG_RETENTION_DAYS，否则会出现"删除记录已失效但缓存还没刷新"的空窗期，导致已删数据复活）
     const localRawCache = localStorage.getItem('APP_raw_cache');
     const lastSyncTime = parseInt(localStorage.getItem('APP_last_sync_time') || '0', 10);
     const daysSinceSync = lastSyncTime ? (Date.now() - lastSyncTime) / (24 * 60 * 60 * 1000) : Infinity;
@@ -9628,7 +9639,12 @@ let _tagSuggestCloseTimer = {};
 
 function getRecentTags() {
     const tagSet = new Map();
-    const sorted = [...transactions].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    const cutoff = Date.now() - RECENT_TAGS_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+    const recent = transactions.filter(t => {
+        const ts = t.date ? new Date(t.date).getTime() : NaN;
+        return !isNaN(ts) && ts >= cutoff;
+    });
+    const sorted = recent.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
     for (const t of sorted) {
         if (t.tags && t.tags.trim()) {
             const tag = t.tags.trim();
