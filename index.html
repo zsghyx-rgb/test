@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html><html lang="zh-CN" data-bs-theme="dark"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title id="app-title">记一笔 v2.5.7</title>
+    <title id="app-title">记一笔 v2.5.8</title>
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0d6efd">
@@ -1010,7 +1010,7 @@ select.compact-form-control { height: 2.1rem; }
 .trans-modal-v2.view-only .tm-date-trigger,
 .trans-modal-v2.view-only .tm-camera-btn,
 .trans-modal-v2.view-only .tm-tag-add-btn,
-.trans-modal-v2.view-only .tm-tag-reveal-btn {
+.trans-modal-v2.view-only .tm-meta-box {
     pointer-events: none;
     opacity: 0.65;
 }
@@ -1124,14 +1124,24 @@ select.compact-form-control { height: 2.1rem; }
 .tm-tag-pill .tm-tag-remove { cursor: pointer; opacity: 0.6; font-size: 0.7rem; }
 .tm-tag-pill .tm-tag-remove:hover { opacity: 1; color: #dc3545; }
 
-/* 标签显示入口：紧邻图片卡片 */
-.tm-tags-entry-row { display: flex; justify-content: flex-end; margin-bottom: 6px; }
-.tm-tag-reveal-btn {
-    display: inline-flex; align-items: center; gap: 4px;
-    border: 1px solid var(--bs-border-color); background: var(--bs-tertiary-bg);
-    color: var(--bs-secondary-color); border-radius: 999px; padding: 4px 12px;
-    font-size: 0.76rem; font-weight: 500;
+/* 备注 + 标签：并排两个小方框（各占一半宽度） */
+.tm-meta-pair { display: flex; gap: 8px; margin-bottom: 8px; }
+.tm-meta-box {
+    flex: 1; min-width: 0;
+    display: flex; align-items: center; gap: 6px;
+    padding: 10px 12px; cursor: pointer;
 }
+.tm-meta-input {
+    flex: 1; min-width: 0; border: none; background: transparent; outline: none;
+    font-size: 0.82rem; color: var(--bs-body-color);
+}
+.tm-meta-input::placeholder { color: var(--bs-secondary-color); }
+.tm-meta-tag-icon { color: var(--bs-secondary-color); font-size: 0.82rem; flex-shrink: 0; }
+.tm-meta-tag-text {
+    flex: 1; min-width: 0; font-size: 0.82rem; color: var(--bs-secondary-color);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.tm-meta-tag-text.has-value { color: var(--bs-body-color); font-weight: 600; }
 
 /* 图片卡片 */
 .tm-image-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px; }
@@ -1527,7 +1537,7 @@ select.compact-form-control { height: 2.1rem; }
         </div>
     </div>
     <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;pointer-events:none;">
-        <span class="text-muted" style="font-size:0.7rem;" id="sidebar-version">version 2.5.7</span>
+        <span class="text-muted" style="font-size:0.7rem;" id="sidebar-version">version 2.5.8</span>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
@@ -2264,7 +2274,7 @@ select.compact-form-control { height: 2.1rem; }
                 <div class="card shadow-sm">
                     <div class="card-body text-center py-4">
                         <h5>记一笔</h5>
-                        <p class="text-muted small">版本 <span id="settings-version">v2.5.7</span></p>
+                        <p class="text-muted small">版本 <span id="settings-version">v2.5.8</span></p>
                         <p class="text-muted small mb-0">个人财务记账 PWA 应用</p>
                     </div>
                 </div>
@@ -2543,19 +2553,23 @@ select.compact-form-control { height: 2.1rem; }
                         <!-- 单笔时的标签/备注（拆分时隐藏） -->
                         <div id="single-meta-section">
 
-                            <!-- 备注 -->
-                            <div class="tm-card tm-row-card" id="desc-collapse-wrap">
-                                <div class="tm-row tm-desc-row" onclick="$('edit-trans-desc').focus()">
-                                    <span class="tm-row-label-static">备注</span>
-                                    <input type="text" class="tm-desc-input" id="edit-trans-desc"
+                            <!-- 备注 + 标签：并排两个小方框 -->
+                            <div class="tm-meta-pair">
+                                <div class="tm-card tm-meta-box" id="desc-collapse-wrap" onclick="$('edit-trans-desc').focus()">
+                                    <input type="text" class="tm-meta-input" id="edit-trans-desc"
                                            oninput="updateDescHint('edit-trans-desc','edit-trans-desc-hint','edit-trans-type','edit-trans-category','edit-trans-account')"
                                            placeholder="添加备注...">
                                     <i class="bi bi-chevron-right tm-row-chevron"></i>
                                 </div>
-                                <div id="edit-trans-desc-hint" style="display:none;align-items:center;gap:6px;margin-top:3px;padding:3px 8px;border-radius:5px;background:rgba(var(--bs-primary-rgb),0.08);border:1px solid rgba(var(--bs-primary-rgb),0.2);font-size:0.78rem;"></div>
+                                <div class="tm-card tm-meta-box tm-meta-tag-box" id="tags-trigger-box" onclick="toggleTagsCard()">
+                                    <i class="bi bi-tag tm-meta-tag-icon"></i>
+                                    <span class="tm-meta-tag-text" id="tags-trigger-text">添加标签...</span>
+                                    <i class="bi bi-chevron-right tm-row-chevron"></i>
+                                </div>
                             </div>
+                            <div id="edit-trans-desc-hint" style="display:none;align-items:center;gap:6px;margin-top:-2px;margin-bottom:8px;padding:3px 8px;border-radius:5px;background:rgba(var(--bs-primary-rgb),0.08);border:1px solid rgba(var(--bs-primary-rgb),0.2);font-size:0.78rem;"></div>
 
-                            <!-- 标签：默认隐藏，通过下方按钮唤出 -->
+                            <!-- 标签编辑区：默认隐藏，点击上方"标签"框唤出 -->
                             <div class="tm-card tm-tags-card" id="tags-collapse-wrap" style="display:none;">
                                 <div class="tm-tags-row">
                                     <span class="tm-row-label-static">标签</span>
@@ -2574,13 +2588,6 @@ select.compact-form-control { height: 2.1rem; }
                                         <ul class="tag-suggest-list" id="ts-single"></ul>
                                     </div>
                                 </div>
-                            </div>
-
-                            <!-- 标签显示入口：紧邻图片卡片 -->
-                            <div class="tm-tags-entry-row">
-                                <button type="button" class="tm-tag-reveal-btn" id="tags-reveal-btn" onclick="toggleTagsCard()">
-                                    <i class="bi bi-tag"></i> 标签
-                                </button>
                             </div>
                         </div>
 
@@ -2797,7 +2804,7 @@ let currentAssetAggregation = 'month';
 let transactionDisplayMode = localStorage.getItem('APP_trans_display_mode') || 'all';
 let currentUserFilterValue = localStorage.getItem('APP_trans_user_filter') || 'all';
 
-const APP_VERSION = '2.5.7';
+const APP_VERSION = '2.5.8';
 
 // ── 数据同步相关日期常量 ──────────────────────────────────────
 // 约束：STALE_CACHE_DAYS（loadFromDrive 中）必须 ≤ DELETED_LOG_RETENTION_DAYS，
@@ -5420,16 +5427,27 @@ function toggleTagsInput() {
 function renderTagPills() {
     const input = $('edit-trans-tags');
     const container = $('tag-pills-display');
-    if (!input || !container) return;
-    container.querySelectorAll('.tm-tag-pill').forEach(p => p.remove());
-    const words = (input.value || '').split(/\s+/).filter(Boolean);
-    words.forEach(w => {
-        const pill = document.createElement('span');
-        pill.className = 'tm-tag-pill';
-        const safeW = _escHtml(w);
-        pill.innerHTML = `# ${safeW} <i class="bi bi-x tm-tag-remove" onclick="removeTagWord('${safeW.replace(/'/g, "\\'")}')"></i>`;
-        container.appendChild(pill);
-    });
+    const words = (input && input.value || '').split(/\s+/).filter(Boolean);
+    if (container) {
+        container.querySelectorAll('.tm-tag-pill').forEach(p => p.remove());
+        words.forEach(w => {
+            const pill = document.createElement('span');
+            pill.className = 'tm-tag-pill';
+            const safeW = _escHtml(w);
+            pill.innerHTML = `# ${safeW} <i class="bi bi-x tm-tag-remove" onclick="removeTagWord('${safeW.replace(/'/g, "\\'")}')"></i>`;
+            container.appendChild(pill);
+        });
+    }
+    const triggerText = $('tags-trigger-text');
+    if (triggerText) {
+        if (words.length) {
+            triggerText.textContent = words.map(w => '#' + w).join(' ');
+            triggerText.classList.add('has-value');
+        } else {
+            triggerText.textContent = '添加标签...';
+            triggerText.classList.remove('has-value');
+        }
+    }
 }
 function removeTagWord(word) {
     const input = $('edit-trans-tags');
@@ -5588,7 +5606,7 @@ function openNewTransfer() {
 }
 
 
-// 互换转出/转入账户（金额保持不变）
+// 互换转出/转入账户（金额同步互换）
 function swapTransferAccounts() {
     const fromSel = $('edit-transfer-from');
     const toSel = $('edit-transfer-to');
@@ -5598,6 +5616,14 @@ function swapTransferAccounts() {
     toSel.value = tmp;
     accSelectSync('edit-transfer-from');
     accSelectSync('edit-transfer-to');
+
+    const outAmtEl = $('edit-transfer-amount-out');
+    const inAmtEl = $('edit-transfer-amount-in');
+    if (outAmtEl && inAmtEl) {
+        const tmpAmt = outAmtEl.value;
+        outAmtEl.value = inAmtEl.value;
+        inAmtEl.value = tmpAmt;
+    }
 }
 
 function handleEditTransferAmountChange(direction) {
