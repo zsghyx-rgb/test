@@ -1054,6 +1054,7 @@ select.compact-form-control { height: 2.1rem; }
 .tm-row-text { flex: 1; min-width: 0; }
 .tm-row-label { font-size: 0.68rem; color: var(--bs-secondary-color); margin-bottom: 0; line-height: 1.2; }
 .tm-row-value {
+    flex: 1; min-width: 0;
     font-size: 0.88rem; font-weight: 600; color: var(--bs-body-color);
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.25;
 }
@@ -1065,6 +1066,15 @@ select.compact-form-control { height: 2.1rem; }
     padding-top: 8px; padding-bottom: 8px; margin-bottom: 0;
     border-bottom: 1px solid var(--bs-border-color);
 }
+/* 账户 + 日期 同行显示 */
+.tm-combo-row { display: flex; align-items: center; gap: 10px; }
+.tm-combo-item { flex: 1; min-width: 0; position: relative; }
+.tm-combo-trigger {
+    flex: 1; min-width: 0;
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 0; cursor: pointer; position: relative;
+}
+.tm-combo-trigger .tm-row-value { flex: 0 1 auto; }
 
 /* 分类卡片：固定高度约展示 4 行，多余分类滚动查看 */
 .tm-cat-card .cat-grid {
@@ -2458,35 +2468,28 @@ select.compact-form-control { height: 2.1rem; }
 
                         <!-- 金额卡片 -->
                         <div class="tm-card tm-amount-card" id="trans-amount-card">
-                            <div class="tm-amount-label">金额</div>
                             <div class="amount-input-row-v3">
                                 <span class="amount-currency" id="amount-currency-symbol">¥</span>
                                 <input type="text" inputmode="decimal" placeholder="0.00" class="amount-input-v2 decimal-input" id="edit-trans-amount" required="">
                             </div>
                         </div>
 
-                        <!-- 账户 / 日期 卡片 -->
+                        <!-- 账户 / 日期 卡片（同一行） -->
                         <div class="tm-card tm-row-card">
-                            <div class="acc-select-wrapper" id="wrap-edit-trans-account">
-                                <select class="form-select" id="edit-trans-account" required="" style="display:none;"></select>
-                                <div class="tm-row tm-acc-trigger" id="trigger-edit-trans-account">
-                                    <div class="tm-row-icon tm-icon-blue"><i class="bi bi-credit-card-fill"></i></div>
-                                    <div class="tm-row-text">
-                                        <div class="tm-row-label">账户</div>
+                            <div class="tm-combo-row">
+                                <div class="acc-select-wrapper tm-combo-item" id="wrap-edit-trans-account">
+                                    <select class="form-select" id="edit-trans-account" required="" style="display:none;"></select>
+                                    <div class="tm-combo-trigger tm-acc-trigger" id="trigger-edit-trans-account">
+                                        <div class="tm-row-icon tm-icon-blue"><i class="bi bi-credit-card-fill"></i></div>
                                         <div class="tm-row-value acc-trigger-text"></div>
                                     </div>
-                                    <i class="bi bi-chevron-right tm-row-chevron"></i>
+                                    <div class="acc-select-dropdown" id="dropdown-edit-trans-account"></div>
                                 </div>
-                                <div class="acc-select-dropdown" id="dropdown-edit-trans-account"></div>
-                            </div>
-                            <div class="tm-row tm-date-trigger" onclick="this.querySelector('input').showPicker && this.querySelector('input').showPicker()">
-                                <div class="tm-row-icon tm-icon-green"><i class="bi bi-calendar3"></i></div>
-                                <div class="tm-row-text">
-                                    <div class="tm-row-label">日期</div>
+                                <div class="tm-combo-trigger tm-date-trigger" onclick="this.querySelector('input').showPicker && this.querySelector('input').showPicker()">
+                                    <div class="tm-row-icon tm-icon-green"><i class="bi bi-calendar3"></i></div>
                                     <div class="tm-row-value" id="edit-trans-date-label">今天</div>
+                                    <input type="date" class="tm-date-input-hidden" id="edit-trans-date" required="" onchange="syncDateLabels()">
                                 </div>
-                                <i class="bi bi-chevron-right tm-row-chevron"></i>
-                                <input type="date" class="tm-date-input-hidden" id="edit-trans-date" required="" onchange="syncDateLabels()">
                             </div>
                         </div>
 
@@ -2629,10 +2632,7 @@ select.compact-form-control { height: 2.1rem; }
                             </div>
                             <div class="tm-row tm-date-trigger" onclick="this.querySelector('input').showPicker && this.querySelector('input').showPicker()">
                                 <div class="tm-row-icon tm-icon-green"><i class="bi bi-calendar3"></i></div>
-                                <div class="tm-row-text">
-                                    <div class="tm-row-label">日期</div>
-                                    <div class="tm-row-value" id="edit-transfer-date-label">今天</div>
-                                </div>
+                                <div class="tm-row-value" id="edit-transfer-date-label">今天</div>
                                 <i class="bi bi-chevron-right tm-row-chevron"></i>
                                 <input type="date" class="tm-date-input-hidden" id="edit-transfer-date" required="" onchange="syncDateLabels()">
                             </div>
