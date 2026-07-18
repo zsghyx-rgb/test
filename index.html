@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html><html lang="zh-CN" data-bs-theme="dark"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title id="app-title">记一笔 v2.7.0</title>
+    <title id="app-title">记一笔 v2.7.1</title>
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0891b2"><!-- 夏日海洋主题色，暑假结束后可改回 #0d6efd -->
@@ -734,7 +734,7 @@ select.compact-form-control { height: 2.1rem; }
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    padding-bottom: 16px;
+    padding-bottom: 28px;
     display: flex;
     flex-direction: column;
 }
@@ -1158,7 +1158,7 @@ select.compact-form-control { height: 2.1rem; }
 
 /* 底部固定栏：仅保留操作按钮（金额已移至顶部卡片）。顶部内边距加大，
    让保存按钮和上方内容（尤其是图片区）之间留出更明显的间隔，不会显得紧贴 */
-.trans-amount-bar.tm-footer-bar { padding-top: 14px; }
+.trans-amount-bar.tm-footer-bar { padding-top: 22px; }
 
 
 
@@ -1671,7 +1671,7 @@ select.compact-form-control { height: 2.1rem; }
         </div>
     </div>
     <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;pointer-events:none;">
-        <span class="text-muted" style="font-size:0.7rem;" id="sidebar-version">version 2.7.0</span>
+        <span class="text-muted" style="font-size:0.7rem;" id="sidebar-version">version 2.7.1</span>
     </div>
 </div>
 <div id="app-wrapper" class="d-none">
@@ -2408,7 +2408,7 @@ select.compact-form-control { height: 2.1rem; }
                 <div class="card shadow-sm">
                     <div class="card-body text-center py-4">
                         <h5>记一笔</h5>
-                        <p class="text-muted small">版本 <span id="settings-version">v2.7.0</span></p>
+                        <p class="text-muted small">版本 <span id="settings-version">v2.7.1</span></p>
                         <p class="text-muted small mb-0">个人财务记账 PWA 应用</p>
                     </div>
                 </div>
@@ -2710,7 +2710,7 @@ select.compact-form-control { height: 2.1rem; }
                         </div>
 
                         <!-- 附件（单笔和拆分都保留） -->
-                        <div class="tm-card" id="attachment-section" style="display:none;">
+                        <div class="tm-card" id="attachment-section" style="display:none;margin-bottom:14px;">
                             <div class="tm-image-row">
                                 <span class="tm-card-header mb-0">图片</span>
                                 <button type="button" class="tm-camera-btn" onclick="document.getElementById('attachment-file-input').click()">
@@ -2922,7 +2922,7 @@ let currentAssetAggregation = 'month';
 let transactionDisplayMode = localStorage.getItem('APP_trans_display_mode') || 'all';
 let currentUserFilterValue = localStorage.getItem('APP_trans_user_filter') || 'all';
 
-const APP_VERSION = '2.7.0';
+const APP_VERSION = '2.7.1';
 
 // ── 数据同步相关日期常量 ──────────────────────────────────────
 // 约束：STALE_CACHE_DAYS（本地缓存过期天数）必须 ≤ DELETED_LOG_RETENTION_DAYS（删除日志保留天数），
